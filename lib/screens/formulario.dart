@@ -1,10 +1,8 @@
-import 'package:cotizacion2/screens/calculos.dart';
-import 'package:cotizacion2/screens/cotizacion.dart';
+import 'package:cotizacion/screens/calculos.dart';
+import 'package:cotizacion/screens/cotizacion.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-//import 'package:cotizacion2/screens/cotizacion.dart';
 
 class FormularioScreen extends StatefulWidget {
   @override
@@ -45,6 +43,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     final provider = Provider.of<CotizacionProvider>(context);
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
           'Formulario de Cliente',
@@ -52,47 +51,38 @@ class _FormularioScreenState extends State<FormularioScreen> {
         ),
         backgroundColor: const Color.fromARGB(255, 0, 27, 69),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 50, horizontal: 30),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSectionTitle('CLIENTE'),
-              SizedBox(height: 10),
-              _buildClienteInfo(),
-              SizedBox(height: 20),
-              Divider(color: Colors.blueAccent),
-              _buildSectionTitle('PRODUCTO'),
-              SizedBox(height: 10),
-              _buildProductoInfo(),
-              SizedBox(height: 20),
-              _buildInstructionsAndSummary(provider),
-              SizedBox(height: 20),
-              _buildProductTable(provider),
-              SizedBox(height: 20),
-              Center(
-                child: ElevatedButton(
-                  onPressed: () {
-                    _guardarCliente(context);
-                  },
-                  child: Text(
-                    'Guardar',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color.fromARGB(255, 0, 209, 129),
-                    padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                    foregroundColor: Color.fromARGB(255, 0, 27, 69),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.0),
-                    ),
-                  ),
-                ),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(30, 30, 30, 100), // Ajusta el padding inferior para dejar espacio al botón
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildInstructions(provider),
+                  _buildSectionTitle('CLIENTE'),
+                  SizedBox(height: 10),
+                  _buildClienteInfo(),
+                  SizedBox(height: 30),
+                  _buildSectionTitle('PRODUCTO'),
+                  SizedBox(height: 10),
+                  _buildProductoInfo(),
+                  SizedBox(height: 30),
+                  _buildSummary(provider),
+                  SizedBox(height: 20),
+                  _buildProductTable(provider),
+                  SizedBox(height: 20),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _buildGuardarButton(),
+          ),
+        ],
       ),
     );
   }
@@ -114,19 +104,6 @@ class _FormularioScreenState extends State<FormularioScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildTextField(clienteController, 'Cliente'),
-            ),
-            SizedBox(width: 10),
-            Expanded(
-              child: _buildTextField(
-                  telefonoController, 'Teléfono', TextInputType.phone),
-            ),
-          ],
-        ),
-        SizedBox(height: 20),
-        Row(
-          children: [
-            Expanded(
               flex: 2,
               child: _buildDropdownWithCustom(
                 label: 'Tipo de Persona',
@@ -140,8 +117,20 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 customController: personalizadoController,
               ),
             ),
+            SizedBox(width: 10),
+            Expanded(
+              flex: 4,
+              child: _buildTextField(clienteController, 'Cliente'),
+            ),
+            SizedBox(width: 10),
+            Expanded(
+              flex: 4,
+              child: _buildTextField(
+                  telefonoController, 'Teléfono', TextInputType.phone),
+            ),
           ],
         ),
+        SizedBox(height: 20),
       ],
     );
   }
@@ -379,16 +368,18 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
-  Widget _buildInstructionsAndSummary(CotizacionProvider provider) {
+  Widget _buildInstructions(CotizacionProvider provider) {
     final total = provider.items.fold(0.0, (sum, item) => sum + item.total);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Instrucciones: ',
-          style:
-              TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent),
+          'INSTRUCCIONES: ',
+          style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.blueAccent,
+              fontSize: 20),
         ),
         SizedBox(height: 10),
         Text(
@@ -396,10 +387,23 @@ class _FormularioScreenState extends State<FormularioScreen> {
           style: TextStyle(color: Colors.black),
         ),
         SizedBox(height: 20),
+      ],
+    );
+  }
+
+  Widget _buildSummary(CotizacionProvider provider) {
+    final total = provider.items.fold(0.0, (sum, item) => sum + item.total);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: 20),
         Text(
-          'Resumen:',
-          style:
-              TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent),
+          'RESUMEN:',
+          style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.blueAccent,
+              fontSize: 20),
         ),
         SizedBox(height: 10),
         Text(
@@ -474,6 +478,33 @@ class _FormularioScreenState extends State<FormularioScreen> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildGuardarButton() {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 20),
+      //color: Colors.amber,
+      child: Align(
+        alignment: Alignment.center,
+        child: ElevatedButton(
+          onPressed: () {
+            _guardarCliente(context);
+          },
+          child: Text(
+            'Guardar',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color.fromARGB(255, 0, 209, 129),
+            padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+            foregroundColor: Color.fromARGB(255, 0, 27, 69),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

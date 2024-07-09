@@ -1,4 +1,4 @@
-import 'package:cotizacion2/screens/calculos.dart';
+import 'package:cotizacion/screens/calculos.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -41,197 +41,200 @@ class CotizacionScreen extends StatelessWidget {
         ],
         leading: BackButton(color: Colors.white),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 200),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(height: 20),
-              Text(
-                'COTIZACIÓN',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+      body: Container(
+        color: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 200),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: 20),
+                Text(
+                  'COTIZACIÓN',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
-              ),
-              SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text('Cliente:', style: TextStyle(fontSize: 16)),
-                          SizedBox(width: 5),
-                          Text('${provider.tipoPersona} ${provider.cliente}',
-                              style: TextStyle(fontSize: 16)),
-                          SizedBox(height: 50),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Text('Teléfono:', style: TextStyle(fontSize: 16)),
-                          SizedBox(width: 5),
-                          Text(provider.telefono,
-                              style: TextStyle(fontSize: 16)),
-                        ],
-                      ),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text('Fecha:', style: TextStyle(fontSize: 16)),
-                          SizedBox(width: 10),
-                          Text('${DateTime.now().toLocal()}'.split(' ')[0],
-                              style: TextStyle(fontSize: 16)),
-                          SizedBox(height: 50),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Text('Válido hasta:', style: TextStyle(fontSize: 16)),
-                          SizedBox(width: 10),
-                          Text(
-                              '${DateTime.now().add(Duration(days: 3)).toLocal()}'
-                                  .split(' ')[0],
-                              style: TextStyle(fontSize: 16)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Estimado cliente, ponemos a su consideración la cotización de los productos que nos ha solicitado, cualquier duda estamos a sus órdenes.',
-                style: TextStyle(fontSize: 14),
-              ),
-              SizedBox(height: 20),
-              Table(
-                border: TableBorder.all(color: Colors.black),
-                columnWidths: {
-                  0: FlexColumnWidth(1),
-                  1: FlexColumnWidth(3),
-                  2: FlexColumnWidth(1),
-                  3: FlexColumnWidth(1),
-                },
-                children: [
-                  TableRow(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          'Cantidad',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.bold),
+                SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text('Cliente:', style: TextStyle(fontSize: 16)),
+                            SizedBox(width: 5),
+                            Text('${provider.tipoPersona} ${provider.cliente}',
+                                style: TextStyle(fontSize: 16)),
+                            SizedBox(height: 50),
+                          ],
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          'Descripción',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.bold),
+                        Row(
+                          children: [
+                            Text('Teléfono:', style: TextStyle(fontSize: 16)),
+                            SizedBox(width: 5),
+                            Text(provider.telefono,
+                                style: TextStyle(fontSize: 16)),
+                          ],
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          'Precio Unitario',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.bold),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text('Fecha:', style: TextStyle(fontSize: 16)),
+                            SizedBox(width: 10),
+                            Text('${DateTime.now().toLocal()}'.split(' ')[0],
+                                style: TextStyle(fontSize: 16)),
+                            SizedBox(height: 50),
+                          ],
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          'Total',
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.bold),
+                        Row(
+                          children: [
+                            Text('Válido hasta:', style: TextStyle(fontSize: 16)),
+                            SizedBox(width: 10),
+                            Text(
+                                '${DateTime.now().add(Duration(days: 3)).toLocal()}'
+                                    .split(' ')[0],
+                                style: TextStyle(fontSize: 16)),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                  ...provider.items.map((item) {
-                    return TableRow(
+                      ],
+                    ),
+                  ],
+                ),
+                SizedBox(height: 20),
+                Text(
+                  'Estimado cliente, ponemos a su consideración la cotización de los productos que nos ha solicitado, cualquier duda estamos a sus órdenes.',
+                  style: TextStyle(fontSize: 14),
+                ),
+                SizedBox(height: 20),
+                Table(
+                  border: TableBorder.all(color: Colors.black),
+                  columnWidths: {
+                    0: FlexColumnWidth(1),
+                    1: FlexColumnWidth(3),
+                    2: FlexColumnWidth(1),
+                    3: FlexColumnWidth(1),
+                  },
+                  children: [
+                    TableRow(
                       children: [
                         Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Text(item.cantidad.toString()),
+                          child: Text(
+                            'Cantidad',
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
                         ),
                         Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Text(item.descripcion),
+                          child: Text(
+                            'Descripción',
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
                         ),
                         Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Text(formatCurrency(item.precioUnitario)),
+                          child: Text(
+                            'Precio Unitario',
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
                         ),
                         Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Text(formatCurrency(item.total)),
+                          child: Text(
+                            'Total',
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ],
-                    );
-                  }).toList(),
-                ],
-              ),
-              SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Cantidad con letra: ${_convertirNumero(provider.total)}',
-                    style: TextStyle(fontSize: 14),
+                    ),
+                    ...provider.items.map((item) {
+                      return TableRow(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(item.cantidad.toString()),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(item.descripcion),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(formatCurrency(item.precioUnitario)),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(formatCurrency(item.total)),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                  ],
+                ),
+                SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Cantidad con letra: ${_convertirNumero(provider.total)}',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('Subtotal: ${formatCurrency(provider.subtotal)}',
+                            style: TextStyle(fontSize: 14)),
+                        Text('IVA 16% : ${formatCurrency(provider.iva)}',
+                            style: TextStyle(fontSize: 14)),
+                        Text('Total: ${formatCurrency(provider.total)}',
+                            style: TextStyle(fontSize: 14)),
+                      ],
+                    ),
+                  ],
+                ),
+                SizedBox(height: 40),
+                Container(
+                  padding: EdgeInsets.all(8.0),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.black),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text('Subtotal: ${formatCurrency(provider.subtotal)}',
-                          style: TextStyle(fontSize: 14)),
-                      Text('IVA 16% : ${formatCurrency(provider.iva)}',
-                          style: TextStyle(fontSize: 14)),
-                      Text('Total: ${formatCurrency(provider.total)}',
-                          style: TextStyle(fontSize: 14)),
-                    ],
+                  child: Text(
+                    'Notas:\n1. Los precios unitarios son expresados en Moneda Nacional + IVA 16% aplicable.\n2. El pedido requerirá al menos un pago inicial del 50%, con el resto a liquidar en el momento de la entrega.\n3. Enviar comprobante de depósito, facilitar datos de facturación y lugar de entrega.\n4. Posterior a la fecha de vigencia, por favor cotizar nuevamente.\n5. Los precios pueden variar sin previo aviso.',
+                    style: TextStyle(fontSize: 12),
                   ),
-                ],
-              ),
-              SizedBox(height: 40),
-              Container(
-                padding: EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black),
                 ),
-                child: Text(
-                  'Notas:\n1. Los precios unitarios son expresados en Moneda Nacional + IVA 16% aplicable.\n2. El pedido requerirá al menos un pago inicial del 50%, con el resto a liquidar en el momento de la entrega.\n3. Enviar comprobante de depósito, facilitar datos de facturación y lugar de entrega.\n4. Posterior a la fecha de vigencia, por favor cotizar nuevamente.\n5. Los precios pueden variar sin previo aviso.',
-                  style: TextStyle(fontSize: 12),
+                SizedBox(height: 20),
+                Center(
+                  child: Text(
+                    '© 2024 CODX',
+                    style: TextStyle(fontSize: 12, color: Colors.black),
+                  ),
                 ),
-              ),
-              SizedBox(height: 20),
-              Center(
-                child: Text(
-                  '© 2024 CODX',
-                  style: TextStyle(fontSize: 12, color: Colors.black),
+                SizedBox(height: 20),
+                Center(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await _generatePdf(provider);
+                    },
+                    child: Text('Download PDF'),
+                  ),
                 ),
-              ),
-              SizedBox(height: 20),
-              Center(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await _generatePdf(provider);
-                  },
-                  child: Text('Download PDF'),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
