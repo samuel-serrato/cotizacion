@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cotizacion/screens/calculos.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -5,7 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show Uint8List, rootBundle;
 
 class CotizacionScreen extends StatelessWidget {
   final descripcionController = TextEditingController();
@@ -98,7 +100,8 @@ class CotizacionScreen extends StatelessWidget {
                         ),
                         Row(
                           children: [
-                            Text('Válido hasta:', style: TextStyle(fontSize: 16)),
+                            Text('Válido hasta:',
+                                style: TextStyle(fontSize: 16)),
                             SizedBox(width: 10),
                             Text(
                                 '${DateTime.now().add(Duration(days: 3)).toLocal()}'
@@ -256,18 +259,33 @@ class CotizacionScreen extends StatelessWidget {
     return words;
   }
 
+  Future<Uint8List> _loadAsset(String path) async {
+    final data = await rootBundle.load(path);
+    return data.buffer.asUint8List();
+  }
+
   Future<void> _generatePdf(CotizacionProvider provider) async {
     // En el método _generatePdf dentro de CotizacionScreen
-    final logoImage = pw.MemoryImage(
-      (await rootBundle.load('assets/images/logo.png')).buffer.asUint8List(),
-    );
+    final codxIconData = await _loadAsset('assets/codxtransparente.png');
+    final facebookIconData = await _loadAsset('assets/facebook.png');
+    final whatsappIconData = await _loadAsset('assets/whatsapp.png');
+    final webIconData = await _loadAsset('assets/web.png');
+    final emailIconData = await _loadAsset('assets/email.png');
+    final ubiIconData = await _loadAsset('assets/ubi.png');
+
+    final codxIcon = pw.MemoryImage(codxIconData);
+    final facebookIcon = pw.MemoryImage(facebookIconData);
+    final whatsappIcon = pw.MemoryImage(whatsappIconData);
+    final webIcon = pw.MemoryImage(webIconData);
+    final emailIcon = pw.MemoryImage(emailIconData);
+    final ubiIcon = pw.MemoryImage(ubiIconData);
 
     final pdf = pw.Document();
     final date = DateFormat('dd/MM/yyyy').format(DateTime.now());
     final validUntil =
         DateFormat('dd/MM/yyyy').format(DateTime.now().add(Duration(days: 3)));
 
-    const double marginAll = 50; // Márgenes para el contenido principal
+    const double marginAll = 40; // Márgenes para el contenido principal
 
     pdf.addPage(
       pw.Page(
@@ -280,16 +298,34 @@ class CotizacionScreen extends StatelessWidget {
         build: (pw.Context context) {
           return pw.Column(
             children: [
+              pw.Container(
+                color: PdfColors.black,
+                width: double.infinity, // Ocupa todo el ancho
+                child: pw.Padding(
+                  padding: pw.EdgeInsets.symmetric(
+                      vertical: 10), // Añadimos un poco de relleno vertical
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.end,
+                    children: [
+                      pw.Padding(
+                        padding: pw.EdgeInsets.only(right: 30),
+                        child: pw.Image(codxIcon,
+                            width: 80, height: 60), // Icono de Facebook
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               pw.Expanded(
                 child: pw.Container(
                   margin: pw.EdgeInsets.all(marginAll),
                   child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    crossAxisAlignment: pw.CrossAxisAlignment.center,
                     children: [
                       pw.Text('COTIZACIÓN',
                           style: pw.TextStyle(
                               fontSize: 24, fontWeight: pw.FontWeight.bold)),
-                      pw.SizedBox(height: 20),
+                      pw.SizedBox(height: 50),
                       pw.Row(
                         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                         children: [
@@ -346,12 +382,12 @@ class CotizacionScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      pw.SizedBox(height: 20),
+                      pw.SizedBox(height: 30),
                       pw.Text(
                         'Estimado cliente, ponemos a su consideración la cotización de los productos que nos ha solicitado, cualquier duda estamos a sus órdenes.',
-                        style: pw.TextStyle(fontSize: 12),
+                        style: pw.TextStyle(fontSize: 10),
                       ),
-                      pw.SizedBox(height: 20),
+                      pw.SizedBox(height: 30),
                       pw.Table.fromTextArray(
                         context: context,
                         data: <List<String>>[
@@ -359,7 +395,7 @@ class CotizacionScreen extends StatelessWidget {
                             'Cantidad',
                             'Descripción',
                             'Precio Unitario',
-                            'Total'
+                            'Total',
                           ],
                           ...provider.items.map((item) => [
                                 item.cantidad.toString(),
@@ -369,43 +405,170 @@ class CotizacionScreen extends StatelessWidget {
                               ]),
                         ],
                         border: pw.TableBorder.all(),
+                        headerStyle: pw.TextStyle(
+                          fontSize: 9,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.white,
+                        ),
+                        headerDecoration: pw.BoxDecoration(
+                          color: PdfColors.black,
+                        ),
+                        cellStyle: pw.TextStyle(fontSize: 9),
+                        columnWidths: {
+                          0: pw.FixedColumnWidth(14),
+                          2: pw.FixedColumnWidth(18),
+                          3: pw.FixedColumnWidth(18),
+                        },
+                        headerAlignments: {
+                          0: pw.Alignment
+                              .center, // Centra el texto del encabezado 'Cantidad'
+                          1: pw.Alignment
+                              .center, // Centra el texto del encabezado 'Descripción'
+                          2: pw.Alignment
+                              .center, // Centra el texto del encabezado 'Precio Unitario'
+                          3: pw.Alignment
+                              .center, // Centra el texto del encabezado 'Total'
+                        },
+                        cellAlignments: {
+                          0: pw.Alignment
+                              .center, // Centra el texto de la columna 'Cantidad'
+                          1: pw.Alignment
+                              .centerLeft, // Centra el texto de la columna 'Descripción'
+                          2: pw.Alignment
+                              .center, // Centra el texto de la columna 'Precio Unitario'
+                          3: pw.Alignment
+                              .center, // Centra el texto de la columna 'Total'
+                        },
                       ),
                       pw.SizedBox(height: 20),
                       pw.Row(
                         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                         children: [
-                          pw.Text(
-                            'Cantidad con letra: ${_convertirNumero(provider.total)}',
-                            style: pw.TextStyle(fontSize: 12),
+                          pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.SizedBox(
+                                  height:
+                                      35), // Ajusta el tamaño según sea necesario
+                              pw.Text(
+                                'Cantidad con letra: ',
+                                style: pw.TextStyle(fontSize: 10),
+                              ),
+                              pw.Container(
+                                width: 350, // Ancho definido para el container
+                                decoration: pw.BoxDecoration(
+                                  color: PdfColors.grey300,
+                                  border: pw.Border(
+                                    bottom: pw.BorderSide(
+                                        width: 1, color: PdfColors.black),
+                                  ),
+                                ),
+                                child: pw.Text(
+                                  _convertirNumero(provider.total),
+                                  style: pw.TextStyle(fontSize: 10),
+                                ),
+                              )
+                            ],
                           ),
                           pw.Column(
-                            crossAxisAlignment: pw.CrossAxisAlignment.end,
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
                             children: [
-                              pw.Text(
-                                  'Subtotal: ${formatCurrency(provider.subtotal)}',
-                                  style: pw.TextStyle(fontSize: 12)),
-                              pw.Text(
-                                  'IVA 16%: ${formatCurrency(provider.iva)}',
-                                  style: pw.TextStyle(fontSize: 12)),
-                              pw.Text(
-                                  'Total: ${formatCurrency(provider.total)}',
-                                  style: pw.TextStyle(fontSize: 12)),
+                              _buildPriceRow('Subtotal',
+                                  '${formatCurrency(provider.subtotal)}'),
+                              _buildPriceRow(
+                                  'IVA', '${formatCurrency(provider.iva)}'),
+                              pw.Row(
+                                mainAxisAlignment:
+                                    pw.MainAxisAlignment.spaceBetween,
+                                children: [
+                                  pw.Container(
+                                    margin:
+                                        pw.EdgeInsets.only(left: -80, right: 0),
+                                    width:
+                                        50, // Ancho definido para el container del título
+                                    color: PdfColors.black,
+                                    padding: pw.EdgeInsets.all(4),
+                                    child: pw.Text(
+                                      'Total',
+                                      style: pw.TextStyle(
+                                          fontSize: 10, color: PdfColors.white),
+                                      textAlign: pw.TextAlign.left,
+                                    ),
+                                  ),
+                                  pw.SizedBox(width: 1),
+                                  pw.Container(
+                                    decoration: pw.BoxDecoration(
+                                      color: PdfColors.grey300,
+                                      border: pw.Border(
+                                        bottom: pw.BorderSide(
+                                            width: 1, color: PdfColors.black),
+                                      ),
+                                    ),
+                                    margin: pw.EdgeInsets.only(
+                                      left: 0,
+                                    ),
+                                    padding:
+                                        pw.EdgeInsets.only(right: 20, left: 20, top: 6),
+                                    child: pw.Text(
+                                      formatCurrency(provider.total),
+                                      style: pw.TextStyle(fontSize: 10),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ],
                       ),
-                      pw.SizedBox(height: 40),
+                      pw.SizedBox(height: 50),
+                      pw.Spacer(),
                       pw.Container(
-                        padding: pw.EdgeInsets.all(8.0),
+                        padding: pw.EdgeInsets.all(0),
                         decoration: pw.BoxDecoration(
                           border: pw.Border.all(),
+                          color: PdfColors
+                              .grey300, // Color gris para el contenedor del resto del contenido
                         ),
-                        child: pw.Text(
-                          'Notas:\n1. Los precios unitarios son expresados en Moneda Nacional + IVA 16% aplicable.\n2. El pedido requerirá al menos un pago inicial del 50%, con el resto a liquidar en el momento de la entrega.\n3. Enviar comprobante de depósito, facilitar datos de facturación y lugar de entrega.\n4. Posterior a la fecha de vigencia, por favor cotizar nuevamente.\n5. Los precios pueden variar sin previo aviso.',
-                          style: pw.TextStyle(fontSize: 9),
+                        child: pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Container(
+                                // Contenedor para el título "Notas"
+                                padding: pw.EdgeInsets.all(5),
+                                width: double.infinity,
+                                color: PdfColors
+                                    .black, // Color negro para el contenedor del título
+                                child: pw.Align(
+                                  alignment: pw.Alignment.center,
+                                  child: pw.Text(
+                                    'Notas:',
+                                    style: pw.TextStyle(
+                                      color: PdfColors
+                                          .white, // Color blanco para el texto del título
+                                      fontSize: 12,
+                                      fontWeight: pw.FontWeight.bold,
+                                    ),
+                                  ),
+                                )),
+                            pw.Container(
+                              padding: pw.EdgeInsets.all(6),
+                              child: pw.Text(
+                                '1. Los precios unitarios son expresados en Moneda Nacional + IVA 16% aplicable.\n'
+                                '2. El pedido requerirá al menos un pago inicial del 50%, con el resto a liquidar en el momento de la entrega.\n'
+                                '3. Enviar comprobante de depósito, facilitar datos de facturación y lugar de entrega.\n'
+                                '4. Posterior a la fecha de vigencia, por favor cotizar nuevamente.\n'
+                                '5. Los precios pueden variar sin previo aviso.',
+                                style: pw.TextStyle(
+                                  color: PdfColors
+                                      .black, // Color negro para el texto del contenido
+                                  fontSize: 9,
+                                ),
+                              ),
+                            )
+                          ],
                         ),
                       ),
-                      pw.SizedBox(height: 20),
+                      pw.SizedBox(height: 30),
                       pw.Center(
                         child: pw.Text('© 2024 CODX',
                             style: pw.TextStyle(fontSize: 12)),
@@ -418,27 +581,52 @@ class CotizacionScreen extends StatelessWidget {
                 color: PdfColors.black,
                 width: double.infinity, // Ocupa todo el ancho
                 child: pw.Padding(
-                  padding: pw.EdgeInsets.symmetric(
-                      vertical: 10), // Añadimos un poco de relleno vertical
+                  padding: pw.EdgeInsets.all(
+                      10), // Añadimos un poco de relleno vertical
                   child: pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.start,
                     children: [
-                      pw.Image(logoImage, width: 100, height: 100),
-                      pw.Text('Facebook: facebook.com/empresa',
+                      pw.Image(facebookIcon,
+                          width: 10, height: 10), // Icono de Facebook
+                      pw.SizedBox(width: 2),
+                      pw.Text(' CODX',
                           style: pw.TextStyle(
                               color: PdfColors.white, fontSize: 8)),
-                      pw.SizedBox(width: 20),
-                      pw.Text('Web: www.empresa.com',
+                      pw.SizedBox(width: 15),
+                      pw.Image(whatsappIcon,
+                          width: 10, height: 10), // Icono de Facebook
+                      pw.SizedBox(width: 2),
+                      pw.Text('744 533 8531',
                           style: pw.TextStyle(
                               color: PdfColors.white, fontSize: 8)),
-                      pw.SizedBox(width: 20),
-                      pw.Text('Email: contacto@empresa.com',
+                      pw.SizedBox(width: 15),
+                      pw.Image(webIcon, width: 10, height: 10),
+                      pw.SizedBox(width: 2),
+                      pw.Text(' www.codxtech.com',
                           style: pw.TextStyle(
                               color: PdfColors.white, fontSize: 8)),
-                      pw.SizedBox(width: 20),
-                      pw.Text('Dirección: Calle Falsa 123',
+                      pw.SizedBox(width: 15),
+                      pw.Image(emailIcon, width: 10, height: 10),
+                      pw.SizedBox(width: 2),
+                      pw.Text(' ventas@codxtech.com',
                           style: pw.TextStyle(
                               color: PdfColors.white, fontSize: 8)),
+                      pw.SizedBox(width: 15),
+                      pw.Image(ubiIcon, width: 10, height: 10),
+                      pw.SizedBox(width: 2),
+                      pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(
+                              'J.R. Cabrillo No. 90, Local B, Fraccionamiento Hornos',
+                              style: pw.TextStyle(
+                                  color: PdfColors.white, fontSize: 8)),
+                          pw.Text(
+                              ' Insurgentes, C.P. 39355. Acapulco de Juárez, Gro',
+                              style: pw.TextStyle(
+                                  color: PdfColors.white, fontSize: 8)),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -451,5 +639,35 @@ class CotizacionScreen extends StatelessWidget {
 
     await Printing.layoutPdf(
         onLayout: (PdfPageFormat format) async => pdf.save());
+  }
+
+  pw.Widget _buildPriceRow(String title, String value) {
+    return pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      children: [
+        pw.Container(
+          margin: pw.EdgeInsets.only(left: -80, right: 0),
+          width: 50, // Ancho definido para el container del título
+          color: PdfColors.black,
+          padding: pw.EdgeInsets.all(4),
+          child: pw.Text(
+            title,
+            style: pw.TextStyle(fontSize: 10, color: PdfColors.white),
+            textAlign: pw.TextAlign.left,
+          ),
+        ),
+        pw.SizedBox(width: 1),
+        pw.Container(
+          margin: pw.EdgeInsets.only(
+            left: 0,
+          ),
+          padding: pw.EdgeInsets.only(right: 20, left: 20, top: 6),
+          child: pw.Text(
+            value,
+            style: pw.TextStyle(fontSize: 10),
+          ),
+        ),
+      ],
+    );
   }
 }
