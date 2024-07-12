@@ -17,8 +17,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
   final personalizadoController = TextEditingController();
   final cantidadPersonalizadaController = TextEditingController();
 
-  String _selectedPersonType = 'C.P.';
-  String _selectedQuantity = '1';
+  String? _selectedPersonType;
+  String? _selectedQuantity = '1';
 
   final List<String> _personTypes = [
     'C.P.',
@@ -111,7 +111,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 items: _personTypes,
                 onChanged: (value) {
                   setState(() {
-                    _selectedPersonType = value!;
+                    _selectedPersonType = value;
                   });
                 },
                 customController: personalizadoController,
@@ -186,7 +186,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
   Widget _buildDropdownWithCustom({
     required String label,
-    required String value,
+    required String? value,
     required List<String> items,
     required ValueChanged<String?> onChanged,
     required TextEditingController customController,
@@ -195,6 +195,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DropdownButtonFormField<String>(
+          hint: Text('Selecciona una opcion'),
           value: value,
           onChanged: onChanged,
           decoration: InputDecoration(labelText: label),
@@ -248,7 +249,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
         double.tryParse(precioController.text.replaceAll(',', '')) ?? 0;
     final cantidad = _selectedQuantity == 'PERSONALIZADO'
         ? int.tryParse(cantidadPersonalizadaController.text) ?? 1
-        : int.tryParse(_selectedQuantity) ?? 1;
+        : int.tryParse(_selectedQuantity!) ?? 1;
 
     if (descripcion.isNotEmpty && precio > 0 && cantidad > 0) {
       final item = CotizacionItem(
@@ -357,8 +358,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
     final telefono = telefonoController.text;
     final tipoPersona = _selectedPersonType == 'PERSONALIZADO'
         ? personalizadoController.text
-        : _selectedPersonType;
+        : _selectedPersonType ?? '';
 
+    provider.setTipoPersona(tipoPersona);
     provider.setCliente(cliente);
     provider.setTelefono(telefono);
 

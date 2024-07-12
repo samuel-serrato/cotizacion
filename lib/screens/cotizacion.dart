@@ -43,11 +43,10 @@ class CotizacionScreen extends StatelessWidget {
         ],
         leading: BackButton(color: Colors.white),
       ),
-      body: Container(
-        color: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 200),
-          child: SingleChildScrollView(
+      body: Stack(children: [
+        SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 200),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -193,7 +192,7 @@ class CotizacionScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Cantidad con letra: ${_convertirNumero(provider.total)}',
+                      'Cantidad con letra: ${NumberToWords.convertDouble(provider.total)}',
                       style: TextStyle(fontSize: 14),
                     ),
                     Column(
@@ -227,20 +226,46 @@ class CotizacionScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 12, color: Colors.black),
                   ),
                 ),
-                SizedBox(height: 20),
-                Center(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      await _generatePdf(provider);
-                    },
-                    child: Text('Download PDF'),
-                  ),
-                ),
+                /* SizedBox(height: 20),
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        await _generatePdf(provider);
+                      },
+                      child: Text('Download PDF'),
+                    ),
+                  ), */
               ],
             ),
           ),
         ),
-      ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: Center(
+            child: Container(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: ElevatedButton(
+                onPressed: () async {
+                  await _generatePdf(provider);
+                },
+                child: Text('Download PDF', style: TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color.fromARGB(255, 0, 209, 129),
+                  padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                  foregroundColor: Color.fromARGB(255, 0, 27, 69),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ]),
     );
   }
 
@@ -318,7 +343,7 @@ class CotizacionScreen extends StatelessWidget {
               ),
               pw.Expanded(
                 child: pw.Container(
-                  margin: pw.EdgeInsets.all(marginAll),
+                  margin: pw.EdgeInsets.only(top: marginAll, bottom: marginAll, left: 30, right: 30),
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.center,
                     children: [
@@ -416,8 +441,8 @@ class CotizacionScreen extends StatelessWidget {
                         cellStyle: pw.TextStyle(fontSize: 9),
                         columnWidths: {
                           0: pw.FixedColumnWidth(14),
-                          2: pw.FixedColumnWidth(18),
-                          3: pw.FixedColumnWidth(18),
+                          2: pw.FixedColumnWidth(15),
+                          3: pw.FixedColumnWidth(15),
                         },
                         headerAlignments: {
                           0: pw.Alignment
@@ -455,7 +480,7 @@ class CotizacionScreen extends StatelessWidget {
                                 style: pw.TextStyle(fontSize: 10),
                               ),
                               pw.Container(
-                                width: 350, // Ancho definido para el container
+                                width: 380, // Ancho definido para el container
                                 decoration: pw.BoxDecoration(
                                   color: PdfColors.grey300,
                                   border: pw.Border(
@@ -464,8 +489,8 @@ class CotizacionScreen extends StatelessWidget {
                                   ),
                                 ),
                                 child: pw.Text(
-                                  _convertirNumero(provider.total),
-                                  style: pw.TextStyle(fontSize: 10),
+                                  NumberToWords.convertDouble(provider.total),
+                                  style: pw.TextStyle(fontSize: 9, letterSpacing: -0.5),
                                 ),
                               )
                             ],
@@ -507,8 +532,8 @@ class CotizacionScreen extends StatelessWidget {
                                     margin: pw.EdgeInsets.only(
                                       left: 0,
                                     ),
-                                    padding:
-                                        pw.EdgeInsets.only(right: 20, left: 20, top: 6),
+                                    padding: pw.EdgeInsets.only(
+                                        right: 20, left: 20, top: 6),
                                     child: pw.Text(
                                       formatCurrency(provider.total),
                                       style: pw.TextStyle(fontSize: 10),
@@ -669,5 +694,98 @@ class CotizacionScreen extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+class NumberToWords {
+  static final List<String> _units = [
+    '',
+    'un',
+    'dos',
+    'tres',
+    'cuatro',
+    'cinco',
+    'seis',
+    'siete',
+    'ocho',
+    'nueve',
+    'diez',
+    'once',
+    'doce',
+    'trece',
+    'catorce',
+    'quince',
+    'dieciséis',
+    'diecisiete',
+    'dieciocho',
+    'diecinueve',
+  ];
+
+  static final List<String> _tens = [
+    '',
+    'diez',
+    'veinte',
+    'treinta',
+    'cuarenta',
+    'cincuenta',
+    'sesenta',
+    'setenta',
+    'ochenta',
+    'noventa',
+  ];
+
+  static final List<String> _hundreds = [
+    '',
+    'ciento',
+    'doscientos',
+    'trescientos',
+    'cuatrocientos',
+    'quinientos',
+    'seiscientos',
+    'setecientos',
+    'ochocientos',
+    'novecientos',
+  ];
+
+  static String convert(int number) {
+    if (number == 0) {
+      return 'cero';
+    }
+    if (number < 20) {
+      return _units[number];
+    }
+    if (number < 100) {
+      return _tens[number ~/ 10] +
+          (number % 10 == 0 ? '' : ' y ' + _units[number % 10]);
+    }
+    if (number < 1000) {
+      if (number == 100) {
+        return 'cien';
+      }
+      return _hundreds[number ~/ 100] +
+          (number % 100 == 0 ? '' : ' ' + convert(number % 100));
+    }
+    if (number < 1000000) {
+      if (number < 2000) {
+        return 'mil' + (number % 1000 == 0 ? '' : ' ' + convert(number % 1000));
+      }
+      return convert(number ~/ 1000) +
+          ' mil' +
+          (number % 1000 == 0 ? '' : ' ' + convert(number % 1000));
+    }
+    return 'Número fuera de rango';
+  }
+
+  static String convertDouble(double number) {
+    int integerPart = number.truncate();
+    int decimalPart = ((number - integerPart) * 100).round();
+
+    String integerPartInWords = convert(integerPart);
+    String decimalPartInWords = convert(decimalPart);
+
+    String pesos = integerPart == 1 ? 'PESO' : 'PESOS';
+    String centavos = decimalPart == 1 ? 'CENTAVO' : 'CENTAVOS';
+
+    return '${integerPartInWords.toUpperCase()} $pesos CON ${decimalPartInWords.toUpperCase()} $centavos';
   }
 }
