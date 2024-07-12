@@ -539,6 +539,7 @@ class CotizacionScreen extends StatelessWidget {
                                       formatCurrency(provider.total),
                                       style: pw.TextStyle(fontSize: 10),
                                     ),
+                                    
                                   ),
                                 ],
                               ),
