@@ -237,7 +237,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
       ),
       keyboardType: keyboardType,
       inputFormatters: label == 'Cantidad' || label == 'Precio'
-          ? [FilteringTextInputFormatter.digitsOnly]
+          ? [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),]
           : [],
     );
   }

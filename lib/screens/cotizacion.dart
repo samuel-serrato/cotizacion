@@ -440,9 +440,10 @@ class CotizacionScreen extends StatelessWidget {
                         ),
                         cellStyle: pw.TextStyle(fontSize: 9),
                         columnWidths: {
-                          0: pw.FixedColumnWidth(14),
-                          2: pw.FixedColumnWidth(15),
-                          3: pw.FixedColumnWidth(15),
+                          0: pw.FixedColumnWidth(4),
+                          1: pw.FixedColumnWidth(30),
+                          2: pw.FixedColumnWidth(5),
+                          3: pw.FixedColumnWidth(5),
                         },
                         headerAlignments: {
                           0: pw.Alignment
@@ -474,13 +475,13 @@ class CotizacionScreen extends StatelessWidget {
                             children: [
                               pw.SizedBox(
                                   height:
-                                      35), // Ajusta el tamaño según sea necesario
+                                      37), // Ajusta el tamaño según sea necesario
                               pw.Text(
                                 'Cantidad con letra: ',
                                 style: pw.TextStyle(fontSize: 10),
                               ),
                               pw.Container(
-                                width: 380, // Ancho definido para el container
+                                width: 420, // Ancho definido para el container
                                 decoration: pw.BoxDecoration(
                                   color: PdfColors.grey300,
                                   border: pw.Border(
@@ -490,7 +491,7 @@ class CotizacionScreen extends StatelessWidget {
                                 ),
                                 child: pw.Text(
                                   NumberToWords.convertDouble(provider.total),
-                                  style: pw.TextStyle(fontSize: 9, letterSpacing: -0.5),
+                                  style: pw.TextStyle(fontSize: 8, letterSpacing: -0.5),
                                 ),
                               )
                             ],
@@ -508,7 +509,7 @@ class CotizacionScreen extends StatelessWidget {
                                 children: [
                                   pw.Container(
                                     margin:
-                                        pw.EdgeInsets.only(left: -80, right: 0),
+                                        pw.EdgeInsets.only(left: -60, right: 0),
                                     width:
                                         50, // Ancho definido para el container del título
                                     color: PdfColors.black,
@@ -530,10 +531,10 @@ class CotizacionScreen extends StatelessWidget {
                                       ),
                                     ),
                                     margin: pw.EdgeInsets.only(
-                                      left: 0,
+                                      left: -1, top: 1
                                     ),
                                     padding: pw.EdgeInsets.only(
-                                        right: 20, left: 20, top: 6),
+                                        right: 10, left: 10, top: 6),
                                     child: pw.Text(
                                       formatCurrency(provider.total),
                                       style: pw.TextStyle(fontSize: 10),
@@ -671,7 +672,7 @@ class CotizacionScreen extends StatelessWidget {
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
         pw.Container(
-          margin: pw.EdgeInsets.only(left: -80, right: 0),
+          margin: pw.EdgeInsets.only(left: -60, right: 0),
           width: 50, // Ancho definido para el container del título
           color: PdfColors.black,
           padding: pw.EdgeInsets.all(4),
@@ -686,7 +687,7 @@ class CotizacionScreen extends StatelessWidget {
           margin: pw.EdgeInsets.only(
             left: 0,
           ),
-          padding: pw.EdgeInsets.only(right: 20, left: 20, top: 6),
+          padding: pw.EdgeInsets.only(right: 10, left: 10, top: 6),
           child: pw.Text(
             value,
             style: pw.TextStyle(fontSize: 10),
