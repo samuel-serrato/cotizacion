@@ -1,6 +1,6 @@
+import 'package:cotizacion/navigation_rail.dart';
 import 'package:cotizacion/screens/calculos.dart';
-import 'package:cotizacion/screens/cotizacion.dart';
-//import 'package:cotizacion2/screens/home.dart';
+import 'package:cotizacion/screens/generarPDF.dart';
 import 'package:cotizacion/screens/formulario.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -13,8 +13,8 @@ void main() {
         debugShowCheckedModeBanner: false,
         initialRoute: '/',
         routes: {
-          '/': (context) => FormularioScreen(),
-          '/cotizacion': (context) => CotizacionScreen(),
+          '/': (context) => NavigationRailScreen(),
+          //'/cotizacion': (context) => CotizacionScreen(mostrarIVA: true,),
         },
       ),
     ),

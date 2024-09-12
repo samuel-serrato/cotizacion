@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:cotizacion/screens/calculos.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -9,288 +8,9 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:flutter/services.dart' show Uint8List, rootBundle;
 
-class CotizacionScreen extends StatelessWidget {
-  final descripcionController = TextEditingController();
-  final precioController = TextEditingController();
-  final cantidadController = TextEditingController();
 
-  @override
-  Widget build(BuildContext context) {
-    final provider = Provider.of<CotizacionProvider>(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Cotización',
-          style: TextStyle(fontSize: 20, color: Colors.white),
-        ),
-        backgroundColor: const Color.fromARGB(255, 0, 27, 69),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Container(
-              width: 100,
-              height: 100,
-              //color: Colors.blue[900],
-              child: Align(
-                alignment: Alignment.center,
-                child: Text('CODX',
-                    style: TextStyle(color: Colors.white, fontSize: 30),
-                    textAlign: TextAlign.center),
-              ),
-            ),
-          ),
-        ],
-        leading: BackButton(color: Colors.white),
-      ),
-      body: Stack(children: [
-        SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 200),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(height: 20),
-                Text(
-                  'COTIZACIÓN',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text('Cliente:', style: TextStyle(fontSize: 16)),
-                            SizedBox(width: 5),
-                            Text('${provider.tipoPersona} ${provider.cliente}',
-                                style: TextStyle(fontSize: 16)),
-                            SizedBox(height: 50),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Text('Teléfono:', style: TextStyle(fontSize: 16)),
-                            SizedBox(width: 5),
-                            Text(provider.telefono,
-                                style: TextStyle(fontSize: 16)),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text('Fecha:', style: TextStyle(fontSize: 16)),
-                            SizedBox(width: 10),
-                            Text('${DateTime.now().toLocal()}'.split(' ')[0],
-                                style: TextStyle(fontSize: 16)),
-                            SizedBox(height: 50),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Text('Válido hasta:',
-                                style: TextStyle(fontSize: 16)),
-                            SizedBox(width: 10),
-                            Text(
-                                '${DateTime.now().add(Duration(days: 3)).toLocal()}'
-                                    .split(' ')[0],
-                                style: TextStyle(fontSize: 16)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                SizedBox(height: 20),
-                Text(
-                  'Estimado cliente, ponemos a su consideración la cotización de los productos que nos ha solicitado, cualquier duda estamos a sus órdenes.',
-                  style: TextStyle(fontSize: 14),
-                ),
-                SizedBox(height: 20),
-                Table(
-                  border: TableBorder.all(color: Colors.black),
-                  columnWidths: {
-                    0: FlexColumnWidth(1),
-                    1: FlexColumnWidth(3),
-                    2: FlexColumnWidth(1),
-                    3: FlexColumnWidth(1),
-                  },
-                  children: [
-                    TableRow(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'Cantidad',
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'Descripción',
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'Precio Unitario',
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            'Total',
-                            style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
-                    ...provider.items.map((item) {
-                      return TableRow(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(item.cantidad.toString()),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(item.descripcion),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(formatCurrency(item.precioUnitario)),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(formatCurrency(item.total)),
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                  ],
-                ),
-                SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Cantidad con letra: ${NumberToWords.convertDouble(provider.total)}',
-                      style: TextStyle(fontSize: 14),
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text('Subtotal: ${formatCurrency(provider.subtotal)}',
-                            style: TextStyle(fontSize: 14)),
-                        Text('IVA 16% : ${formatCurrency(provider.iva)}',
-                            style: TextStyle(fontSize: 14)),
-                        Text('Total: ${formatCurrency(provider.total)}',
-                            style: TextStyle(fontSize: 14)),
-                      ],
-                    ),
-                  ],
-                ),
-                SizedBox(height: 40),
-                Container(
-                  padding: EdgeInsets.all(8.0),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.black),
-                  ),
-                  child: Text(
-                    'Notas:\n1. Los precios unitarios son expresados en Moneda Nacional + IVA 16% aplicable.\n2. El pedido requerirá al menos un pago inicial del 50%, con el resto a liquidar en el momento de la entrega.\n3. Enviar comprobante de depósito, facilitar datos de facturación y lugar de entrega.\n4. Posterior a la fecha de vigencia, por favor cotizar nuevamente.\n5. Los precios pueden variar sin previo aviso.',
-                    style: TextStyle(fontSize: 12),
-                  ),
-                ),
-                SizedBox(height: 20),
-                Center(
-                  child: Text(
-                    '© 2024 CODX',
-                    style: TextStyle(fontSize: 12, color: Colors.black),
-                  ),
-                ),
-                /* SizedBox(height: 20),
-                  Center(
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        await _generatePdf(provider);
-                      },
-                      child: Text('Download PDF'),
-                    ),
-                  ), */
-              ],
-            ),
-          ),
-        ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: Center(
-            child: Container(
-              padding: EdgeInsets.symmetric(vertical: 20),
-              child: ElevatedButton(
-                onPressed: () async {
-                  await _generatePdf(provider);
-                },
-                child: Text('Download PDF', style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color.fromARGB(255, 0, 209, 129),
-                  padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                  foregroundColor: Color.fromARGB(255, 0, 27, 69),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ]),
-    );
-  }
-
-  String formatCurrency(double amount) {
-    final format = NumberFormat("#,##0.00", "en_US");
-    return '\$${format.format(amount)}';
-  }
-
-  String _convertirNumero(double numero) {
-    if (numero == 0) {
-      return 'CERO PESOS';
-    }
-
-    final formatter = NumberFormat.currency(locale: 'es_ES', symbol: '');
-    String words = formatter.format(numero).toUpperCase();
-    return words;
-  }
-
-  Future<Uint8List> _loadAsset(String path) async {
-    final data = await rootBundle.load(path);
-    return data.buffer.asUint8List();
-  }
-
-  Future<void> _generatePdf(CotizacionProvider provider) async {
-    // En el método _generatePdf dentro de CotizacionScreen
+Future<void> generatePdf(CotizacionProvider provider) async {
+    // En el método generatePdf dentro de CotizacionScreen
     final codxIconData = await _loadAsset('assets/codxtransparente.png');
     final facebookIconData = await _loadAsset('assets/facebook.png');
     final whatsappIconData = await _loadAsset('assets/whatsapp.png');
@@ -343,7 +63,8 @@ class CotizacionScreen extends StatelessWidget {
               ),
               pw.Expanded(
                 child: pw.Container(
-                  margin: pw.EdgeInsets.only(top: marginAll, bottom: marginAll, left: 30, right: 30),
+                  margin: pw.EdgeInsets.only(
+                      top: marginAll, bottom: marginAll, left: 30, right: 30),
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.center,
                     children: [
@@ -375,6 +96,16 @@ class CotizacionScreen extends StatelessWidget {
                                       style: pw.TextStyle(fontSize: 12)),
                                   pw.SizedBox(width: 5),
                                   pw.Text(provider.telefono,
+                                      style: pw.TextStyle(fontSize: 12)),
+                                ],
+                              ),
+                              pw.SizedBox(height: 10),
+                              pw.Row(
+                                children: [
+                                  pw.Text('Correo:',
+                                      style: pw.TextStyle(fontSize: 12)),
+                                  pw.SizedBox(width: 5),
+                                  pw.Text(provider.email,
                                       style: pw.TextStyle(fontSize: 12)),
                                 ],
                               ),
@@ -491,7 +222,8 @@ class CotizacionScreen extends StatelessWidget {
                                 ),
                                 child: pw.Text(
                                   NumberToWords.convertDouble(provider.total),
-                                  style: pw.TextStyle(fontSize: 8, letterSpacing: -0.5),
+                                  style: pw.TextStyle(
+                                      fontSize: 8, letterSpacing: -0.5),
                                 ),
                               )
                             ],
@@ -530,16 +262,14 @@ class CotizacionScreen extends StatelessWidget {
                                             width: 1, color: PdfColors.black),
                                       ),
                                     ),
-                                    margin: pw.EdgeInsets.only(
-                                      left: -1, top: 1
-                                    ),
+                                    margin:
+                                        pw.EdgeInsets.only(left: -1, top: 1),
                                     padding: pw.EdgeInsets.only(
                                         right: 10, left: 10, top: 6),
                                     child: pw.Text(
                                       formatCurrency(provider.total),
                                       style: pw.TextStyle(fontSize: 10),
                                     ),
-                                    
                                   ),
                                 ],
                               ),
@@ -668,6 +398,26 @@ class CotizacionScreen extends StatelessWidget {
         onLayout: (PdfPageFormat format) async => pdf.save());
   }
 
+  String formatCurrency(double amount) {
+    final format = NumberFormat("#,##0.00", "en_US");
+    return '\$${format.format(amount)}';
+  }
+
+  String _convertirNumero(double numero) {
+    if (numero == 0) {
+      return 'CERO PESOS';
+    }
+
+    final formatter = NumberFormat.currency(locale: 'es_ES', symbol: '');
+    String words = formatter.format(numero).toUpperCase();
+    return words;
+  }
+
+  Future<Uint8List> _loadAsset(String path) async {
+    final data = await rootBundle.load(path);
+    return data.buffer.asUint8List();
+  }
+
   pw.Widget _buildPriceRow(String title, String value) {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -697,7 +447,7 @@ class CotizacionScreen extends StatelessWidget {
       ],
     );
   }
-}
+
 
 class NumberToWords {
   static final List<String> _units = [

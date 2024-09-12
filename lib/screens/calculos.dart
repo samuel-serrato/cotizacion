@@ -5,10 +5,12 @@ import 'package:number_to_words/number_to_words.dart';
 class CotizacionProvider extends ChangeNotifier {
   String _cliente = '';
   String _telefono = '';
+  String _email = '';
   String _tipoPersona = '';
 
   String get cliente => _cliente;
   String get telefono => _telefono;
+  String get email => _email;
   String get tipoPersona => _tipoPersona;
   List<CotizacionItem> items = [];
 
@@ -25,6 +27,11 @@ class CotizacionProvider extends ChangeNotifier {
 
   void setTelefono(String telefono) {
     _telefono = telefono;
+    notifyListeners();
+  }
+  
+  void setEmail(String email) {
+    _email = email;
     notifyListeners();
   }
 
@@ -54,16 +61,33 @@ class CotizacionProvider extends ChangeNotifier {
 
 class CotizacionItem {
   final String descripcion;
-  final double precioUnitario;
+   double precioUnitario;
   final int cantidad;
+    double? ganancia; // Añadir este campo si aún no existe
+  final double porcentajeGanancia; // Nueva propiedad para almacenar el % de ganancia
+
+
 
   CotizacionItem({
     required this.descripcion,
     required this.precioUnitario,
     required this.cantidad,
+        this.ganancia,
+            required this.porcentajeGanancia, // Asegúrate de recibir este valor
+
+
   });
 
   double get total => precioUnitario * cantidad;
+
+    // Puedes añadir un método para calcular la ganancia basada en el porcentaje
+  double calcularGanancia(double porcentajeGanancia) {
+    return (precioUnitario * porcentajeGanancia) / 100;
+  }
+
+  double calcularPrecioVenta(double porcentajeGanancia) {
+    return precioUnitario + calcularGanancia(porcentajeGanancia);
+  }
 }
 
 String formatCurrency(double amount) {
