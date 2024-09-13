@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:cotizacion/screens/calculos.dart';
 import 'package:cotizacion/screens/control.dart';
 import 'package:cotizacion/screens/generarPDF.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
 
 class FormularioScreen extends StatefulWidget {
   @override
@@ -11,7 +14,7 @@ class FormularioScreen extends StatefulWidget {
 }
 
 class _FormularioScreenState extends State<FormularioScreen> {
-  final clienteController = TextEditingController();
+  final nombresController = TextEditingController();
   final telefonoController = TextEditingController();
   final emailController = TextEditingController();
   final descripcionController = TextEditingController();
@@ -144,7 +147,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
             SizedBox(width: 10),
             Expanded(
               flex: 4,
-              child: _buildTextField(clienteController, 'Cliente'),
+              child: _buildTextField(nombresController, 'Cliente'),
             ),
             SizedBox(width: 10),
             Expanded(
@@ -285,6 +288,58 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
+  void _guardarCliente() async {
+    // Obtén los valores de los controladores y del Dropdown
+    String nombres = nombresController.text;
+    String telefono = telefonoController.text;
+    String email = emailController.text;
+
+    // Cuerpo del POST
+    final body = {
+      'nombres': nombres,
+      'telefono': telefono,
+      'email': email,
+    };
+
+    // Hacer el POST request
+    final response = await http.post(
+      Uri.parse('http://192.168.0.109:3000/api/v1/clientes/agregar'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(body),
+    );
+
+    if (response.statusCode == 201) {
+      print('Cliente guardado con éxito');
+    } else {
+      print('Error al guardar el cliente: ${response.body}');
+    }
+  }
+
+  void _guardarProducto() async {
+    // Obtén los valores de los controladores y del Dropdown
+    String producto = descripcionController.text;
+    String precio_compra = precioController.text;
+
+    // Cuerpo del POST
+    final body = {
+      'producto': producto,
+      'precio_compra': precio_compra,
+    };
+
+    // Hacer el POST request
+    final response = await http.post(
+      Uri.parse('http://192.168.0.109:3000/api/v1/productos/agregar'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(body),
+    );
+
+    if (response.statusCode == 201) {
+      print('Cliente guardado con éxito');
+    } else {
+      print('Error al guardar el cliente: ${response.body}');
+    }
+  }
+
   Widget _buildTextField(TextEditingController controller, String label,
       [TextInputType keyboardType = TextInputType.text,
       VoidCallback? onChanged]) {
@@ -374,7 +429,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
   void _actualizarDatosClientePDF(BuildContext context) {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
-    final cliente = clienteController.text;
+    final cliente = nombresController.text;
     final telefono = telefonoController.text;
     final email = emailController.text;
     final tipoPersona = _selectedPersonType == 'PERSONALIZADO'
@@ -386,14 +441,12 @@ class _FormularioScreenState extends State<FormularioScreen> {
     provider.setTelefono(telefono);
     provider.setEmail(email);
 
-    
-     _handleGeneratePdf(
-                    context); 
+    _handleGeneratePdf(context);
   }
 
   void _actualizarDatosCliente(BuildContext context) {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
-    final cliente = clienteController.text;
+    final cliente = nombresController.text;
     final telefono = telefonoController.text;
     final email = emailController.text;
     final tipoPersona = _selectedPersonType == 'PERSONALIZADO'
@@ -405,11 +458,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
     provider.setTelefono(telefono);
     provider.setEmail(email);
 
-    
-     _handleGeneratePdf(
-                    context); 
+    _handleGeneratePdf(context);
   }
-  
 
   Widget _buildInstructions(CotizacionProvider provider) {
     final total = provider.items.fold(0.0, (sum, item) => sum + item.total);
@@ -674,20 +724,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   void _guardarCotizacion(BuildContext context) {
-  final provider = Provider.of<CotizacionProvider>(context, listen: false);
-  
-  // Guardar los datos del cliente
-  _actualizarDatosCliente(context);
-
-  // Navegar a la pantalla de control y enviar los datos
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => ControlScreen(),
-    ),
-  );
-}
-
+    _guardarCliente();
+  }
 
   Widget _buildButtons() {
     return Container(
@@ -698,7 +736,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton(
-                  onPressed: () => _guardarCotizacion(context),
+              onPressed: () => _guardarCotizacion(context),
               child: Text(
                 'Guardar Cotización',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),

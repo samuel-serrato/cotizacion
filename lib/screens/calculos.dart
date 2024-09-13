@@ -29,7 +29,7 @@ class CotizacionProvider extends ChangeNotifier {
     _telefono = telefono;
     notifyListeners();
   }
-  
+
   void setEmail(String email) {
     _email = email;
     notifyListeners();
@@ -61,26 +61,23 @@ class CotizacionProvider extends ChangeNotifier {
 
 class CotizacionItem {
   final String descripcion;
-   double precioUnitario;
+  double precioUnitario;
   final int cantidad;
-    double? ganancia; // Añadir este campo si aún no existe
-  final double porcentajeGanancia; // Nueva propiedad para almacenar el % de ganancia
-
-
+  double? ganancia; // Añadir este campo si aún no existe
+  final double
+      porcentajeGanancia; // Nueva propiedad para almacenar el % de ganancia
 
   CotizacionItem({
     required this.descripcion,
     required this.precioUnitario,
     required this.cantidad,
-        this.ganancia,
-            required this.porcentajeGanancia, // Asegúrate de recibir este valor
-
-
+    this.ganancia,
+    required this.porcentajeGanancia, // Asegúrate de recibir este valor
   });
 
   double get total => precioUnitario * cantidad;
 
-    // Puedes añadir un método para calcular la ganancia basada en el porcentaje
+  // Puedes añadir un método para calcular la ganancia basada en el porcentaje
   double calcularGanancia(double porcentajeGanancia) {
     return (precioUnitario * porcentajeGanancia) / 100;
   }

@@ -19,10 +19,13 @@ class _ControlScreenState extends State<ControlScreen> {
 
   Future<void> fetchClientesYProductos() async {
     try {
-      final clientesResponse = await http.get(Uri.parse('http://192.168.0.102:3000/api/v1/clientes'));
-      final productosResponse = await http.get(Uri.parse('http://192.168.0.102:3000/api/v1/productos'));
+      final clientesResponse = await http
+          .get(Uri.parse('http://192.168.0.109:3000/api/v1/clientes'));
+      final productosResponse = await http
+          .get(Uri.parse('http://192.168.0.109:3000/api/v1/productos'));
 
-      if (clientesResponse.statusCode == 200 && productosResponse.statusCode == 200) {
+      if (clientesResponse.statusCode == 200 &&
+          productosResponse.statusCode == 200) {
         setState(() {
           clientes = json.decode(clientesResponse.body);
           productos = json.decode(productosResponse.body);
@@ -84,7 +87,8 @@ class _ControlScreenState extends State<ControlScreen> {
                       DataCell(Text(cliente['email'] ?? '')),
                       DataCell(Text(cliente['fCreacion'] ?? '')),
                       DataCell(Text(productosDelCliente[0]['producto'] ?? '')),
-                      DataCell(Text(productosDelCliente[0]['precio_compra'].toString())),
+                      DataCell(Text(
+                          productosDelCliente[0]['precio_compra'].toString())),
                       DataCell(Text(productosDelCliente[0]['fCreacion'] ?? '')),
                     ]);
                   }
