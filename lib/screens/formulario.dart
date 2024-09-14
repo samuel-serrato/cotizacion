@@ -303,7 +303,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.0.109:3000/api/v1/clientes/agregar'),
+      Uri.parse('http://192.168.1.16:3000/api/v1/clientes/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -315,30 +315,32 @@ class _FormularioScreenState extends State<FormularioScreen> {
     }
   }
 
-  void _guardarProducto() async {
-    // Obtén los valores de los controladores y del Dropdown
-    String producto = descripcionController.text;
-    String precio_compra = precioController.text;
+  void _guardarProducto(BuildContext context) async {
+  final provider = Provider.of<CotizacionProvider>(context, listen: false);
+  List<CotizacionItem> productos = provider.items;
 
-    // Cuerpo del POST
-    final body = {
-      'producto': producto,
-      'precio_compra': precio_compra,
+  // Construye el cuerpo del POST con todos los productos
+  final body = productos.map((item) {
+    return {
+      'producto': item.descripcion,
+      'precio_compra': item.precioUnitario.toString(),
     };
+  }).toList();
 
-    // Hacer el POST request
-    final response = await http.post(
-      Uri.parse('http://192.168.0.109:3000/api/v1/productos/agregar'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(body),
-    );
+  // Hacer el POST request
+  final response = await http.post(
+    Uri.parse('http://192.168.1.16:3000/api/v1/productos/agregar'),
+    headers: {'Content-Type': 'application/json'},
+    body: json.encode(body),
+  );
 
-    if (response.statusCode == 201) {
-      print('Cliente guardado con éxito');
-    } else {
-      print('Error al guardar el cliente: ${response.body}');
-    }
+  if (response.statusCode == 201) {
+    print('Productos guardados con éxito');
+  } else {
+    print('Error al guardar los productos: ${response.body}');
   }
+}
+
 
   Widget _buildTextField(TextEditingController controller, String label,
       [TextInputType keyboardType = TextInputType.text,
@@ -724,7 +726,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   void _guardarCotizacion(BuildContext context) {
-    _guardarCliente();
+    //_guardarCliente();
+    _guardarProducto(context);
   }
 
   Widget _buildButtons() {
