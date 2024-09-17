@@ -303,7 +303,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.1.16:3000/api/v1/clientes/agregar'),
+      Uri.parse('http://192.168.1.26:3000/api/v1/clientes/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -329,7 +329,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
   // Hacer el POST request
   final response = await http.post(
-    Uri.parse('http://192.168.1.16:3000/api/v1/productos/agregar'),
+    Uri.parse('http://192.168.1.26:3000/api/v1/productos/agregar'),
     headers: {'Content-Type': 'application/json'},
     body: json.encode(body),
   );
