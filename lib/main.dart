@@ -16,7 +16,7 @@ void main() {
           useMaterial3: true, // Habilita Material 3
           colorScheme: ColorScheme.fromSeed(
             seedColor: const Color.fromARGB(255, 0, 255,
-                223), // Color base para generar el esquema de colores
+                225), // Color base para generar el esquema de colores
             /*  primary: const Color.fromARGB(
                 255, 0, 255, 157), // Color primario para la aplicación */
             /*  onPrimary: Colors
