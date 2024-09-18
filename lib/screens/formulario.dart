@@ -26,6 +26,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
   String? _selectedPersonType;
   String? _selectedQuantity = '1';
+  String? _selectedType = 'Producto';
 
   final List<String> _personTypes = [
     'C.P.',
@@ -44,6 +45,12 @@ class _FormularioScreenState extends State<FormularioScreen> {
   ];
 
   final List<String> _quantities = ['1', '2', '3', '4', '5', 'PERSONALIZADO'];
+
+  final List<String> _types = [
+    'Producto',
+    'Software',
+    'Servicio',
+  ];
 
   bool _mostrarIVA = true;
 
@@ -75,41 +82,43 @@ class _FormularioScreenState extends State<FormularioScreen> {
         ),
         backgroundColor: const Color.fromARGB(255, 0, 27, 69),
       ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(30, 30, 30,
-                  100), // Ajusta el padding inferior para dejar espacio al botón
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // _buildInstructions(provider),
-                  _buildSectionTitle('CLIENTE'),
-                  SizedBox(height: 10),
-                  _buildClienteInfo(),
-                  SizedBox(height: 30),
-                  _buildSectionTitle('PRODUCTO'),
-                  SizedBox(height: 10),
-                  _buildProductoInfo(),
-                  SizedBox(height: 30),
-                  _buildGananciaYPrecioVenta(), // Nuevo widget para mostrar ganancia y precio de venta
-                  _buildSummary(provider),
-                  SizedBox(height: 20),
-                  _buildProductTable(
-                      provider), // Tabla de productos con ganancia total
-                  SizedBox(height: 20),
-                ],
+      body: Container(
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(30, 30, 30,
+                    100), // Ajusta el padding inferior para dejar espacio al botón
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // _buildInstructions(provider),
+                    _buildSectionTitle('CLIENTE'),
+                    SizedBox(height: 10),
+                    _buildClienteInfo(),
+                    SizedBox(height: 30),
+                    _buildSectionTitle('PRODUCTO'),
+                    SizedBox(height: 10),
+                    _buildProductoInfo(),
+                    SizedBox(height: 30),
+                    _buildGananciaYPrecioVenta(), // Nuevo widget para mostrar ganancia y precio de venta
+                    _buildSummary(provider),
+                    SizedBox(height: 20),
+                    _buildProductTable(
+                        provider), // Tabla de productos con ganancia total
+                    SizedBox(height: 20),
+                  ],
+                ),
               ),
             ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _buildButtons(),
-          ),
-        ],
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: _buildButtons(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -170,6 +179,21 @@ class _FormularioScreenState extends State<FormularioScreen> {
   Widget _buildProductoInfo() {
     return Row(
       children: [
+        Expanded(
+          flex: 2,
+          child: _buildDropdownWithCustom(
+            label: 'Tipo',
+            value: _selectedType,
+            items: _types,
+            onChanged: (value) {
+              setState(() {
+                _selectedType = value!;
+              });
+            },
+            customController: cantidadPersonalizadaController,
+          ),
+        ),
+        SizedBox(width: 10),
         Expanded(
           flex: 2,
           child: _buildDropdownWithCustom(
@@ -266,7 +290,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DropdownButtonFormField<String>(
-          hint: Text('Selecciona una opcion'),
+          hint: Text('Elige una opcion'),
           value: value,
           onChanged: onChanged,
           decoration: InputDecoration(labelText: label),
