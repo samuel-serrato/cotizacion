@@ -8,10 +8,15 @@ class ControlScreen extends StatefulWidget {
   _ControlScreenState createState() => _ControlScreenState();
 }
 
-class _ControlScreenState extends State<ControlScreen> {
+class _ControlScreenState extends State<ControlScreen>
+    with TickerProviderStateMixin {
   List<dynamic> clientes = [];
   List<dynamic> detalles = [];
   List<dynamic> articulos = [];
+  Map<String, bool> _expandedState =
+      {}; // Mapa para rastrear el estado expandido de cada folio
+  Map<String, AnimationController> _controllers =
+      {}; // Mapa para AnimationControllers
 
   @override
   void initState() {
@@ -22,11 +27,11 @@ class _ControlScreenState extends State<ControlScreen> {
   Future<void> fetchClientesYDetallesYArticulos() async {
     try {
       final clientesResponse = await http
-          .get(Uri.parse('http://192.168.0.109:3000/api/v1/clientes'));
+          .get(Uri.parse('http://192.168.1.26:3000/api/v1/clientes'));
       final detallesResponse = await http
-          .get(Uri.parse('http://192.168.0.109:3000/api/v1/detalles/'));
+          .get(Uri.parse('http://192.168.1.26:3000/api/v1/detalles/'));
       final articulosResponse = await http
-          .get(Uri.parse('http://192.168.0.109:3000/api/v1/articulos'));
+          .get(Uri.parse('http://192.168.1.26:3000/api/v1/articulos'));
 
       if (clientesResponse.statusCode == 200 &&
           detallesResponse.statusCode == 200 &&
@@ -44,14 +49,17 @@ class _ControlScreenState extends State<ControlScreen> {
     }
   }
 
-  String formatDate(String dateString) {
+  String formatDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) {
+      return 'Fecha desconocida';
+    }
     try {
       final date = DateTime.parse(dateString);
       final DateFormat formatter =
           DateFormat('d \'de\' MMMM \'de\' yyyy', 'es_ES');
       return formatter.format(date);
     } catch (e) {
-      return dateString; // Retorna el valor original si hay un error en el formato
+      return dateString; // Retorna el valor original si hay un error
     }
   }
 
@@ -60,217 +68,348 @@ class _ControlScreenState extends State<ControlScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(
-            255, 0, 27, 69), // Color personalizado para la AppBar
+        backgroundColor: const Color.fromARGB(255, 0, 27, 69),
         title: Text(
           'Control de Clientes y Ventas',
-          style: TextStyle(color: Colors.white), // Color del texto de la AppBar
+          style: TextStyle(color: Colors.white),
         ),
       ),
       body: clientes.isEmpty || detalles.isEmpty || articulos.isEmpty
           ? Center(child: CircularProgressIndicator())
           : ListView.builder(
               itemCount: clientes.length,
-              itemBuilder: (context, index) {
-                final cliente = clientes[index];
+              itemBuilder: (context, clienteIndex) {
+                final cliente = clientes[clienteIndex];
 
                 // Filtrar los detalles que pertenecen al cliente actual
                 final detallesDelCliente = detalles.where((detalle) {
                   return detalle['cliente'] == cliente['nombres'];
                 }).toList();
 
-                return Card(
-                  color: Colors.white, // Color de fondo de la tarjeta
-                  margin: const EdgeInsets.symmetric(
-                      vertical: 8.0, horizontal: 16.0),
-                  elevation: 4,
-                  child: ExpansionTile(
-                    tilePadding: const EdgeInsets.all(16.0),
-                    title: Text(
-                      cliente['nombres'] ?? '',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87, // Color del texto del título
-                      ),
-                    ),
-                    subtitle: Text(
-                      'Teléfono: ${cliente['telefono'] ?? ''}',
-                      style: TextStyle(
-                          color:
-                              Colors.black54), // Color del texto del subtítulo
-                    ),
-                    trailing: Text(
-                      'Fecha: ${formatDate(cliente['fCreacion'] ?? '')}',
-                      style: TextStyle(
-                          color:
-                              Colors.black54), // Color del texto del trailing
-                    ),
-                    children: [
-                      detallesDelCliente.isEmpty
-                          ? ListTile(
-                              title: Text(
-                                'Sin detalles de ventas',
-                                style: TextStyle(
-                                  fontStyle: FontStyle.italic,
-                                  color: Colors
-                                      .black54, // Color del texto cuando no hay detalles
-                                ),
-                              ),
-                              tileColor: Colors.grey[
-                                  200], // Color de fondo cuando no hay detalles
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: detallesDelCliente.map((detalle) {
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.all(16.0),
-                                      child: Text(
-                                        'Folio: ${detalle['folio']}',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                          color: Colors
-                                              .blue, // Color del texto del Folio
-                                        ),
-                                      ),
-                                    ),
-                                    ...detalle['articulos']
-                                        .map<Widget>((articuloDetalle) {
-                                      final articulo = articulos.firstWhere(
-                                        (articulo) =>
-                                            articulo['idarticulo'] ==
-                                            articuloDetalle['idarticulo'],
-                                        orElse: () => null,
-                                      );
+                return Column(
+                  children: detallesDelCliente.map((detalle) {
+                    final folio = detalle['folio'] ?? 'desconocido';
+                    final isExpanded = _expandedState[folio] ?? false;
 
-                                      return Card(
-                                        color: const Color.fromARGB(
-                                            255, 243, 243, 243),
-                                        margin: const EdgeInsets.symmetric(
-                                            vertical: 4.0, horizontal: 8.0),
-                                        elevation: 2,
-                                        child: ListTile(
-                                          contentPadding: EdgeInsets.symmetric(
-                                              vertical: 2, horizontal: 16.0),
-                                          /* leading: Icon(Icons.shopping_cart,
-                                              color: Colors
-                                                  .blue), // Color del ícono */
-                                          title: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Expanded(
-                                                  child: Text(
-                                                'Cantidad: ${articuloDetalle['cantidad']}',
-                                                style: TextStyle(fontSize: 16),
-                                              )),
-                                              Expanded(
-                                                  child: Text(
-                                                'Producto: ${articulo != null ? articulo['descripcion'] : 'Desconocido'}',
-                                                style: TextStyle(fontSize: 16),
-                                              )),
-                                              Expanded(
-                                                  child: Text(
-                                                'Compra: \$${articuloDetalle['precio_compra']}',
-                                                style: TextStyle(fontSize: 16),
-                                              )),
-                                              Expanded(
-                                                  child: Text(
-                                                'Venta: \$${articuloDetalle['precio_venta']}',
-                                                style: TextStyle(fontSize: 16),
-                                              )),
-                                              Expanded(
-                                                  child: Text(
-                                                'Ganancia: \$${articuloDetalle['ganancia']}',
-                                                style: TextStyle(fontSize: 16),
-                                              )),
-                                            ],
-                                          ),
-                                        ),
-                                      );
-                                    }).toList(),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 8.0, horizontal: 16.0),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            'Subtotal:',
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16),
-                                          ),
-                                          Text(
-                                            '\$${detalle['subtotal']}',
-                                            style: TextStyle(
-                                                color: Colors.black87,
-                                                fontSize:
-                                                    16), // Color del texto del subtotal
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 8.0, horizontal: 16.0),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            'IVA:',
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16),
-                                          ),
-                                          Text(
-                                            '\$${detalle['iva']}',
-                                            style: TextStyle(
-                                                color: Colors.black87,
-                                                fontSize:
-                                                    16), // Color del texto del IVA
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 8.0, horizontal: 16.0),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            'Total:',
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16),
-                                          ),
-                                          Text(
-                                            '\$${detalle['total']}',
-                                            style: TextStyle(
-                                                color: Colors.black87,
-                                                fontSize:
-                                                    16), // Color del texto del total
-                                          ),
-                                        ],
+                    // Crear o actualizar el AnimationController para el folio
+                    if (!_controllers.containsKey(folio)) {
+                      _controllers[folio] = AnimationController(
+                        vsync: this,
+                        duration: Duration(milliseconds: 300),
+                      );
+                    }
+
+                    final controller = _controllers[folio]!;
+                    final animation = Tween<double>(begin: 0.0, end: 1.0)
+                        .animate(CurvedAnimation(
+                      parent: controller,
+                      curve: Curves.easeInOut,
+                    ));
+
+                    // Iniciar o detener la animación según el estado expandido
+                    if (isExpanded) {
+                      if (controller.status == AnimationStatus.dismissed) {
+                        controller.forward();
+                      }
+                    } else {
+                      if (controller.status == AnimationStatus.completed) {
+                        controller.reverse();
+                      }
+                    }
+
+                    return Card(
+                      color: Colors.white,
+                      margin: const EdgeInsets.symmetric(
+                          vertical: 8.0, horizontal: 16.0),
+                      elevation: 4,
+                      child: Column(
+                        children: [
+                          ListTile(
+                            contentPadding: EdgeInsets.all(16),
+                            title: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '${cliente['nombres'] ?? 'Cliente desconocido'} - ${detalle['nombre_venta'] ?? 'Venta sin nombre'}',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                Text(
+                                  '${formatDate(detalle['fecha'] as String?)}',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Folio: $folio',
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ],
-                                );
-                              }).toList(),
+                                ),
+                                SizedBox(height: 8),
+                                /* Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      'Subtotal:',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    Text(
+                                      '\$${detalle['subtotal'] ?? '0.00'}',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      'IVA:',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    Text(
+                                      '\$${detalle['iva'] ?? '0.00'}',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      'Total:',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    Text(
+                                      '\$${detalle['total'] ?? '0.00'}',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ],
+                                ), */
+                              ],
                             ),
-                    ],
-                  ),
+                            trailing: Icon(
+                              isExpanded
+                                  ? Icons.keyboard_arrow_up
+                                  : Icons.keyboard_arrow_down,
+                            ),
+                            onTap: () {
+                              setState(() {
+                                if (isExpanded) {
+                                  _expandedState.remove(folio);
+                                } else {
+                                  _expandedState.forEach((key, value) {
+                                    if (value) {
+                                      _expandedState[key] = false;
+                                    }
+                                  });
+                                  _expandedState[folio] = true;
+                                }
+                              });
+                            },
+                          ),
+                          SizeTransition(
+                            sizeFactor: animation,
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              color: Colors.white,
+                              child: isExpanded
+                                  ? Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                            'Teléfono: ${cliente['telefono'] ?? 'No disponible'}'),
+                                        SizedBox(height: 16),
+                                        ...detalle['articulos']
+                                            .map<Widget>((articuloDetalle) {
+                                          final articulo = articulos.firstWhere(
+                                            (articulo) =>
+                                                articulo['idarticulo'] ==
+                                                articuloDetalle['idarticulo'],
+                                            orElse: () => null,
+                                          );
+
+                                          return Card(
+                                            color: const Color.fromARGB(
+                                                255, 243, 243, 243),
+                                            margin: const EdgeInsets.symmetric(
+                                                vertical: 4.0, horizontal: 8.0),
+                                            elevation: 2,
+                                            child: ListTile(
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                      vertical: 2,
+                                                      horizontal: 16.0),
+                                              title: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  Expanded(
+                                                      child: Text(
+                                                    'Cantidad: ${articuloDetalle['cantidad'] ?? '0'}',
+                                                    style:
+                                                        TextStyle(fontSize: 16),
+                                                  )),
+                                                  Expanded(
+                                                      child: Text(
+                                                    'Producto: ${articulo != null ? articulo['descripcion'] ?? 'Desconocido' : 'Desconocido'}',
+                                                    style:
+                                                        TextStyle(fontSize: 16),
+                                                  )),
+                                                  Expanded(
+                                                      child: Text(
+                                                    'Compra: \$${articuloDetalle['precio_compra'] ?? '0.00'}',
+                                                    style:
+                                                        TextStyle(fontSize: 16),
+                                                  )),
+                                                  Expanded(
+                                                      child: Text(
+                                                    'Venta: \$${articuloDetalle['precio_venta'] ?? '0.00'}',
+                                                    style:
+                                                        TextStyle(fontSize: 16),
+                                                  )),
+                                                  Expanded(
+                                                      child: Text(
+                                                    'Ganancia: \$${articuloDetalle['ganancia'] ?? '0.00'}',
+                                                    style:
+                                                        TextStyle(fontSize: 16),
+                                                  )),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        }).toList(),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 8.0, horizontal: 16.0),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                'Subtotal:',
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 16),
+                                              ),
+                                              Text(
+                                                '\$${detalle['subtotal'] ?? '0.00'}',
+                                                style: TextStyle(
+                                                    color: Colors.black87,
+                                                    fontSize: 16),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 8.0, horizontal: 16.0),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                'IVA:',
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 16),
+                                              ),
+                                              Text(
+                                                '\$${detalle['iva'] ?? '0.00'}',
+                                                style: TextStyle(
+                                                    color: Colors.black87,
+                                                    fontSize: 16),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 8.0, horizontal: 16.0),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                'Total:',
+                                                style: TextStyle(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 16),
+                                              ),
+                                              Text(
+                                                '\$${detalle['total'] ?? '0.00'}',
+                                                style: TextStyle(
+                                                    color: Colors.black87,
+                                                    fontSize: 16),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
                 );
               },
             ),
     );
+  }
+
+  @override
+  void dispose() {
+    // Limpiar los AnimationControllers al cerrar el widget
+    _controllers.values.forEach((controller) {
+      controller.dispose();
+    });
+    super.dispose();
   }
 }
