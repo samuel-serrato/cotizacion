@@ -107,6 +107,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                     _buildProductTable(
                         provider), // Tabla de productos con ganancia total
                     SizedBox(height: 20),
+                    _buildLastDetails(provider)
                   ],
                 ),
               ),
@@ -327,7 +328,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.1.26:3000/api/v1/clientes/agregar'),
+      Uri.parse('http://192.168.0.110:3000/api/v1/clientes/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -340,31 +341,30 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   void _guardarProducto(BuildContext context) async {
-  final provider = Provider.of<CotizacionProvider>(context, listen: false);
-  List<CotizacionItem> productos = provider.items;
+    final provider = Provider.of<CotizacionProvider>(context, listen: false);
+    List<CotizacionItem> productos = provider.items;
 
-  // Construye el cuerpo del POST con todos los productos
-  final body = productos.map((item) {
-    return {
-      'producto': item.descripcion,
-      'precio_compra': item.precioUnitario.toString(),
-    };
-  }).toList();
+    // Construye el cuerpo del POST con todos los productos
+    final body = productos.map((item) {
+      return {
+        'producto': item.descripcion,
+        'precio_compra': item.precioUnitario.toString(),
+      };
+    }).toList();
 
-  // Hacer el POST request
-  final response = await http.post(
-    Uri.parse('http://192.168.1.26:3000/api/v1/productos/agregar'),
-    headers: {'Content-Type': 'application/json'},
-    body: json.encode(body),
-  );
+    // Hacer el POST request
+    final response = await http.post(
+      Uri.parse('http://192.168.0.110:3000/api/v1/productos/agregar'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(body),
+    );
 
-  if (response.statusCode == 201) {
-    print('Productos guardados con éxito');
-  } else {
-    print('Error al guardar los productos: ${response.body}');
+    if (response.statusCode == 201) {
+      print('Productos guardados con éxito');
+    } else {
+      print('Error al guardar los productos: ${response.body}');
+    }
   }
-}
-
 
   Widget _buildTextField(TextEditingController controller, String label,
       [TextInputType keyboardType = TextInputType.text,
@@ -664,6 +664,17 @@ class _FormularioScreenState extends State<FormularioScreen> {
             color: Colors.black,
             fontSize: 16,
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLastDetails(CotizacionProvider provider) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          child: Text('Requiere Factura?'),
         ),
       ],
     );

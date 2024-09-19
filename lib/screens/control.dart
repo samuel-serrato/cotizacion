@@ -27,11 +27,11 @@ class _ControlScreenState extends State<ControlScreen>
   Future<void> fetchClientesYDetallesYArticulos() async {
     try {
       final clientesResponse = await http
-          .get(Uri.parse('http://192.168.1.26:3000/api/v1/clientes'));
+          .get(Uri.parse('http://192.168.0.110:3000/api/v1/clientes'));
       final detallesResponse = await http
-          .get(Uri.parse('http://192.168.1.26:3000/api/v1/detalles/'));
+          .get(Uri.parse('http://192.168.0.110:3000/api/v1/detalles/'));
       final articulosResponse = await http
-          .get(Uri.parse('http://192.168.1.26:3000/api/v1/articulos'));
+          .get(Uri.parse('http://192.168.0.110:3000/api/v1/articulos'));
 
       if (clientesResponse.statusCode == 200 &&
           detallesResponse.statusCode == 200 &&
@@ -60,6 +60,32 @@ class _ControlScreenState extends State<ControlScreen>
       return formatter.format(date);
     } catch (e) {
       return dateString; // Retorna el valor original si hay un error
+    }
+  }
+
+  // Función para obtener el color basado en el estado
+  Color _getStatusColor(String estado) {
+    switch (estado) {
+      case 'Esperando confirmación':
+        return const Color.fromARGB(255, 213, 245, 175);
+      case 'Pago del Cliente':
+        return Colors.green;
+      case 'Pago a proveedor':
+        return Colors.blue;
+      case 'En espera de Productos':
+        return const Color.fromARGB(255, 255, 213, 151);
+      case 'Productos Recibidos':
+        return const Color.fromARGB(255, 181, 54, 244);
+      case 'Entrega a Cliente':
+        return const Color.fromARGB(255, 255, 99, 247);
+      case 'Finalizado,':
+        return const Color.fromARGB(255, 128, 53, 219);
+      case 'Cancelado':
+        return Colors.red;
+      case 'Cotización':
+        return const Color.fromARGB(255, 64, 124, 255);
+      default:
+        return Colors.green; // Color por defecto
     }
   }
 
@@ -117,6 +143,13 @@ class _ControlScreenState extends State<ControlScreen>
                       }
                     }
 
+                    // Calcular el total del precio de compra
+                    double totalCompra = 0.0;
+                    for (var articuloDetalle in detalle['articulos']) {
+                      totalCompra += (articuloDetalle['precio_compra'] ?? 0.0) *
+                          (articuloDetalle['cantidad'] ?? 1.0);
+                    }
+
                     return Card(
                       color: Colors.white,
                       margin: const EdgeInsets.symmetric(
@@ -125,109 +158,162 @@ class _ControlScreenState extends State<ControlScreen>
                       child: Column(
                         children: [
                           ListTile(
-                            contentPadding: EdgeInsets.all(16),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 4),
                             title: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
                                   '${cliente['nombres'] ?? 'Cliente desconocido'} - ${detalle['nombre_venta'] ?? 'Venta sin nombre'}',
                                   style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                Text(
-                                  '${formatDate(detalle['fecha'] as String?)}',
-                                  style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black87,
                                   ),
                                 ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      '${formatDate(detalle['fecha'] as String?)}',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                        width:
+                                            16), // Espaciado entre el texto del estado y la fecha
+                                    // Contenedor para el círculo y el texto del estado
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: 2,
+                                          horizontal: 12), // Espacio interno
+                                      decoration: BoxDecoration(
+                                        color: _getStatusColor(
+                                                detalle['estado'])
+                                            ?.withOpacity(
+                                                0.1), // Color de fondo con transparencia
+                                        borderRadius: BorderRadius.circular(
+                                            20), // Radio del borde
+                                        border: Border.all(
+                                          color: _getStatusColor(detalle[
+                                              'estado']), // Color del borde
+                                          width: 1, // Ancho del borde
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          // Círculo de color según el estado
+                                          Container(
+                                            width: 12,
+                                            height: 12,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: _getStatusColor(detalle[
+                                                  'estado']), // Color del círculo interno
+                                            ),
+                                          ),
+                                          SizedBox(
+                                              width:
+                                                  8), // Espaciado entre el círculo y el texto
+                                          Text(
+                                            '${detalle['estado'] ?? 'Estado desconocido'}',
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Folio: $folio',
-                                      style: TextStyle(
-                                        color: Colors.blue,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 10),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  // Folio a la izquierda
+                                  Text(
+                                    'Folio: $folio',
+                                    style: TextStyle(
+                                      color: Colors.blue,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                  ],
-                                ),
-                                SizedBox(height: 8),
-                                /* Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      'Subtotal:',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
+                                  ),
+                                  // Cifras a la derecha
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Precio Compra: ',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    ),
-                                    Text(
-                                      '\$${detalle['subtotal'] ?? '0.00'}',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.black87,
+                                      Text(
+                                        '\$${totalCompra.toStringAsFixed(2)}',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: 4),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      'IVA:',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
+                                      SizedBox(
+                                          width:
+                                              16), // Espacio entre las cifras
+                                      Text(
+                                        'Subtotal: ',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    ),
-                                    Text(
-                                      '\$${detalle['iva'] ?? '0.00'}',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.black87,
+                                      Text(
+                                        '\$${detalle['subtotal'] ?? '0.00'}',
+                                        style: TextStyle(
+                                          color: Colors.black87,
+                                          fontSize: 16,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: 4),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      'Total:',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
+                                      SizedBox(width: 16),
+                                      Text(
+                                        'IVA: ',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    ),
-                                    Text(
-                                      '\$${detalle['total'] ?? '0.00'}',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        color: Colors.black87,
+                                      Text(
+                                        '\$${detalle['iva'] ?? '0.00'}',
+                                        style: TextStyle(
+                                          color: Colors.black87,
+                                          fontSize: 16,
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ), */
-                              ],
+                                      SizedBox(width: 16),
+                                      Text(
+                                        'Total: ',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      Text(
+                                        '\$${detalle['total'] ?? '0.00'}',
+                                        style: TextStyle(
+                                          color: Colors.black87,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                             trailing: Icon(
                               isExpanded
@@ -328,7 +414,7 @@ class _ControlScreenState extends State<ControlScreen>
                                               vertical: 8.0, horizontal: 16.0),
                                           child: Row(
                                             mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
+                                                MainAxisAlignment.start,
                                             children: [
                                               Text(
                                                 'Subtotal:',
@@ -336,6 +422,7 @@ class _ControlScreenState extends State<ControlScreen>
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 16),
                                               ),
+                                              SizedBox(width: 10),
                                               Text(
                                                 '\$${detalle['subtotal'] ?? '0.00'}',
                                                 style: TextStyle(
@@ -350,14 +437,15 @@ class _ControlScreenState extends State<ControlScreen>
                                               vertical: 8.0, horizontal: 16.0),
                                           child: Row(
                                             mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
+                                                MainAxisAlignment.start,
                                             children: [
                                               Text(
-                                                'IVA:',
+                                                'IVA (16%):',
                                                 style: TextStyle(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 16),
                                               ),
+                                              SizedBox(width: 10),
                                               Text(
                                                 '\$${detalle['iva'] ?? '0.00'}',
                                                 style: TextStyle(
@@ -372,7 +460,7 @@ class _ControlScreenState extends State<ControlScreen>
                                               vertical: 8.0, horizontal: 16.0),
                                           child: Row(
                                             mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
+                                                MainAxisAlignment.start,
                                             children: [
                                               Text(
                                                 'Total:',
@@ -380,6 +468,7 @@ class _ControlScreenState extends State<ControlScreen>
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 16),
                                               ),
+                                              SizedBox(width: 10),
                                               Text(
                                                 '\$${detalle['total'] ?? '0.00'}',
                                                 style: TextStyle(
