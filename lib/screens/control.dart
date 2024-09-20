@@ -67,7 +67,7 @@ class _ControlScreenState extends State<ControlScreen>
   Color _getStatusColor(String estado) {
     switch (estado) {
       case 'Esperando confirmación':
-        return const Color.fromARGB(255, 213, 245, 175);
+        return Colors.yellow;
       case 'Pago del Cliente':
         return Colors.green;
       case 'Pago a proveedor':
@@ -193,7 +193,7 @@ class _ControlScreenState extends State<ControlScreen>
                                         color: _getStatusColor(
                                                 detalle['estado'])
                                             ?.withOpacity(
-                                                0.1), // Color de fondo con transparencia
+                                                0.09), // Color de fondo con transparencia
                                         borderRadius: BorderRadius.circular(
                                             20), // Radio del borde
                                         border: Border.all(
@@ -242,7 +242,7 @@ class _ControlScreenState extends State<ControlScreen>
                                   Text(
                                     'Folio: $folio',
                                     style: TextStyle(
-                                      color: Colors.blue,
+                                      color: Color(0xFF00A1B0),
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -346,8 +346,16 @@ class _ControlScreenState extends State<ControlScreen>
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                            'Teléfono: ${cliente['telefono'] ?? 'No disponible'}'),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                                'Teléfono: ${cliente['telefono'] ?? 'No disponible'}'),
+                                            Text(
+                                                'Email: ${cliente['email'] ?? 'No disponible'}'),
+                                          ],
+                                        ),
                                         SizedBox(height: 16),
                                         ...detalle['articulos']
                                             .map<Widget>((articuloDetalle) {
@@ -409,25 +417,55 @@ class _ControlScreenState extends State<ControlScreen>
                                             ),
                                           );
                                         }).toList(),
+                                        SizedBox(height: 10),
                                         Padding(
                                           padding: const EdgeInsets.symmetric(
                                               vertical: 8.0, horizontal: 16.0),
                                           child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.start,
+                                            mainAxisAlignment: MainAxisAlignment
+                                                .spaceBetween, // Espacio entre elementos
                                             children: [
-                                              Text(
-                                                'Subtotal:',
-                                                style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 16),
+                                              Row(
+                                                // Elementos de la izquierda
+                                                children: [
+                                                  Text(
+                                                    'Subtotal:',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 10),
+                                                  Text(
+                                                    '\$${detalle['subtotal'] ?? '0.00'}',
+                                                    style: TextStyle(
+                                                      color: Colors.black87,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              SizedBox(width: 10),
-                                              Text(
-                                                '\$${detalle['subtotal'] ?? '0.00'}',
-                                                style: TextStyle(
-                                                    color: Colors.black87,
-                                                    fontSize: 16),
+                                              Row(
+                                                // Elementos nuevos a la derecha
+                                                children: [
+                                                  Text(
+                                                    'Método de pago:',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 10),
+                                                  Text(
+                                                    detalle['tipo_pago'],
+                                                    style: TextStyle(
+                                                      color: Colors.black87,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ],
                                           ),
@@ -436,44 +474,105 @@ class _ControlScreenState extends State<ControlScreen>
                                           padding: const EdgeInsets.symmetric(
                                               vertical: 8.0, horizontal: 16.0),
                                           child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.start,
+                                            mainAxisAlignment: MainAxisAlignment
+                                                .spaceBetween, // Espacio entre elementos
                                             children: [
-                                              Text(
-                                                'IVA (16%):',
-                                                style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 16),
+                                              Row(
+                                                // Elementos de la izquierda
+                                                children: [
+                                                  Text(
+                                                    'IVA:',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 10),
+                                                  Text(
+                                                    '\$${detalle['iva'] ?? '0.00'}',
+                                                    style: TextStyle(
+                                                      color: Colors.black87,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              SizedBox(width: 10),
-                                              Text(
-                                                '\$${detalle['iva'] ?? '0.00'}',
-                                                style: TextStyle(
-                                                    color: Colors.black87,
-                                                    fontSize: 16),
+                                              Row(
+                                                // Elementos nuevos a la derecha
+                                                children: [
+                                                  Text(
+                                                    'Factura:',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 10),
+                                                  Text(
+                                                    detalle['factura'],
+                                                    style: TextStyle(
+                                                      color: Colors.black87,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ],
                                           ),
                                         ),
                                         Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: 8.0, horizontal: 16.0),
+                                          padding: const EdgeInsets.only(
+                                              top: 8,
+                                              bottom: 8,
+                                              left: 16,
+                                              right: 0),
                                           child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.start,
+                                            mainAxisAlignment: MainAxisAlignment
+                                                .spaceBetween, // Espacio entre elementos
                                             children: [
-                                              Text(
-                                                'Total:',
-                                                style: TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 16),
+                                              Row(
+                                                // Elementos de la izquierda
+                                                children: [
+                                                  Text(
+                                                    'Total:',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 10),
+                                                  Text(
+                                                    '\$${detalle['total'] ?? '0.00'}',
+                                                    style: TextStyle(
+                                                      color: Colors.black87,
+                                                      fontSize: 16,
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                              SizedBox(width: 10),
-                                              Text(
-                                                '\$${detalle['total'] ?? '0.00'}',
-                                                style: TextStyle(
-                                                    color: Colors.black87,
-                                                    fontSize: 16),
+                                              Row(
+                                                // Elementos nuevos a la derecha
+                                                children: [
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      // Llamas a la función para mostrar el diálogo, pasando el contexto y los detalles
+                                                      mostrarDetallesEstado(
+                                                          detalle['estados']);
+                                                    },
+                                                    child: Text(
+                                                      'Ver detalles del estado',
+                                                      style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 16,
+                                                          color: Color(
+                                                              0xFF00A1B0)),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ],
                                           ),
@@ -490,6 +589,45 @@ class _ControlScreenState extends State<ControlScreen>
                 );
               },
             ),
+    );
+  }
+
+  void mostrarDetallesEstado(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Detalles del Estado'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Estado: En proceso',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Fecha de completado: 20/09/2024',
+                style: TextStyle(
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cerrar'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Cierra el diálogo
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 

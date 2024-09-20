@@ -80,7 +80,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
           'Formulario de Cliente',
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: const Color.fromARGB(255, 0, 27, 69),
+        backgroundColor: const Color(0xFF001F3F),
       ),
       body: Container(
         child: Stack(
@@ -93,6 +93,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // _buildInstructions(provider),
+                    _buildSectionTitle('DESCRIPCIÓN DE COTIZACIÓN'),
+                    _buildDesc(),
+                    SizedBox(height: 20),
                     _buildSectionTitle('CLIENTE'),
                     SizedBox(height: 10),
                     _buildClienteInfo(),
@@ -102,12 +105,11 @@ class _FormularioScreenState extends State<FormularioScreen> {
                     _buildProductoInfo(),
                     SizedBox(height: 30),
                     _buildGananciaYPrecioVenta(), // Nuevo widget para mostrar ganancia y precio de venta
+                    _buildSectionTitle('RESUMEN'),
                     _buildSummary(provider),
                     SizedBox(height: 20),
                     _buildProductTable(
                         provider), // Tabla de productos con ganancia total
-                    SizedBox(height: 20),
-                    _buildLastDetails(provider)
                   ],
                 ),
               ),
@@ -125,14 +127,12 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-        color: Colors.blueAccent,
-      ),
-    );
+    return Text(title,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF001F3F),
+        ));
   }
 
   Widget _buildClienteInfo() {
@@ -238,12 +238,12 @@ class _FormularioScreenState extends State<FormularioScreen> {
           child: Text(
             'Agregar',
             style: TextStyle(
-                color: Color.fromARGB(255, 0, 27, 69),
+                color: Color(0xFF001F3F),
                 fontSize: 16,
                 fontWeight: FontWeight.w600),
           ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Color.fromARGB(255, 0, 209, 129),
+            backgroundColor: Color(0xFF77E4C8),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8.0),
             ),
@@ -265,6 +265,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
           'Ganancia: \$${ganancia.toStringAsFixed(2)}',
           style: TextStyle(fontSize: 16, color: Colors.black),
         ),
+        SizedBox(height: 30),
       ],
     );
   }
@@ -291,21 +292,49 @@ class _FormularioScreenState extends State<FormularioScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DropdownButtonFormField<String>(
-          hint: Text('Elige una opcion'),
+          hint: Text('Elige una opción',
+              style: TextStyle(color: Colors.grey.shade500)),
           value: value,
           onChanged: onChanged,
-          decoration: InputDecoration(labelText: label),
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle:
+                TextStyle(color: Colors.black54, fontWeight: FontWeight.w500),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30.0), // Bordes redondeados
+                borderSide: BorderSide(
+                  color: Color(0xFF001F3F),
+                )),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30.0),
+              borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+            ),
+            filled: true,
+            fillColor:
+                Colors.white, // Fondo blanco para consistencia con el TextField
+            contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+          ),
+          icon: Icon(
+            Icons.arrow_drop_down,
+            color: Color(0xFF001F3F),
+          ), // Icono personalizado
+          dropdownColor: Colors.white, // Color del menú desplegable
           items: items.map((item) {
             return DropdownMenuItem(
               value: item,
-              child: Text(item),
+              child: Text(
+                item,
+                style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 14), // Texto más visible en el menú
+              ),
             );
           }).toList(),
         ),
         if (value == 'PERSONALIZADO') SizedBox(height: 10),
         if (value == 'PERSONALIZADO')
           SizedBox(
-            width: 100, // Tamaño más pequeño para el campo personalizado
+            width: 150, // Tamaño más compacto para el campo personalizado
             child: _buildTextField(
                 customController, 'Personalizado', TextInputType.number),
           ),
@@ -371,19 +400,29 @@ class _FormularioScreenState extends State<FormularioScreen> {
       VoidCallback? onChanged]) {
     return TextField(
       controller: controller,
+      style:
+          TextStyle(color: Colors.black87, fontSize: 14), // Texto más visible
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.blueAccent),
-        focusedBorder: UnderlineInputBorder(
-          borderSide: BorderSide(color: Colors.blueAccent),
-        ),
+        labelStyle: TextStyle(
+            color: Colors.black54, fontWeight: FontWeight.w500, fontSize: 14),
+        floatingLabelBehavior:
+            FloatingLabelBehavior.auto, // Efecto flotante suave
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30.0), // Bordes muy redondeados
+            borderSide: BorderSide(
+              color: Color(0xFF001F3F),
+            )),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8.0),
-          borderSide: BorderSide(color: Colors.grey.shade400),
+          borderRadius: BorderRadius.circular(30.0),
+          borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
         ),
         filled: true,
-        fillColor: Colors.grey.shade200,
-        contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+        fillColor: Colors.white, // Fondo blanco para un look limpio
+        contentPadding: EdgeInsets.symmetric(
+            vertical: 15, horizontal: 25), // Más espacio interno
+        hintText: "Ingresa $label", // Texto de ayuda
+        hintStyle: TextStyle(color: Colors.grey.shade400),
       ),
       keyboardType: keyboardType,
       onChanged: (value) {
@@ -427,6 +466,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
       precioController.clear();
       cantidadPersonalizadaController.clear();
       porcentajeGananciaController.clear(); // Resetear el campo de % Ganancia
+      _selectedQuantity = '1';
+      precioVenta = 0;
+      ganancia = 0;
     }
   }
 
@@ -448,7 +490,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
       padding: const EdgeInsets.all(8.0),
       child: Text(
         title,
-        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent),
+        style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF001F3F)),
       ),
     );
   }
@@ -500,7 +542,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
               'INSTRUCCIONES: ',
               style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.blueAccent,
+                  color: Color(0xFF001F3F),
                   fontSize: 20),
             ),
             SizedBox(height: 10),
@@ -526,33 +568,6 @@ class _FormularioScreenState extends State<FormularioScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(height: 20),
-        Row(
-          children: [
-            Text(
-              'RESUMEN:',
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blueAccent,
-                  fontSize: 18),
-            ),
-            /* Row(
-              children: [
-                Text('Mostrar IVA'),
-                SizedBox(width: 10),
-                Switch(
-                  value: _mostrarIVA,
-                  activeColor: Color.fromARGB(255, 3, 174, 108),
-                  onChanged: (value) {
-                    setState(() {
-                      _mostrarIVA = value;
-                    });
-                  },
-                ),
-              ],
-            ), */
-          ],
-        ),
         Text(
           'Ganancia Total: \$${gananciaTotal.toStringAsFixed(2)}',
           style: TextStyle(
@@ -669,12 +684,63 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
-  Widget _buildLastDetails(CotizacionProvider provider) {
+  Widget _buildDesc() {
+    bool _requiereFactura = false; // Estado local para el checkbox
+    final TextEditingController _descController =
+        TextEditingController(); // Controlador para el TextField
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          child: Text('Requiere Factura?'),
+        // Fila con TextField a la izquierda y Checkbox a la derecha
+        Row(
+          children: [
+            // Campo de texto para descripción
+            Expanded(
+              flex: 3, // Controla el espacio que ocupa el TextField
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: _buildTextField(
+                  _descController, // Controlador del TextField
+                  'Nombre o Descripción',
+                  TextInputType.text,
+                ),
+              ),
+            ),
+
+            // Espacio flexible entre el TextField y el Checkbox
+            Spacer(),
+
+            // Texto y Checkbox a la derecha con diseño
+            Row(
+              children: [
+                Text(
+                  '¿Requiere Factura?',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey.shade800, // Color del texto
+                  ),
+                ),
+                SizedBox(width: 10), // Espacio entre el texto y el checkbox
+                Theme(
+                  data: ThemeData(
+                    unselectedWidgetColor: Colors.grey
+                        .shade400, // Color del borde del checkbox cuando no está seleccionado
+                  ),
+                  child: Checkbox(
+                    value: _requiereFactura, // Valor fijo por ahora
+                    onChanged: (bool? value) {
+                      // Aquí no se hace nada por el momento
+                    },
+                    activeColor:
+                        Color(0xFF001F3F), // Color cuando está seleccionado
+                    checkColor:
+                        Colors.white, // Color de la marca de verificación
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ],
     );
@@ -780,9 +846,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color.fromARGB(255, 0, 209, 129),
+                backgroundColor: Color(0xFF77E4C8),
                 padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                foregroundColor: Color.fromARGB(255, 0, 27, 69),
+                foregroundColor: Color(0xFF001F3F),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8.0),
                 ),
@@ -798,9 +864,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color.fromARGB(255, 0, 209, 129),
+                backgroundColor: Color(0xFF77E4C8),
                 padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                foregroundColor: Color.fromARGB(255, 0, 27, 69),
+                foregroundColor: Color(0xFF001F3F),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8.0),
                 ),
