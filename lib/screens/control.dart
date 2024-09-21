@@ -18,10 +18,26 @@ class _ControlScreenState extends State<ControlScreen>
   Map<String, AnimationController> _controllers =
       {}; // Mapa para AnimationControllers
 
+  String? estadoActual;
+
   @override
   void initState() {
     super.initState();
     fetchClientesYDetallesYArticulos();
+    // Asumiendo que 'detalle' es el dato que recibes de la base de datos
+    var detalle = {
+      'estado_actual': [
+        {'estado': 'Pago del cliente'}
+      ]
+    };
+
+    // Configura el estado actual basado en el dato de la base de datos
+    if (detalle['estado_actual'] != null &&
+        detalle['estado_actual']!.isNotEmpty) {
+      estadoActual = detalle['estado_actual']?[0]['estado'];
+    } else {
+      estadoActual = 'Desconocido';
+    }
   }
 
   Future<void> fetchClientesYDetallesYArticulos() async {
@@ -62,18 +78,31 @@ class _ControlScreenState extends State<ControlScreen>
     }
   }
 
-  final List<String> estados = [
-  'Esperando confirmación',
-  'Pago del cliente',
-  'Pago a proveedor',
-  'En espera de productos',
-  'Productos recibidos',
-  'Entrega a cliente',
-  'Finalizado',
-  'Cancelado',
-  'Cotización',
-];
+  String formatDateWithTime(String? dateString) {
+    if (dateString == null || dateString.isEmpty) {
+      return 'Fecha desconocida';
+    }
+    try {
+      final date = DateTime.parse(dateString);
+      final DateFormat formatter =
+          DateFormat('d \'de\' MMMM \'de\' yyyy, h:mm a', 'es_ES');
+      return formatter.format(date);
+    } catch (e) {
+      return dateString; // Retorna el valor original si hay un error
+    }
+  }
 
+  final List<String> estados = [
+    'Esperando confirmación',
+    'Pago del cliente',
+    'Pago a proveedor',
+    'En espera de productos',
+    'Productos recibidos',
+    'Entrega a cliente',
+    'Finalizado',
+    'Cancelado',
+    'Cotización',
+  ];
 
   // Función para obtener el color basado en el estado
   Color _getStatusColor(String estado) {
@@ -186,7 +215,7 @@ class _ControlScreenState extends State<ControlScreen>
                                 Row(
                                   children: [
                                     Text(
-                                      '${formatDate(detalle['fecha'] as String?)}',
+                                      '${formatDate(detalle['fechaCreacion'] as String?)}',
                                       style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
@@ -234,32 +263,37 @@ class _ControlScreenState extends State<ControlScreen>
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
                                               color: _getStatusColor(
-                                                detalle['estado_actual'] !=
-                                                            null &&
-                                                        detalle['estado_actual']
-                                                            .isNotEmpty
-                                                    ? detalle['estado_actual']
-                                                        [0]['estado']
-                                                    : 'Desconocido',
-                                              ), // Valor por defecto en caso de que el array esté vacío o sea null // Color del círculo interno
+                                                  estadoActual ??
+                                                      'Desconocido'),
                                             ),
                                           ),
-                                          SizedBox(
-                                              width:
-                                                  8), // Espaciado entre el círculo y el texto
-                                          Text(
-                                            detalle['estado_actual'] !=
-                                                            null &&
-                                                        detalle['estado_actual']
-                                                            .isNotEmpty
-                                                    ? detalle['estado_actual']
-                                                        [0]['estado']
-                                                    : 'Desconocido',
+                                          SizedBox(width: 8),
+                                          /* Text(
+                                            estadoActual ?? 'Desconocido',
                                             style: TextStyle(
                                               fontSize: 18,
                                               fontWeight: FontWeight.bold,
                                               color: Colors.black87,
                                             ),
+                                          ), */
+                                          SizedBox(
+                                              width:
+                                                  8), // Espaciado antes del dropdown
+                                          DropdownButton<String>(
+                                            value: estadoActual,
+                                            onChanged: (String? newValue) {
+                                              setState(() {
+                                                estadoActual = newValue;
+                                              });
+                                            },
+                                            items: estados
+                                                .map<DropdownMenuItem<String>>(
+                                                    (String value) {
+                                              return DropdownMenuItem<String>(
+                                                value: value,
+                                                child: Text(value),
+                                              );
+                                            }).toList(),
                                           ),
                                         ],
                                       ),
@@ -595,8 +629,9 @@ class _ControlScreenState extends State<ControlScreen>
                                                   TextButton(
                                                     onPressed: () {
                                                       // Llamas a la función para mostrar el diálogo, pasando el contexto y los detalles
-                                                      mostrarDetallesEstado(context,
-                                                         );
+                                                      mostrarDetallesEstado(
+                                                          context,
+                                                          detalle['estados']);
                                                     },
                                                     child: Text(
                                                       'Ver detalles del estado',
@@ -628,68 +663,98 @@ class _ControlScreenState extends State<ControlScreen>
     );
   }
 
-  void mostrarDetallesEstado(BuildContext context) {
-  final List<String> estados = [
-    'Esperando confirmación',
-    'Pago del cliente',
-    'Pago a proveedor',
-    'En espera de productos',
-    'Productos recibidos',
-    'Entrega a cliente',
-    'Finalizado',
-    'Cancelado',
-    'Cotización',
-  ];
+  void mostrarDetallesEstado(
+      BuildContext context, List<dynamic> estadosActuales) {
+    // Lista de todos los estados posibles
+    final List<String> estados = [
+      'Esperando confirmación',
+      'Pago del cliente',
+      'Pago a proveedor',
+      'En espera de productos',
+      'Productos recibidos',
+      'Entrega a cliente',
+      'Finalizado',
+      'Cancelado',
+      'Cotización',
+    ];
 
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text('Detalles del Estado'),
-        content: Container(
-          width: MediaQuery.of(context).size.width * 0.3, // 80% del ancho de la pantalla
-          child: ListView.builder(
-            shrinkWrap: true,
-            itemCount: estados.length,
-            itemBuilder: (BuildContext context, int index) {
-              final estado = estados[index];
-              final color = _getStatusColor(estado);
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Detalles del Estado'),
+          content: Container(
+            width: MediaQuery.of(context).size.width *
+                0.3, // 80% del ancho de la pantalla
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: estados.length,
+              itemBuilder: (BuildContext context, int index) {
+                final estado = estados[index];
+                final color = _getStatusColor(estado);
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: color,
+                // Buscar si este estado ya tiene una fecha en el array de 'estadosActuales'
+                final estadoEncontrado = estadosActuales.firstWhere(
+                  (e) => e['estado'] == estado,
+                  orElse: () => null,
+                );
+
+                final fechaEstado = estadoEncontrado != null
+                    ? estadoEncontrado['fechaestado']
+                    : 'Aún no alcanzado'; // Si no se encontró, indica que no ha llegado
+
+                // Color de la fecha basado en si es 'Aún no alcanzado' o no
+                final fechaColor = fechaEstado == 'Aún no alcanzado'
+                    ? Colors.grey // gris si no ha alcanzado
+                    : Color(0xFF00A1B0); // azul si tiene fecha
+
+                final fechaFontWeight = fechaEstado == 'Aún no alcanzado'
+                    ? FontWeight.normal // normal si no ha alcanzado
+                    : FontWeight.w500; // negrita si tiene fecha
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: color,
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      estado,
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              );
-            },
+                      SizedBox(width: 8),
+                      Text(
+                        estado,
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        ' - ${formatDateWithTime(fechaEstado)}', // Mostrar la fecha o 'Aún no alcanzado'
+                        style: TextStyle(
+                            fontSize: 14,
+                            color: fechaColor,
+                            fontWeight: fechaFontWeight),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            child: Text('Cerrar'),
-            onPressed: () {
-              Navigator.of(context).pop(); // Cierra el diálogo
-            },
-          ),
-        ],
-      );
-    },
-  );
-}
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cerrar'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Cierra el diálogo
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   void dispose() {

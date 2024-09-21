@@ -685,66 +685,82 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   Widget _buildDesc() {
-    bool _requiereFactura = false; // Estado local para el checkbox
-    final TextEditingController _descController =
-        TextEditingController(); // Controlador para el TextField
+  bool _requiereFactura = false; // Estado local para el checkbox
+  final TextEditingController _descController = TextEditingController(); // Controlador para el TextField
+  String? _selectedOption; // Variable para almacenar la opción seleccionada
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Fila con TextField a la izquierda y Checkbox a la derecha
-        Row(
-          children: [
-            // Campo de texto para descripción
-            Expanded(
-              flex: 3, // Controla el espacio que ocupa el TextField
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: _buildTextField(
-                  _descController, // Controlador del TextField
-                  'Nombre o Descripción',
-                  TextInputType.text,
-                ),
+  // Lista de opciones para el dropdown
+  final List<String> _options = ['Opción 1', 'Opción 2', 'Opción 3', 'PERSONALIZADO'];
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // Fila con TextField a la izquierda y Checkbox a la derecha
+      Row(
+        children: [
+          // Campo de texto para descripción
+          Expanded(
+            flex: 3, // Controla el espacio que ocupa el TextField
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: _buildTextField(
+                _descController, // Controlador del TextField
+                'Nombre o Descripción',
+                TextInputType.text,
               ),
             ),
+          ),
 
-            // Espacio flexible entre el TextField y el Checkbox
-            Spacer(),
+          // Espacio flexible entre el TextField y el Dropdown
+          Spacer(),
 
-            // Texto y Checkbox a la derecha con diseño
-            Row(
-              children: [
-                Text(
-                  '¿Requiere Factura?',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey.shade800, // Color del texto
-                  ),
-                ),
-                SizedBox(width: 10), // Espacio entre el texto y el checkbox
-                Theme(
-                  data: ThemeData(
-                    unselectedWidgetColor: Colors.grey
-                        .shade400, // Color del borde del checkbox cuando no está seleccionado
-                  ),
-                  child: Checkbox(
-                    value: _requiereFactura, // Valor fijo por ahora
-                    onChanged: (bool? value) {
-                      // Aquí no se hace nada por el momento
-                    },
-                    activeColor:
-                        Color(0xFF001F3F), // Color cuando está seleccionado
-                    checkColor:
-                        Colors.white, // Color de la marca de verificación
-                  ),
-                ),
-              ],
+          // Dropdown personalizado
+          Expanded(
+            child: _buildDropdownWithCustom(
+              label: 'Opciones',
+              value: _selectedOption,
+              items: _options,
+              onChanged: (String? newValue) {
+                _selectedOption = newValue; // Actualiza el estado
+              },
+              customController: _descController, // Controlador para el campo personalizado
             ),
-          ],
-        ),
-      ],
-    );
-  }
+          ),
+
+          // Texto y Checkbox a la derecha con diseño
+          Row(
+            children: [
+              Text(
+                '¿Requiere Factura?',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey.shade800, // Color del texto
+                ),
+              ),
+              SizedBox(width: 10), // Espacio entre el texto y el checkbox
+              Theme(
+                data: ThemeData(
+                  unselectedWidgetColor: Colors.grey.shade400, // Color del borde del checkbox cuando no está seleccionado
+                ),
+                child: Checkbox(
+                  value: _requiereFactura, // Valor fijo por ahora
+                  onChanged: (bool? value) {
+                    // Aquí no se hace nada por el momento
+                  },
+                  activeColor: Color(0xFF001F3F), // Color cuando está seleccionado
+                  checkColor: Colors.white, // Color de la marca de verificación
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+
+
 
   void _editarProducto(BuildContext context, CotizacionItem item) {
     showDialog(
