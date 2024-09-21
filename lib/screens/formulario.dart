@@ -286,7 +286,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     required String? value,
     required List<String> items,
     required ValueChanged<String?> onChanged,
-    required TextEditingController customController,
+    required TextEditingController? customController,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -336,7 +336,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
           SizedBox(
             width: 150, // Tamaño más compacto para el campo personalizado
             child: _buildTextField(
-                customController, 'Personalizado', TextInputType.number),
+                customController!, 'Personalizado', TextInputType.number),
           ),
       ],
     );
@@ -357,7 +357,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.1.26:30000/api/v1/clientes/agregar'),
+      Uri.parse('http://192.168.0.110:3000/api/v1/clientes/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -383,7 +383,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.1.26:30000/api/v1/productos/agregar'),
+      Uri.parse('http://192.168.0.110:3000/api/v1/productos/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -685,82 +685,118 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   Widget _buildDesc() {
-  bool _requiereFactura = false; // Estado local para el checkbox
-  final TextEditingController _descController = TextEditingController(); // Controlador para el TextField
-  String? _selectedOption; // Variable para almacenar la opción seleccionada
+    bool _requiereFactura = false; // Estado local para el checkbox
+    final TextEditingController _descController =
+        TextEditingController(); // Controlador para el TextField
+    String? _selectedOption; // Variable para almacenar la opción seleccionada
 
-  // Lista de opciones para el dropdown
-  final List<String> _options = ['Opción 1', 'Opción 2', 'Opción 3', 'PERSONALIZADO'];
+    // Lista de opciones para el dropdown
+    final List<String> _metodos = ['Transferencia', 'Efectivo', 'No asignado'];
 
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      // Fila con TextField a la izquierda y Checkbox a la derecha
-      Row(
-        children: [
-          // Campo de texto para descripción
-          Expanded(
-            flex: 3, // Controla el espacio que ocupa el TextField
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: _buildTextField(
-                _descController, // Controlador del TextField
-                'Nombre o Descripción',
-                TextInputType.text,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Fila con TextField a la izquierda y Checkbox a la derecha
+        Row(
+          children: [
+            // Campo de texto para descripción
+            Expanded(
+              flex: 3, // Controla el espacio que ocupa el TextField
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: _buildTextField(
+                  _descController, // Controlador del TextField
+                  'Nombre o Descripción',
+                  TextInputType.text,
+                ),
               ),
             ),
-          ),
 
-          // Espacio flexible entre el TextField y el Dropdown
-          Spacer(),
+            // Espacio flexible entre el TextField y el Dropdown
+            Spacer(),
 
-          // Dropdown personalizado
-          Expanded(
-            child: _buildDropdownWithCustom(
-              label: 'Opciones',
-              value: _selectedOption,
-              items: _options,
-              onChanged: (String? newValue) {
-                _selectedOption = newValue; // Actualiza el estado
-              },
-              customController: _descController, // Controlador para el campo personalizado
+            // Dropdown a la izquierda del checkbox
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: _selectedOption,
+                onChanged: (String? newValue) {
+                  _selectedOption = newValue; // Actualiza el estado
+                },
+                decoration: InputDecoration(
+                  labelText: 'Método de pago',
+                  labelStyle: TextStyle(
+                      color: Colors.black54, fontWeight: FontWeight.w500),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius:
+                        BorderRadius.circular(30.0), // Bordes redondeados
+                    borderSide: BorderSide(
+                      color: Color(0xFF001F3F),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30.0),
+                    borderSide:
+                        BorderSide(color: Colors.grey.shade300, width: 1.5),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white, // Fondo blanco
+                  contentPadding:
+                      EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                ),
+                icon: Icon(
+                  Icons.arrow_drop_down,
+                  color: Color(0xFF001F3F),
+                ), // Icono personalizado
+                dropdownColor: Colors.white, // Color del menú desplegable
+                items: _metodos.map((item) {
+                  return DropdownMenuItem<String>(
+                    value: item,
+                    child: Text(
+                      item,
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontSize: 14, // Texto más visible en el menú
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
-          ),
-
-          // Texto y Checkbox a la derecha con diseño
-          Row(
-            children: [
-              Text(
-                '¿Requiere Factura?',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade800, // Color del texto
+            SizedBox(width: 20),
+            // Texto y Checkbox a la derecha con diseño
+            Row(
+              children: [
+                Text(
+                  '¿Requiere Factura?',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey.shade800, // Color del texto
+                  ),
                 ),
-              ),
-              SizedBox(width: 10), // Espacio entre el texto y el checkbox
-              Theme(
-                data: ThemeData(
-                  unselectedWidgetColor: Colors.grey.shade400, // Color del borde del checkbox cuando no está seleccionado
+                SizedBox(width: 10), // Espacio entre el texto y el checkbox
+                Theme(
+                  data: ThemeData(
+                    unselectedWidgetColor: Colors.grey
+                        .shade400, // Color del borde del checkbox cuando no está seleccionado
+                  ),
+                  child: Checkbox(
+                    value: _requiereFactura, // Valor fijo por ahora
+                    onChanged: (bool? value) {
+                      // Aquí no se hace nada por el momento
+                    },
+                    activeColor:
+                        Color(0xFF001F3F), // Color cuando está seleccionado
+                    checkColor:
+                        Colors.white, // Color de la marca de verificación
+                  ),
                 ),
-                child: Checkbox(
-                  value: _requiereFactura, // Valor fijo por ahora
-                  onChanged: (bool? value) {
-                    // Aquí no se hace nada por el momento
-                  },
-                  activeColor: Color(0xFF001F3F), // Color cuando está seleccionado
-                  checkColor: Colors.white, // Color de la marca de verificación
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ],
-  );
-}
-
-
-
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
 
   void _editarProducto(BuildContext context, CotizacionItem item) {
     showDialog(
