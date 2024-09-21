@@ -26,12 +26,12 @@ class _ControlScreenState extends State<ControlScreen>
 
   Future<void> fetchClientesYDetallesYArticulos() async {
     try {
-      final clientesResponse = await http
-          .get(Uri.parse('http://192.168.0.110:3000/api/v1/clientes'));
+      final clientesResponse =
+          await http.get(Uri.parse('http://192.168.1.26:3000/api/v1/clientes'));
       final detallesResponse = await http
-          .get(Uri.parse('http://192.168.0.110:3000/api/v1/detalles/'));
+          .get(Uri.parse('http://192.168.1.26:3000/api/v1/detalles/'));
       final articulosResponse = await http
-          .get(Uri.parse('http://192.168.0.110:3000/api/v1/articulos'));
+          .get(Uri.parse('http://192.168.1.26:3000/api/v1/articulos'));
 
       if (clientesResponse.statusCode == 200 &&
           detallesResponse.statusCode == 200 &&
@@ -41,9 +41,8 @@ class _ControlScreenState extends State<ControlScreen>
           detalles = json.decode(detallesResponse.body);
           articulos = json.decode(articulosResponse.body);
         });
-      } else {
         throw Exception('Error al obtener los datos');
-      }
+      } else {}
     } catch (e) {
       print('Error: $e');
     }
@@ -63,20 +62,33 @@ class _ControlScreenState extends State<ControlScreen>
     }
   }
 
+  final List<String> estados = [
+  'Esperando confirmación',
+  'Pago del cliente',
+  'Pago a proveedor',
+  'En espera de productos',
+  'Productos recibidos',
+  'Entrega a cliente',
+  'Finalizado',
+  'Cancelado',
+  'Cotización',
+];
+
+
   // Función para obtener el color basado en el estado
   Color _getStatusColor(String estado) {
     switch (estado) {
       case 'Esperando confirmación':
         return Colors.yellow;
-      case 'Pago del Cliente':
+      case 'Pago del cliente':
         return Colors.green;
       case 'Pago a proveedor':
         return Colors.blue;
-      case 'En espera de Productos':
+      case 'En espera de productos':
         return const Color.fromARGB(255, 255, 213, 151);
-      case 'Productos Recibidos':
+      case 'Productos recibidos':
         return const Color.fromARGB(255, 181, 54, 244);
-      case 'Entrega a Cliente':
+      case 'Entrega a cliente':
         return const Color.fromARGB(255, 255, 99, 247);
       case 'Finalizado,':
         return const Color.fromARGB(255, 128, 53, 219);
@@ -191,14 +203,25 @@ class _ControlScreenState extends State<ControlScreen>
                                           horizontal: 12), // Espacio interno
                                       decoration: BoxDecoration(
                                         color: _getStatusColor(
-                                                detalle['estado'])
-                                            ?.withOpacity(
-                                                0.09), // Color de fondo con transparencia
+                                          detalle['estado_actual'] != null &&
+                                                  detalle['estado_actual']
+                                                      .isNotEmpty
+                                              ? detalle['estado_actual'][0]
+                                                  ['estado']
+                                              : 'Desconocido', // Valor por defecto en caso de que el array esté vacío o sea null
+                                        )?.withOpacity(
+                                            0.09), // Color de fondo con transparencia
                                         borderRadius: BorderRadius.circular(
                                             20), // Radio del borde
                                         border: Border.all(
-                                          color: _getStatusColor(detalle[
-                                              'estado']), // Color del borde
+                                          color: _getStatusColor(
+                                            detalle['estado_actual'] != null &&
+                                                    detalle['estado_actual']
+                                                        .isNotEmpty
+                                                ? detalle['estado_actual'][0]
+                                                    ['estado']
+                                                : 'Desconocido',
+                                          ), // Valor por defecto en caso de que el array esté vacío o sea null // Color del borde
                                           width: 1, // Ancho del borde
                                         ),
                                       ),
@@ -210,15 +233,28 @@ class _ControlScreenState extends State<ControlScreen>
                                             height: 12,
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
-                                              color: _getStatusColor(detalle[
-                                                  'estado']), // Color del círculo interno
+                                              color: _getStatusColor(
+                                                detalle['estado_actual'] !=
+                                                            null &&
+                                                        detalle['estado_actual']
+                                                            .isNotEmpty
+                                                    ? detalle['estado_actual']
+                                                        [0]['estado']
+                                                    : 'Desconocido',
+                                              ), // Valor por defecto en caso de que el array esté vacío o sea null // Color del círculo interno
                                             ),
                                           ),
                                           SizedBox(
                                               width:
                                                   8), // Espaciado entre el círculo y el texto
                                           Text(
-                                            '${detalle['estado'] ?? 'Estado desconocido'}',
+                                            detalle['estado_actual'] !=
+                                                            null &&
+                                                        detalle['estado_actual']
+                                                            .isNotEmpty
+                                                    ? detalle['estado_actual']
+                                                        [0]['estado']
+                                                    : 'Desconocido',
                                             style: TextStyle(
                                               fontSize: 18,
                                               fontWeight: FontWeight.bold,
@@ -559,8 +595,8 @@ class _ControlScreenState extends State<ControlScreen>
                                                   TextButton(
                                                     onPressed: () {
                                                       // Llamas a la función para mostrar el diálogo, pasando el contexto y los detalles
-                                                      mostrarDetallesEstado(
-                                                          detalle['estados']);
+                                                      mostrarDetallesEstado(context,
+                                                         );
                                                     },
                                                     child: Text(
                                                       'Ver detalles del estado',
@@ -593,43 +629,67 @@ class _ControlScreenState extends State<ControlScreen>
   }
 
   void mostrarDetallesEstado(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Detalles del Estado'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Estado: En proceso',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+  final List<String> estados = [
+    'Esperando confirmación',
+    'Pago del cliente',
+    'Pago a proveedor',
+    'En espera de productos',
+    'Productos recibidos',
+    'Entrega a cliente',
+    'Finalizado',
+    'Cancelado',
+    'Cotización',
+  ];
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Detalles del Estado'),
+        content: Container(
+          width: MediaQuery.of(context).size.width * 0.3, // 80% del ancho de la pantalla
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: estados.length,
+            itemBuilder: (BuildContext context, int index) {
+              final estado = estados[index];
+              final color = _getStatusColor(estado);
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: color,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      estado,
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ],
                 ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Fecha de completado: 20/09/2024',
-                style: TextStyle(
-                  fontSize: 16,
-                ),
-              ),
-            ],
+              );
+            },
           ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Cerrar'),
-              onPressed: () {
-                Navigator.of(context).pop(); // Cierra el diálogo
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: Text('Cerrar'),
+            onPressed: () {
+              Navigator.of(context).pop(); // Cierra el diálogo
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
 
   @override
   void dispose() {
