@@ -61,6 +61,7 @@ class CotizacionProvider extends ChangeNotifier {
 
 class CotizacionItem {
   final String descripcion;
+  final String tipo;
   double precioUnitario;
   final int cantidad;
   double? ganancia; // Añadir este campo si aún no existe
@@ -69,6 +70,7 @@ class CotizacionItem {
 
   CotizacionItem({
     required this.descripcion,
+    required this.tipo,
     required this.precioUnitario,
     required this.cantidad,
     this.ganancia,

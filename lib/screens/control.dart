@@ -541,6 +541,12 @@ class _ControlScreenState extends State<ControlScreen>
                                                     )),
                                                     Expanded(
                                                         child: Text(
+                                                      'Porcentaje: ${articuloDetalle['porcentaje']  ?? '0.00'}%',
+                                                      style: TextStyle(
+                                                          fontSize: 16),
+                                                    )),
+                                                    Expanded(
+                                                        child: Text(
                                                       'Venta: \$${articuloDetalle['precio_venta'] ?? '0.00'}',
                                                       style: TextStyle(
                                                           fontSize: 16),

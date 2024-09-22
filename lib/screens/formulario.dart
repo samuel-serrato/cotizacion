@@ -379,6 +379,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     final body = productos.map((item) {
       return {
         'producto': item.descripcion,
+        'tipo': _selectedType,
         'precio_compra': item.precioUnitario.toString(),
       };
     }).toList();
@@ -442,6 +443,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
   void _agregarProducto() {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
     final descripcion = descripcionController.text;
+    final tipo = _selectedType!;
     final precio =
         double.tryParse(precioController.text.replaceAll(',', '')) ?? 0;
     final cantidad = _selectedQuantity == 'PERSONALIZADO'
@@ -453,6 +455,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     if (descripcion.isNotEmpty && precio > 0 && cantidad > 0) {
       final item = CotizacionItem(
         descripcion: descripcion,
+        tipo: tipo,
         precioUnitario: precio,
         cantidad: cantidad,
         ganancia: (precio * porcentajeGanancia) / 100,
@@ -495,7 +498,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
         style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF001F3F)),
       ),
     );
-  }
+  } 
 
   void _actualizarDatosClientePDF(BuildContext context) {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
@@ -607,12 +610,14 @@ class _FormularioScreenState extends State<FormularioScreen> {
               3: FlexColumnWidth(1),
               4: FlexColumnWidth(1),
               5: FlexColumnWidth(1),
-              6: FlexColumnWidth(
+              6: FlexColumnWidth(1),
+              7: FlexColumnWidth(
                   1), // Nueva columna para la ganancia por producto
             },
             children: [
               TableRow(
                 children: [
+                  _buildTableHeader('Tipo'),
                   _buildTableHeader('Cantidad'),
                   _buildTableHeader('Descripción'),
                   _buildTableHeader('Precio de Compra'),
@@ -632,6 +637,10 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
                 return TableRow(
                   children: [
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(item.tipo.toString()),
+                    ),
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(item.cantidad.toString()),
@@ -846,6 +855,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
             TextButton(
               onPressed: () {
                 final descripcionEdit = descripcionEditController.text;
+                 final tipoEdit = descripcionEditController.text;
                 final precioEdit = double.tryParse(
                         precioEditController.text.replaceAll(',', '')) ??
                     0;
@@ -863,6 +873,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                   // Validación de porcentaje de ganancia
                   final newItem = CotizacionItem(
                     descripcion: descripcionEdit,
+                    tipo: tipoEdit,
                     precioUnitario: precioEdit,
                     cantidad: cantidadEdit,
                     porcentajeGanancia: porcentajeGananciaEdit, // Agregado
@@ -887,7 +898,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   void _guardarCotizacion(BuildContext context) {
-    //_guardarCliente();
+    _guardarCliente();
     _guardarProducto(context);
   }
 
