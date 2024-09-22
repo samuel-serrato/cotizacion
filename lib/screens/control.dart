@@ -29,12 +29,12 @@ class _ControlScreenState extends State<ControlScreen>
 
   Future<void> fetchClientesYDetallesYArticulos() async {
     try {
-      final clientesResponse = await http
-          .get(Uri.parse('http://192.168.0.110:3000/api/v1/clientes'));
+      final clientesResponse =
+          await http.get(Uri.parse('http://192.168.1.26:3000/api/v1/clientes'));
       final detallesResponse = await http
-          .get(Uri.parse('http://192.168.0.110:3000/api/v1/detalles/'));
+          .get(Uri.parse('http://192.168.1.26:3000/api/v1/detalles/'));
       final articulosResponse = await http
-          .get(Uri.parse('http://192.168.0.110:3000/api/v1/articulos'));
+          .get(Uri.parse('http://192.168.1.26:3000/api/v1/articulos'));
 
       if (clientesResponse.statusCode == 200 &&
           detallesResponse.statusCode == 200 &&
@@ -131,7 +131,7 @@ class _ControlScreenState extends State<ControlScreen>
   Future<bool> actualizarEstado(String folio, String estado) async {
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.0.110:3000/api/v1/estados/agregar'),
+        Uri.parse('http://192.168.1.26:3000/api/v1/estados/agregar'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -154,10 +154,18 @@ class _ControlScreenState extends State<ControlScreen>
         });
         return true; // Indica que la actualización fue exitosa
       } else {
+        // Asume que 'response.body' es un JSON
+        Map<String, dynamic> errorResponse = jsonDecode(response.body);
+
+// Extrae el código y el mensaje de error
+        int errorCode = errorResponse['Error']?['Code'] ?? 0;
+        String errorMessage =
+            errorResponse['Error']?['Message'] ?? 'Error desconocido';
+
         // Mostrar SnackBar de error
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al actualizar el estado: ${response.body}'),
+            content: Text('Error $errorCode: $errorMessage'),
             backgroundColor: Colors.red,
           ),
         );
@@ -338,9 +346,6 @@ class _ControlScreenState extends State<ControlScreen>
                                                   _focusNode
                                                       .unfocus(); // Quita el foco al seleccionar un nuevo valor
 
-                                                  // Llama a la función para actualizar el estado
-                                                  actualizarEstado(
-                                                      folio, newValue);
                                                   setState(() {
                                                     fetchClientesYDetallesYArticulos();
                                                   });

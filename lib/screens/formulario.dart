@@ -64,6 +64,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
     });
   }
 
+      bool _requiereFactura = false; // Inicialmente en "No"
+
   void _handleGeneratePdf(BuildContext context) {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
     generatePdf(provider); // Llamada correcta
@@ -357,7 +359,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.0.110:3000/api/v1/clientes/agregar'),
+      Uri.parse('http://192.168.1.26:3000/api/v1/clientes/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -383,7 +385,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.0.110:3000/api/v1/productos/agregar'),
+      Uri.parse('http://192.168.1.26:3000/api/v1/productos/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -685,13 +687,16 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   Widget _buildDesc() {
-    bool _requiereFactura = false; // Estado local para el checkbox
+
     final TextEditingController _descController =
         TextEditingController(); // Controlador para el TextField
     String? _selectedOption; // Variable para almacenar la opción seleccionada
 
     // Lista de opciones para el dropdown
-    final List<String> _metodos = ['Transferencia', 'Efectivo', 'No asignado'];
+    final List<String> _metodos = [
+      'Transferencia',
+      'Efectivo',
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -782,7 +787,10 @@ class _FormularioScreenState extends State<FormularioScreen> {
                   child: Checkbox(
                     value: _requiereFactura, // Valor fijo por ahora
                     onChanged: (bool? value) {
-                      // Aquí no se hace nada por el momento
+                      setState(() {
+                        _requiereFactura =
+                            value ?? false; // Actualiza el estado
+                      });
                     },
                     activeColor:
                         Color(0xFF001F3F), // Color cuando está seleccionado
