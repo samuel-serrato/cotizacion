@@ -23,10 +23,17 @@ class _FormularioScreenState extends State<FormularioScreen> {
   final cantidadPersonalizadaController = TextEditingController();
   final porcentajeGananciaController =
       TextEditingController(); // Nuevo campo para el % de ganancia
+  final TextEditingController _descController = TextEditingController();
 
   String? _selectedPersonType;
   String? _selectedQuantity = '1';
   String? _selectedType = 'Producto';
+  String? _selectedMetodoP; // Variable para almacenar la opción seleccionada
+
+//DATOS PARA LAS PETICIONES HTTP
+  String clienteId = ''; // Variable para almacenar el ID del cliente
+  List<String> articuloIds =
+      []; // Variable para almacenar los IDs de los artículos
 
   final List<String> _personTypes = [
     'C.P.',
@@ -64,7 +71,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     });
   }
 
-      bool _requiereFactura = false; // Inicialmente en "No"
+  bool _requiereFactura = false; // Inicialmente en "No"
 
   void _handleGeneratePdf(BuildContext context) {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
@@ -344,38 +351,45 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
-  void _guardarCliente() async {
-    // Obtén los valores de los controladores y del Dropdown
+  Future<void> _guardarCliente() async {
     String nombres = nombresController.text;
     String telefono = telefonoController.text;
     String email = emailController.text;
 
-    // Cuerpo del POST
     final body = {
       'nombres': nombres,
       'telefono': telefono,
       'email': email,
     };
 
-    // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.1.16:3000/api/v1/clientes/agregar'),
+      Uri.parse('http://192.168.0.110:3000/api/v1/clientes/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
 
     if (response.statusCode == 201) {
-      print('Cliente guardado con éxito');
+      final responseData = json.decode(response.body);
+      clienteId = responseData['id']; // Almacena el ID
+      print('Cliente guardado con éxito: $clienteId');
     } else {
       print('Error al guardar el cliente: ${response.body}');
     }
   }
 
-  void _guardararticulo(BuildContext context) async {
+  Future<void> _guardararticulo(BuildContext context) async {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
     List<CotizacionItem> articulos = provider.items;
 
-    // Construye el cuerpo del POST con todos los articulos
+    // Asegúrate de que cada artículo tenga un tipo
+    for (var item in articulos) {
+      if (item.tipo.isEmpty) {
+        print('Error: El tipo del artículo "${item.descripcion}" está vacío.');
+        return;
+      }
+    }
+
+    // Construye el cuerpo del POST directamente como un array
     final body = articulos.map((item) {
       return {
         'descripcion': item.descripcion,
@@ -384,17 +398,105 @@ class _FormularioScreenState extends State<FormularioScreen> {
       };
     }).toList();
 
+    // Asegúrate de que el cuerpo es un objeto JSON válido
+    print('Cuerpo del POST para artículos: ${json.encode(body)}');
+
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.1.16:3000/api/v1/articulos/agregar'),
+      Uri.parse('http://192.168.0.110:3000/api/v1/articulos/agregar'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(body), // Enviar como array directamente
+    );
+
+    if (response.statusCode == 201) {
+      final responseData = json.decode(response.body);
+      // Almacena los IDs de los artículos, que se espera que ahora sean un array
+      articuloIds = List<String>.from(responseData[
+          'id']); // Asegúrate de que esto coincide con la estructura de respuesta
+      print('Artículos guardados con éxito: $articuloIds');
+    } else {
+      print('Error al guardar los artículos: ${response.body}');
+    }
+  }
+
+  double _calcularSubtotal(List<CotizacionItem> articulos) {
+    double subtotal = 0;
+    for (var item in articulos) {
+      subtotal += item.precioVenta * item.cantidad;
+    }
+    return subtotal;
+  }
+
+  double _calcularIVA(List<CotizacionItem> articulos) {
+    const double tasaIVA = 0.16; // 16% de IVA
+    return _calcularSubtotal(articulos) * tasaIVA;
+  }
+
+  double _calcularTotal(List<CotizacionItem> articulos) {
+    return _calcularSubtotal(articulos) + _calcularIVA(articulos);
+  }
+
+  Future<void> _guardarVenta(BuildContext context) async {
+    final provider = Provider.of<CotizacionProvider>(context, listen: false);
+    List<CotizacionItem> articulos = provider.items;
+
+    // Verifica que se hayan guardado artículos y que haya IDs disponibles
+    if (articuloIds.isEmpty) {
+      print('Error: No se han recibido IDs de artículos.');
+      return;
+    }
+
+    // Asegúrate de que el número de IDs coincida con el número de artículos
+    if (articuloIds.length != articulos.length) {
+      print(
+          'Error: El número de IDs de artículos no coincide con el número de artículos.');
+      return;
+    }
+
+    // Array de productos basado en los artículos almacenados
+    List<Map<String, dynamic>> productos = [];
+    for (int i = 0; i < articulos.length; i++) {
+      final item = articulos[i];
+      productos.add({
+        "idarticulo":
+            articuloIds[i], // Usar el ID del artículo obtenido al guardarlo
+        "precio_venta": item.precioVenta,
+        "ganancia": item.ganancia,
+        "porcentaje": item.porcentajeGanancia,
+        "cantidad": item.cantidad,
+      });
+    }
+
+    // Cuerpo del POST
+    final body = {
+      "iddetalleventa": clienteId, // Aquí va el ID del cliente guardado
+      "nombre_venta": _descController.text, // Nombre o descripción de la venta
+      "productos": productos, // Lista de productos con sus IDs y detalles
+      "factura": _requiereFactura ? "Si" : "No",
+      "tipo_pago": (_selectedMetodoP == null || _selectedMetodoP!.isEmpty)
+          ? "No asignado"
+          : _selectedMetodoP, // Si es null o vacío, enviar "No asignado"
+      "subtotal": _calcularSubtotal(articulos), // Subtotal calculado
+      "iva": _calcularIVA(articulos), // IVA calculado
+      "total": _calcularTotal(articulos), // Total calculado
+    };
+
+    // Imprimir el cuerpo del POST antes de enviarlo
+    print('Datos de la venta a enviar: ${json.encode(body)}');
+
+    // Hacer el POST request
+    final response = await http.post(
+      Uri.parse('http://192.168.0.110:3000/api/v1/ventas/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
 
+    print('Código de estado: ${response.statusCode}');
+
     if (response.statusCode == 201) {
-      print('articulos guardados con éxito');
+      print('Venta guardada con éxito');
     } else {
-      print('Error al guardar los articulos: ${response.body}');
+      print('Error al guardar la venta: ${response.body}');
     }
   }
 
@@ -444,7 +546,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
     final descripcion = descripcionController.text;
     final tipo = _selectedType!;
-    final precio =
+    final precioCompra =
         double.tryParse(precioController.text.replaceAll(',', '')) ?? 0;
     final cantidad = _selectedQuantity == 'PERSONALIZADO'
         ? int.tryParse(cantidadPersonalizadaController.text) ?? 1
@@ -452,28 +554,31 @@ class _FormularioScreenState extends State<FormularioScreen> {
     final porcentajeGanancia =
         double.tryParse(porcentajeGananciaController.text) ?? 0;
 
-    if (descripcion.isNotEmpty && precio > 0 && cantidad > 0) {
+    // Calcular la ganancia y el precio de venta
+    final ganancia = (precioCompra * porcentajeGanancia) / 100;
+    final precioVenta = precioCompra + ganancia;
+
+    if (descripcion.isNotEmpty && precioCompra > 0 && cantidad > 0) {
       final item = CotizacionItem(
         descripcion: descripcion,
         tipo: tipo,
-        precioUnitario: precio,
+        precioUnitario: precioCompra,
         cantidad: cantidad,
-        ganancia: (precio * porcentajeGanancia) / 100,
-        porcentajeGanancia: porcentajeGanancia, // Guardar el % de ganancia
+        ganancia: ganancia,
+        porcentajeGanancia: porcentajeGanancia,
+        precioVenta: precioVenta, // Precio de venta calculado
       );
 
       provider.addItem(item);
 
-      _calcularGananciaTotal(); // Recalcular ganancia total después de agregar articulo
+      _calcularGananciaTotal(); // Recalcular ganancia total después de agregar artículo
 
       // Limpiar campos
       descripcionController.clear();
       precioController.clear();
       cantidadPersonalizadaController.clear();
-      porcentajeGananciaController.clear(); // Resetear el campo de % Ganancia
+      porcentajeGananciaController.clear();
       _selectedQuantity = '1';
-      precioVenta = 0;
-      ganancia = 0;
     }
   }
 
@@ -498,7 +603,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
         style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF001F3F)),
       ),
     );
-  } 
+  }
 
   void _actualizarDatosClientePDF(BuildContext context) {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
@@ -696,11 +801,6 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   Widget _buildDesc() {
-
-    final TextEditingController _descController =
-        TextEditingController(); // Controlador para el TextField
-    String? _selectedOption; // Variable para almacenar la opción seleccionada
-
     // Lista de opciones para el dropdown
     final List<String> _metodos = [
       'Transferencia',
@@ -732,9 +832,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
             // Dropdown a la izquierda del checkbox
             Expanded(
               child: DropdownButtonFormField<String>(
-                value: _selectedOption,
+                value: _selectedMetodoP,
                 onChanged: (String? newValue) {
-                  _selectedOption = newValue; // Actualiza el estado
+                  _selectedMetodoP = newValue; // Actualiza el estado
                 },
                 decoration: InputDecoration(
                   labelText: 'Método de pago',
@@ -855,8 +955,11 @@ class _FormularioScreenState extends State<FormularioScreen> {
             TextButton(
               onPressed: () {
                 final descripcionEdit = descripcionEditController.text;
-                 final tipoEdit = descripcionEditController.text;
+                final tipoEdit = descripcionEditController.text;
                 final precioEdit = double.tryParse(
+                        precioEditController.text.replaceAll(',', '')) ??
+                    0;
+                final precioVentaEdit = double.tryParse(
                         precioEditController.text.replaceAll(',', '')) ??
                     0;
                 final cantidadEdit =
@@ -872,12 +975,12 @@ class _FormularioScreenState extends State<FormularioScreen> {
                     porcentajeGananciaEdit >= 0) {
                   // Validación de porcentaje de ganancia
                   final newItem = CotizacionItem(
-                    descripcion: descripcionEdit,
-                    tipo: tipoEdit,
-                    precioUnitario: precioEdit,
-                    cantidad: cantidadEdit,
-                    porcentajeGanancia: porcentajeGananciaEdit, // Agregado
-                  );
+                      descripcion: descripcionEdit,
+                      tipo: tipoEdit,
+                      precioUnitario: precioEdit,
+                      cantidad: cantidadEdit,
+                      porcentajeGanancia: porcentajeGananciaEdit, // Agregado
+                      precioVenta: precioVentaEdit);
 
                   final provider =
                       Provider.of<CotizacionProvider>(context, listen: false);
@@ -897,9 +1000,10 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
-  void _guardarCotizacion(BuildContext context) {
-    //_guardarCliente();
-    _guardararticulo(context);
+  void _guardarCotizacion(BuildContext context) async {
+    await _guardarCliente(); // Espera a que se guarde el cliente
+    await _guardararticulo(context); // Espera a que se guarden los artículos
+    await _guardarVenta(context); // Finalmente, guarda la venta
   }
 
   Widget _buildButtons() {

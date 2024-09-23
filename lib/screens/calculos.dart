@@ -67,6 +67,7 @@ class CotizacionItem {
   double? ganancia; // Añadir este campo si aún no existe
   final double
       porcentajeGanancia; // Nueva propiedad para almacenar el % de ganancia
+  final double precioVenta;
 
   CotizacionItem({
     required this.descripcion,
@@ -75,6 +76,7 @@ class CotizacionItem {
     required this.cantidad,
     this.ganancia,
     required this.porcentajeGanancia, // Asegúrate de recibir este valor
+    required this.precioVenta,
   });
 
   double get total => precioUnitario * cantidad;

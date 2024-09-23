@@ -29,12 +29,12 @@ class _ControlScreenState extends State<ControlScreen>
 
   Future<void> fetchClientesYDetallesYArticulos() async {
     try {
-      final clientesResponse =
-          await http.get(Uri.parse('http://192.168.1.16:3000/api/v1/clientes'));
+      final clientesResponse = await http
+          .get(Uri.parse('http://192.168.0.110:3000/api/v1/clientes'));
       final detallesResponse = await http
-          .get(Uri.parse('http://192.168.1.16:3000/api/v1/detalles/'));
+          .get(Uri.parse('http://192.168.0.110:3000/api/v1/detalles/'));
       final articulosResponse = await http
-          .get(Uri.parse('http://192.168.1.16:3000/api/v1/articulos'));
+          .get(Uri.parse('http://192.168.0.110:3000/api/v1/articulos'));
 
       if (clientesResponse.statusCode == 200 &&
           detallesResponse.statusCode == 200 &&
@@ -131,7 +131,7 @@ class _ControlScreenState extends State<ControlScreen>
   Future<bool> actualizarEstado(String folio, String estado) async {
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.16:3000/api/v1/estados/agregar'),
+        Uri.parse('http://192.168.0.110:3000/api/v1/estados/agregar'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -284,7 +284,7 @@ class _ControlScreenState extends State<ControlScreen>
                                   Row(
                                     children: [
                                       Text(
-                                        '${formatDate(detalle['fechaCreacion'] as String?)}',
+                                        '${formatDate(detalle['fecha_creacion'] as String?)}',
                                         style: TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
