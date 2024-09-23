@@ -104,14 +104,14 @@ class _FormularioScreenState extends State<FormularioScreen> {
                     SizedBox(height: 30),
                     _buildSectionTitle('PRODUCTO'),
                     SizedBox(height: 10),
-                    _buildProductoInfo(),
+                    _buildarticuloInfo(),
                     SizedBox(height: 30),
                     _buildGananciaYPrecioVenta(), // Nuevo widget para mostrar ganancia y precio de venta
                     _buildSectionTitle('RESUMEN'),
                     _buildSummary(provider),
                     SizedBox(height: 20),
                     _buildProductTable(
-                        provider), // Tabla de productos con ganancia total
+                        provider), // Tabla de articulos con ganancia total
                   ],
                 ),
               ),
@@ -179,7 +179,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
-  Widget _buildProductoInfo() {
+  Widget _buildarticuloInfo() {
     return Row(
       children: [
         Expanded(
@@ -236,7 +236,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
         ),
         SizedBox(width: 10),
         ElevatedButton(
-          onPressed: _agregarProducto,
+          onPressed: _agregararticulo,
           child: Text(
             'Agregar',
             style: TextStyle(
@@ -359,7 +359,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.1.26:3000/api/v1/clientes/agregar'),
+      Uri.parse('http://192.168.1.16:3000/api/v1/clientes/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -371,30 +371,30 @@ class _FormularioScreenState extends State<FormularioScreen> {
     }
   }
 
-  void _guardarProducto(BuildContext context) async {
+  void _guardararticulo(BuildContext context) async {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
-    List<CotizacionItem> productos = provider.items;
+    List<CotizacionItem> articulos = provider.items;
 
-    // Construye el cuerpo del POST con todos los productos
-    final body = productos.map((item) {
+    // Construye el cuerpo del POST con todos los articulos
+    final body = articulos.map((item) {
       return {
-        'producto': item.descripcion,
-        'tipo': _selectedType,
+        'descripcion': item.descripcion,
+        'tipo': item.tipo,
         'precio_compra': item.precioUnitario.toString(),
       };
     }).toList();
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.1.26:3000/api/v1/productos/agregar'),
+      Uri.parse('http://192.168.1.16:3000/api/v1/articulos/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
 
     if (response.statusCode == 201) {
-      print('Productos guardados con éxito');
+      print('articulos guardados con éxito');
     } else {
-      print('Error al guardar los productos: ${response.body}');
+      print('Error al guardar los articulos: ${response.body}');
     }
   }
 
@@ -440,7 +440,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   // Actualiza este método para recalcular la ganancia total
-  void _agregarProducto() {
+  void _agregararticulo() {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
     final descripcion = descripcionController.text;
     final tipo = _selectedType!;
@@ -464,7 +464,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
       provider.addItem(item);
 
-      _calcularGananciaTotal(); // Recalcular ganancia total después de agregar producto
+      _calcularGananciaTotal(); // Recalcular ganancia total después de agregar articulo
 
       // Limpiar campos
       descripcionController.clear();
@@ -485,8 +485,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
       final precioCompra = item.precioUnitario;
       final precioVenta =
           precioCompra + (precioCompra * item.porcentajeGanancia / 100);
-      final gananciaPorProducto = (precioVenta - precioCompra) * item.cantidad;
-      return sum + gananciaPorProducto;
+      final gananciaPorarticulo = (precioVenta - precioCompra) * item.cantidad;
+      return sum + gananciaPorarticulo;
     });
   }
 
@@ -612,7 +612,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
               5: FlexColumnWidth(1),
               6: FlexColumnWidth(1),
               7: FlexColumnWidth(
-                  1), // Nueva columna para la ganancia por producto
+                  1), // Nueva columna para la ganancia por articulo
             },
             children: [
               TableRow(
@@ -622,7 +622,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                   _buildTableHeader('Descripción'),
                   _buildTableHeader('Precio de Compra'),
                   _buildTableHeader('% Ganancia'),
-                  _buildTableHeader('Ganancia por Producto'), // Nueva cabecera
+                  _buildTableHeader('Ganancia por articulo'), // Nueva cabecera
                   _buildTableHeader('Precio de Venta'),
                   _buildTableHeader('Total'),
                 ],
@@ -630,9 +630,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
               ...provider.items.map((item) {
                 double precioCompra = item.precioUnitario;
                 double porcentajeGanancia = item.porcentajeGanancia;
-                double gananciaPorProducto =
+                double gananciaPorarticulo =
                     (precioCompra * porcentajeGanancia / 100);
-                double precioVenta = precioCompra + gananciaPorProducto;
+                double precioVenta = precioCompra + gananciaPorarticulo;
                 double totalVenta = precioVenta * item.cantidad;
 
                 return TableRow(
@@ -658,10 +658,10 @@ class _FormularioScreenState extends State<FormularioScreen> {
                       child: Text('${porcentajeGanancia.toStringAsFixed(2)}%'),
                     ),
                     Padding(
-                      // Nueva columna para mostrar la ganancia por producto
+                      // Nueva columna para mostrar la ganancia por articulo
                       padding: const EdgeInsets.all(8.0),
                       child:
-                          Text('\$${gananciaPorProducto.toStringAsFixed(2)}'),
+                          Text('\$${gananciaPorarticulo.toStringAsFixed(2)}'),
                     ),
                     Padding(
                       padding: const EdgeInsets.all(8.0),
@@ -815,7 +815,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
-  void _editarProducto(BuildContext context, CotizacionItem item) {
+  void _editararticulo(BuildContext context, CotizacionItem item) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -831,7 +831,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
             TextEditingController(text: item.porcentajeGanancia.toString());
 
         return AlertDialog(
-          title: Text('Editar Producto'),
+          title: Text('Editar articulo'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -898,8 +898,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   void _guardarCotizacion(BuildContext context) {
-    _guardarCliente();
-    _guardarProducto(context);
+    //_guardarCliente();
+    _guardararticulo(context);
   }
 
   Widget _buildButtons() {

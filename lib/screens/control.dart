@@ -30,11 +30,11 @@ class _ControlScreenState extends State<ControlScreen>
   Future<void> fetchClientesYDetallesYArticulos() async {
     try {
       final clientesResponse =
-          await http.get(Uri.parse('http://192.168.1.26:3000/api/v1/clientes'));
+          await http.get(Uri.parse('http://192.168.1.16:3000/api/v1/clientes'));
       final detallesResponse = await http
-          .get(Uri.parse('http://192.168.1.26:3000/api/v1/detalles/'));
+          .get(Uri.parse('http://192.168.1.16:3000/api/v1/detalles/'));
       final articulosResponse = await http
-          .get(Uri.parse('http://192.168.1.26:3000/api/v1/articulos'));
+          .get(Uri.parse('http://192.168.1.16:3000/api/v1/articulos'));
 
       if (clientesResponse.statusCode == 200 &&
           detallesResponse.statusCode == 200 &&
@@ -131,7 +131,7 @@ class _ControlScreenState extends State<ControlScreen>
   Future<bool> actualizarEstado(String folio, String estado) async {
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.26:3000/api/v1/estados/agregar'),
+        Uri.parse('http://192.168.1.16:3000/api/v1/estados/agregar'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -195,7 +195,14 @@ class _ControlScreenState extends State<ControlScreen>
         ),
       ),
       body: clientes.isEmpty || detalles.isEmpty || articulos.isEmpty
-          ? Center(child: CircularProgressIndicator())
+          ? Center(
+              child: clientes.isEmpty && detalles.isEmpty && articulos.isEmpty
+                  ? Text(
+                      'No hay datos para mostrar',
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                    )
+                  : CircularProgressIndicator(),
+            )
           : GestureDetector(
               onTap: () {
                 _focusNode.unfocus(); // Quita el foco al tocar fuera
@@ -541,7 +548,7 @@ class _ControlScreenState extends State<ControlScreen>
                                                     )),
                                                     Expanded(
                                                         child: Text(
-                                                      'Porcentaje: ${articuloDetalle['porcentaje']  ?? '0.00'}%',
+                                                      'Porcentaje: ${articuloDetalle['porcentaje'] ?? '0.00'}%',
                                                       style: TextStyle(
                                                           fontSize: 16),
                                                     )),
