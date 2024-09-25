@@ -4,15 +4,16 @@ import 'dart:convert';
 import 'package:intl/intl.dart';
 
 class ControlScreen extends StatefulWidget {
+    const ControlScreen({Key? key}) : super(key: key); // Acepta el parámetro key
+
   @override
-  _ControlScreenState createState() => _ControlScreenState();
+  ControlScreenState createState() => ControlScreenState();
 }
 
-class _ControlScreenState extends State<ControlScreen>
+class ControlScreenState extends State<ControlScreen>
     with TickerProviderStateMixin {
   List<dynamic> clientes = [];
   List<dynamic> detalles = [];
-  List<dynamic> articulos = [];
   Map<String, bool> _expandedState =
       {}; // Mapa para rastrear el estado expandido de cada folio
   Map<String, AnimationController> _controllers =
@@ -24,25 +25,28 @@ class _ControlScreenState extends State<ControlScreen>
   @override
   void initState() {
     super.initState();
-    fetchClientesYDetallesYArticulos();
+    fetchDetallesYArticulos();
   }
 
-  Future<void> fetchClientesYDetallesYArticulos() async {
+ @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Aquí puedes llamar al método cuando las dependencias cambian
+    fetchDetallesYArticulos();
+  }
+
+  Future<void> fetchDetallesYArticulos() async {
     try {
-      final clientesResponse = await http
-          .get(Uri.parse('http://192.168.0.110:3000/api/v1/clientes'));
+      final clientesResponse =
+          await http.get(Uri.parse('http://192.168.1.16:3000/api/v1/clientes'));
       final detallesResponse = await http
-          .get(Uri.parse('http://192.168.0.110:3000/api/v1/detalles/'));
-      final articulosResponse = await http
-          .get(Uri.parse('http://192.168.0.110:3000/api/v1/articulos'));
+          .get(Uri.parse('http://192.168.1.16:3000/api/v1/detalles/'));
 
       if (clientesResponse.statusCode == 200 &&
-          detallesResponse.statusCode == 200 &&
-          articulosResponse.statusCode == 200) {
+          detallesResponse.statusCode == 200) {
         setState(() {
           clientes = json.decode(clientesResponse.body);
           detalles = json.decode(detallesResponse.body);
-          articulos = json.decode(articulosResponse.body);
         });
         throw Exception('Error al obtener los datos');
       } else {}
@@ -131,7 +135,7 @@ class _ControlScreenState extends State<ControlScreen>
   Future<bool> actualizarEstado(String folio, String estado) async {
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.0.110:3000/api/v1/estados/agregar'),
+        Uri.parse('http://192.168.1.16:3000/api/v1/estados/agregar'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -150,7 +154,7 @@ class _ControlScreenState extends State<ControlScreen>
           ),
         );
         setState(() {
-          fetchClientesYDetallesYArticulos();
+          fetchDetallesYArticulos();
         });
         return true; // Indica que la actualización fue exitosa
       } else {
@@ -185,6 +189,9 @@ class _ControlScreenState extends State<ControlScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Formateador de números
+    final numberFormat = NumberFormat("#,##0.00", "en_US");
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -194,9 +201,9 @@ class _ControlScreenState extends State<ControlScreen>
           style: TextStyle(color: Colors.white),
         ),
       ),
-      body: clientes.isEmpty || detalles.isEmpty || articulos.isEmpty
+      body: clientes.isEmpty || detalles.isEmpty
           ? Center(
-              child: clientes.isEmpty && detalles.isEmpty && articulos.isEmpty
+              child: clientes.isEmpty && detalles.isEmpty
                   ? Text(
                       'No hay datos para mostrar',
                       style: TextStyle(fontSize: 18, color: Colors.grey),
@@ -228,6 +235,13 @@ class _ControlScreenState extends State<ControlScreen>
                           vsync: this,
                           duration: Duration(milliseconds: 300),
                         );
+                      }
+
+                      // Calcular la ganancia total
+                      double gananciaTotal = 0.0;
+                      for (var articulo in detalle['articulos']) {
+                        gananciaTotal += (articulo['ganancia'] ?? 0.0) *
+                            (articulo['cantidad'] ?? 1.0);
                       }
 
                       final controller = _controllers[folio]!;
@@ -274,7 +288,7 @@ class _ControlScreenState extends State<ControlScreen>
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    '${cliente['nombres'] ?? 'Cliente desconocido'} - ${detalle['nombre_venta'] ?? 'Venta sin nombre'}',
+                                    '${detalle['cliente'] ?? 'Cliente desconocido'} - ${detalle['nombre_venta'] ?? 'Venta sin nombre'}',
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
@@ -341,7 +355,7 @@ class _ControlScreenState extends State<ControlScreen>
                                                     setState(() {
                                                       _estadoPorFolio[folio] =
                                                           newValue; // Actualiza el estado específico para el folio
-                                                      fetchClientesYDetallesYArticulos();
+                                                      fetchDetallesYArticulos();
                                                     });
                                                   } else {
                                                     // Opcional: Si deseas revertir el estado al anterior en caso de error
@@ -354,7 +368,7 @@ class _ControlScreenState extends State<ControlScreen>
                                                       .unfocus(); // Quita el foco al seleccionar un nuevo valor
 
                                                   setState(() {
-                                                    fetchClientesYDetallesYArticulos();
+                                                    fetchDetallesYArticulos();
                                                   });
                                                 }
                                               },
@@ -409,6 +423,20 @@ class _ControlScreenState extends State<ControlScreen>
                                         SizedBox(
                                             width:
                                                 16), // Espacio entre las cifras
+                                        Text(
+                                          'Ganancia Total: ',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          '\$${gananciaTotal.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        SizedBox(width: 16),
                                         Text(
                                           'Subtotal: ',
                                           style: TextStyle(
@@ -502,14 +530,6 @@ class _ControlScreenState extends State<ControlScreen>
                                           SizedBox(height: 16),
                                           ...detalle['articulos']
                                               .map<Widget>((articuloDetalle) {
-                                            final articulo =
-                                                articulos.firstWhere(
-                                              (articulo) =>
-                                                  articulo['idarticulo'] ==
-                                                  articuloDetalle['idarticulo'],
-                                              orElse: () => null,
-                                            );
-
                                             return Card(
                                               color: const Color.fromARGB(
                                                   255, 243, 243, 243),
@@ -529,41 +549,228 @@ class _ControlScreenState extends State<ControlScreen>
                                                           .spaceBetween,
                                                   children: [
                                                     Expanded(
-                                                        child: Text(
-                                                      'Cantidad: ${articuloDetalle['cantidad'] ?? '0'}',
-                                                      style: TextStyle(
-                                                          fontSize: 16),
-                                                    )),
+                                                      flex: 1,
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start, // Alinea a la izquierda
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Text(
+                                                            'Cantidad:',
+                                                            style: TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                          Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .only(
+                                                                    left: 25),
+                                                            child: Text(
+                                                              '${articuloDetalle['cantidad'] ?? '0'}',
+                                                              style: TextStyle(
+                                                                  fontSize: 14),
+                                                              textAlign:
+                                                                  TextAlign
+                                                                      .center,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
                                                     Expanded(
-                                                        child: Text(
-                                                      'Producto: ${articulo != null ? articulo['descripcion'] ?? 'Desconocido' : 'Desconocido'}',
-                                                      style: TextStyle(
-                                                          fontSize: 16),
-                                                    )),
+                                                      flex: 4,
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start, // Alinea a la izquierda
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Text(
+                                                            'Producto:',
+                                                            style: TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                            textAlign: TextAlign
+                                                                .left, // Alinea a la izquierda
+                                                          ),
+                                                          Text(
+                                                            '${articuloDetalle['descripcion'] ?? 'Desconocido'}',
+                                                            style: TextStyle(
+                                                                fontSize: 14),
+                                                            textAlign: TextAlign
+                                                                .left, // Alinea a la izquierda
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
                                                     Expanded(
-                                                        child: Text(
-                                                      'Compra: \$${articuloDetalle['precio_compra'] ?? '0.00'}',
-                                                      style: TextStyle(
-                                                          fontSize: 16),
-                                                    )),
+                                                      child: Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Text(
+                                                            'Precio Compra:',
+                                                            style: TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                          Text(
+                                                            '\$${articuloDetalle['precio_compra']?.toStringAsFixed(2) ?? '0.00'}',
+                                                            style: TextStyle(
+                                                                fontSize: 14),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
                                                     Expanded(
-                                                        child: Text(
-                                                      'Porcentaje: ${articuloDetalle['porcentaje'] ?? '0.00'}%',
-                                                      style: TextStyle(
-                                                          fontSize: 16),
-                                                    )),
+                                                      child: Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Text(
+                                                            'Porcentaje:',
+                                                            style: TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                          Text(
+                                                            '${articuloDetalle['porcentaje'] ?? '0.00'}%',
+                                                            style: TextStyle(
+                                                                fontSize: 14),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
                                                     Expanded(
-                                                        child: Text(
-                                                      'Venta: \$${articuloDetalle['precio_venta'] ?? '0.00'}',
-                                                      style: TextStyle(
-                                                          fontSize: 16),
-                                                    )),
+                                                      child: Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Text(
+                                                            'Ganancia p/p:',
+                                                            style: TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                          Text(
+                                                            '\$${articuloDetalle['ganancia']?.toStringAsFixed(2) ?? '0.00'}',
+                                                            style: TextStyle(
+                                                                fontSize: 14),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
                                                     Expanded(
-                                                        child: Text(
-                                                      'Ganancia: \$${articuloDetalle['ganancia'] ?? '0.00'}',
-                                                      style: TextStyle(
-                                                          fontSize: 16),
-                                                    )),
+                                                      child: Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Text(
+                                                            'Ganancia Total:',
+                                                            style: TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                          Text(
+                                                            '\$${((double.tryParse(articuloDetalle['cantidad']?.toString() ?? '0') ?? 0) * (double.tryParse(articuloDetalle['ganancia']?.toString() ?? '0') ?? 0)).toStringAsFixed(2)}',
+                                                            style: TextStyle(
+                                                                fontSize: 14),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    Expanded(
+                                                      child: Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Text(
+                                                            'Venta:',
+                                                            style: TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                          Text(
+                                                            '\$${articuloDetalle['precio_venta']?.toStringAsFixed(2) ?? '0.00'}',
+                                                            style: TextStyle(
+                                                                fontSize: 14),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    Expanded(
+                                                      child: Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Text(
+                                                            'Total:',
+                                                            style: TextStyle(
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                          Text(
+                                                            '\$${(articuloDetalle['precio_venta'] ?? 0) * (articuloDetalle['cantidad'] ?? 0)}',
+                                                            style: TextStyle(
+                                                                fontSize: 14),
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
                                                   ],
                                                 ),
                                               ),
@@ -612,7 +819,8 @@ class _ControlScreenState extends State<ControlScreen>
                                                     ),
                                                     SizedBox(width: 10),
                                                     Text(
-                                                      detalle['tipo_pago'],
+                                                      detalle['tipo_pago'] ??
+                                                          'No disponible',
                                                       style: TextStyle(
                                                         color: Colors.black87,
                                                         fontSize: 16,
@@ -717,7 +925,7 @@ class _ControlScreenState extends State<ControlScreen>
                                                             context,
                                                             detalle['estados']);
                                                         setState(() {
-                                                          fetchClientesYDetallesYArticulos();
+                                                          fetchDetallesYArticulos();
                                                         });
                                                       },
                                                       child: Text(
@@ -754,7 +962,7 @@ class _ControlScreenState extends State<ControlScreen>
   void mostrarDetallesEstado(
       BuildContext context, List<dynamic> estadosActuales) {
     setState(() {
-      fetchClientesYDetallesYArticulos();
+      fetchDetallesYArticulos();
     });
     // Lista de todos los estados posibles
     final List<String> estados = [

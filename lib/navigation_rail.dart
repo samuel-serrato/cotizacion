@@ -1,8 +1,6 @@
-import 'package:cotizacion/screens/control.dart';
 import 'package:flutter/material.dart';
-
+import 'screens/control.dart';
 import 'screens/formulario.dart';
-import 'screens/generarPDF.dart';
 
 class NavigationRailScreen extends StatefulWidget {
   @override
@@ -11,6 +9,22 @@ class NavigationRailScreen extends StatefulWidget {
 
 class _NavigationRailScreenState extends State<NavigationRailScreen> {
   int _selectedIndex = 0;
+  
+  // Crear un GlobalKey para cada pantalla
+  final GlobalKey<ControlScreenState> _controlKey = GlobalKey<ControlScreenState>();
+
+  void _onDestinationSelected(int index) {
+    setState(() {
+      _selectedIndex = index;
+
+      // Llamar al método de carga de datos según la pantalla seleccionada
+      if (_selectedIndex == 0) {
+       
+      } else if (_selectedIndex == 1) {
+        _controlKey.currentState?.fetchDetallesYArticulos(); // Método en ControlScreen
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,11 +34,7 @@ class _NavigationRailScreenState extends State<NavigationRailScreen> {
           NavigationRail(
             backgroundColor: Colors.white,
             selectedIndex: _selectedIndex,
-            onDestinationSelected: (int index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
+            onDestinationSelected: _onDestinationSelected,
             labelType: NavigationRailLabelType.selected,
             destinations: [
               NavigationRailDestination(
@@ -44,57 +54,13 @@ class _NavigationRailScreenState extends State<NavigationRailScreen> {
             child: IndexedStack(
               index: _selectedIndex,
               children: [
-                FormularioNavigator(),
-                ControlScreen(),
+                FormularioScreen(),
+                ControlScreen(key: _controlKey),
               ],
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class FormularioNavigator extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Navigator(
-      onGenerateRoute: (RouteSettings settings) {
-        WidgetBuilder builder;
-        switch (settings.name) {
-          case '/':
-            builder = (BuildContext _) => FormularioScreen();
-            break;
-        /*   case '/cotizacion':
-            builder = (BuildContext _) => CotizacionScreen(mostrarIVA: true,);
-            break; */
-          default:
-            throw Exception('Invalid route: ${settings.name}');
-        }
-        return MaterialPageRoute(builder: builder, settings: settings);
-      },
-    );
-  }
-}
-
-class CotizacionNavigator extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Navigator(
-      onGenerateRoute: (RouteSettings settings) {
-        WidgetBuilder builder;
-        switch (settings.name) {
-         /*  case '/':
-            builder = (BuildContext _) => CotizacionScreen(mostrarIVA: true,);
-            break; */
-          case '/control':
-            builder = (BuildContext _) => ControlScreen();
-            break;
-          default:
-            throw Exception('Invalid route: ${settings.name}');
-        }
-        return MaterialPageRoute(builder: builder, settings: settings);
-      },
     );
   }
 }

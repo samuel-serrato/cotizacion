@@ -48,10 +48,10 @@ class _FormularioScreenState extends State<FormularioScreen> {
     'PROF.',
     'ABG.',
     'ABGDA.',
-    'PERSONALIZADO'
+    'OTRO'
   ];
 
-  final List<String> _quantities = ['1', '2', '3', '4', '5', 'PERSONALIZADO'];
+  final List<String> _quantities = ['1', '2', '3', '4', '5', 'OTRO'];
 
   final List<String> _types = [
     'Producto',
@@ -191,16 +191,47 @@ class _FormularioScreenState extends State<FormularioScreen> {
       children: [
         Expanded(
           flex: 2,
-          child: _buildDropdownWithCustom(
-            label: 'Tipo',
+          child: DropdownButtonFormField<String>(
             value: _selectedType,
-            items: _types,
-            onChanged: (value) {
-              setState(() {
-                _selectedType = value!;
-              });
+            onChanged: (String? newValue) {
+              _selectedType = newValue; // Actualiza el estado
             },
-            customController: cantidadPersonalizadaController,
+            decoration: InputDecoration(
+              labelText: 'Tipo',
+              labelStyle:
+                  TextStyle(color: Colors.black54, fontWeight: FontWeight.w500),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30.0), // Bordes redondeados
+                borderSide: BorderSide(
+                  color: Color(0xFF001F3F),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30.0),
+                borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+              ),
+              filled: true,
+              fillColor: Colors.white, // Fondo blanco
+              contentPadding:
+                  EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+            ),
+            icon: Icon(
+              Icons.arrow_drop_down,
+              color: Color(0xFF001F3F),
+            ), // Icono personalizado
+            dropdownColor: Colors.white, // Color del menú desplegable
+            items: _types.map((item) {
+              return DropdownMenuItem<String>(
+                value: item,
+                child: Text(
+                  item,
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: 14, // Texto más visible en el menú
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ),
         SizedBox(width: 10),
@@ -301,8 +332,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DropdownButtonFormField<String>(
-          hint: Text('Elige una opción',
-              style: TextStyle(color: Colors.grey.shade500)),
+          hint: Text('Elige',
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 14)),
           value: value,
           onChanged: onChanged,
           decoration: InputDecoration(
@@ -340,12 +371,12 @@ class _FormularioScreenState extends State<FormularioScreen> {
             );
           }).toList(),
         ),
-        if (value == 'PERSONALIZADO') SizedBox(height: 10),
-        if (value == 'PERSONALIZADO')
+        if (value == 'OTRO') SizedBox(height: 10),
+        if (value == 'OTRO')
           SizedBox(
-            width: 150, // Tamaño más compacto para el campo personalizado
+            width: 200, // Tamaño más compacto para el campo personalizado
             child: _buildTextField(
-                customController!, 'Personalizado', TextInputType.number),
+                customController!, 'Otro', TextInputType.number),
           ),
       ],
     );
@@ -363,7 +394,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     };
 
     final response = await http.post(
-      Uri.parse('http://192.168.0.110:3000/api/v1/clientes/agregar'),
+      Uri.parse('http://192.168.1.16:3000/api/v1/clientes/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -403,7 +434,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.0.110:3000/api/v1/articulos/agregar'),
+      Uri.parse('http://192.168.1.16:3000/api/v1/articulos/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body), // Enviar como array directamente
     );
@@ -486,7 +517,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.0.110:3000/api/v1/ventas/agregar'),
+      Uri.parse('http://192.168.1.16:3000/api/v1/ventas/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -495,8 +526,37 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     if (response.statusCode == 201) {
       print('Venta guardada con éxito');
+
+      // Extraer el mensaje de respuesta del servidor
+      final responseBody = json.decode(response.body);
+      final message = responseBody['message'] ?? 'Venta guardada con éxito';
+
+      // Mostrar Snackbar con el mensaje de éxito
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.green,
+        ),
+      );
+      // Limpiar los campos después de guardar la venta
+      _limpiarCampos();
+      provider.clearItems(); // Limpia los productos
     } else {
       print('Error al guardar la venta: ${response.body}');
+
+      // Extraer el código de error y el mensaje de respuesta del servidor
+      final errorMessage = json.decode(response.body);
+      final errorCode = response.statusCode;
+      final errorDetail = errorMessage['error'] ?? 'Error al guardar la venta.';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error $errorCode: $errorDetail'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -548,7 +608,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     final tipo = _selectedType!;
     final precioCompra =
         double.tryParse(precioController.text.replaceAll(',', '')) ?? 0;
-    final cantidad = _selectedQuantity == 'PERSONALIZADO'
+    final cantidad = _selectedQuantity == 'OTRO'
         ? int.tryParse(cantidadPersonalizadaController.text) ?? 1
         : int.tryParse(_selectedQuantity!) ?? 1;
     final porcentajeGanancia =
@@ -610,7 +670,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     final cliente = nombresController.text;
     final telefono = telefonoController.text;
     final email = emailController.text;
-    final tipoPersona = _selectedPersonType == 'PERSONALIZADO'
+    final tipoPersona = _selectedPersonType == 'OTRO'
         ? personalizadoController.text
         : _selectedPersonType ?? '';
 
@@ -627,7 +687,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     final cliente = nombresController.text;
     final telefono = telefonoController.text;
     final email = emailController.text;
-    final tipoPersona = _selectedPersonType == 'PERSONALIZADO'
+    final tipoPersona = _selectedPersonType == 'OTRO'
         ? personalizadoController.text
         : _selectedPersonType ?? '';
 
@@ -710,14 +770,14 @@ class _FormularioScreenState extends State<FormularioScreen> {
             border: TableBorder.all(color: Colors.grey.shade400),
             columnWidths: {
               0: FlexColumnWidth(1),
-              1: FlexColumnWidth(2),
-              2: FlexColumnWidth(1),
+              1: FlexColumnWidth(1),
+              2: FlexColumnWidth(3),
               3: FlexColumnWidth(1),
               4: FlexColumnWidth(1),
               5: FlexColumnWidth(1),
               6: FlexColumnWidth(1),
-              7: FlexColumnWidth(
-                  1), // Nueva columna para la ganancia por articulo
+              7: FlexColumnWidth(1),
+              8: FlexColumnWidth(1),
             },
             children: [
               TableRow(
@@ -730,6 +790,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                   _buildTableHeader('Ganancia por articulo'), // Nueva cabecera
                   _buildTableHeader('Precio de Venta'),
                   _buildTableHeader('Total'),
+                  _buildTableHeader('Herramientas'),
                 ],
               ),
               ...provider.items.map((item) {
@@ -756,25 +817,84 @@ class _FormularioScreenState extends State<FormularioScreen> {
                     ),
                     Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: Text('\$${precioCompra.toStringAsFixed(2)}'),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text('${porcentajeGanancia.toStringAsFixed(2)}%'),
-                    ),
-                    Padding(
-                      // Nueva columna para mostrar la ganancia por articulo
-                      padding: const EdgeInsets.all(8.0),
                       child:
-                          Text('\$${gananciaPorarticulo.toStringAsFixed(2)}'),
+                          Text('\$${item.precioUnitario.toStringAsFixed(2)}'),
                     ),
                     Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: Text('\$${precioVenta.toStringAsFixed(2)}'),
+                      child: Text(
+                          '${item.porcentajeGanancia.toStringAsFixed(2)}%'),
                     ),
                     Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: Text('\$${totalVenta.toStringAsFixed(2)}'),
+                      child: Text(
+                          '\$${(item.precioUnitario * item.porcentajeGanancia / 100).toStringAsFixed(2)}'),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                          '\$${(item.precioUnitario + (item.precioUnitario * item.porcentajeGanancia / 100)).toStringAsFixed(2)}'),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                          '\$${(item.precioUnitario + (item.precioUnitario * item.porcentajeGanancia / 100) * item.cantidad).toStringAsFixed(2)}'), // Total
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.edit, color: Colors.blue),
+                            onPressed: () => _editararticulo(context, item),
+                            tooltip: 'Editar',
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete, color: Colors.red),
+                            onPressed: () {
+                              // Muestra un cuadro de diálogo de confirmación
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return AlertDialog(
+                                    title: Text('Confirmar Eliminación'),
+                                    content: Text(
+                                        '¿Estás seguro de que deseas eliminar este artículo?'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.of(context)
+                                              .pop(); // Cierra el diálogo
+                                        },
+                                        child: Text('Cancelar',
+                                            style:
+                                                TextStyle(color: Colors.grey)),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          final provider =
+                                              Provider.of<CotizacionProvider>(
+                                                  context,
+                                                  listen: false);
+                                          provider.removeItem(
+                                              item); // Llama a la función de eliminación
+                                          Navigator.of(context)
+                                              .pop(); // Cierra el diálogo
+                                        },
+                                        child: Text('Eliminar',
+                                            style:
+                                                TextStyle(color: Colors.red)),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            },
+                            tooltip: 'Eliminar',
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 );
@@ -916,6 +1036,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   void _editararticulo(BuildContext context, CotizacionItem item) {
+    String? tipoEdit = item.tipo;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -925,8 +1047,6 @@ class _FormularioScreenState extends State<FormularioScreen> {
             TextEditingController(text: item.precioUnitario.toString());
         final cantidadEditController =
             TextEditingController(text: item.cantidad.toString());
-
-        // Añadir un controlador para el porcentaje de ganancia
         final porcentajeGananciaEditController =
             TextEditingController(text: item.porcentajeGanancia.toString());
 
@@ -935,13 +1055,50 @@ class _FormularioScreenState extends State<FormularioScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              DropdownButtonFormField<String>(
+                value: tipoEdit,
+                onChanged: (String? newValue) {
+                  tipoEdit = newValue;
+                },
+                decoration: InputDecoration(
+                  labelText: 'Tipo de Producto',
+                  labelStyle: TextStyle(color: Colors.black),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30.0),
+                    borderSide: BorderSide(color: Color(0xFF001F3F)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30.0),
+                    borderSide:
+                        BorderSide(color: Colors.grey.shade300, width: 1.5),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding:
+                      EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                ),
+                icon: Icon(Icons.arrow_drop_down, color: Color(0xFF001F3F)),
+                dropdownColor: Colors.white,
+                items: _types.map((item) {
+                  return DropdownMenuItem<String>(
+                    value: item,
+                    child: Text(item,
+                        style: TextStyle(
+                            color: Colors.grey.shade800, fontSize: 14)),
+                  );
+                }).toList(),
+              ),
+              SizedBox(height: 10),
               _buildTextField(descripcionEditController, 'Descripción'),
+              SizedBox(height: 10),
               _buildTextField(
                   precioEditController, 'Precio', TextInputType.number),
+              SizedBox(height: 10),
               _buildTextField(
                   cantidadEditController, 'Cantidad', TextInputType.number),
+              SizedBox(height: 10),
               _buildTextField(porcentajeGananciaEditController,
-                  'Porcentaje de Ganancia', TextInputType.number), // Agregado
+                  'Porcentaje de Ganancia', TextInputType.number),
             ],
           ),
           actions: [
@@ -955,11 +1112,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
             TextButton(
               onPressed: () {
                 final descripcionEdit = descripcionEditController.text;
-                final tipoEdit = descripcionEditController.text;
                 final precioEdit = double.tryParse(
-                        precioEditController.text.replaceAll(',', '')) ??
-                    0;
-                final precioVentaEdit = double.tryParse(
                         precioEditController.text.replaceAll(',', '')) ??
                     0;
                 final cantidadEdit =
@@ -967,20 +1120,28 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 final porcentajeGananciaEdit = double.tryParse(
                         porcentajeGananciaEditController.text
                             .replaceAll(',', '')) ??
-                    0; // Agregado
+                    0;
+
+                // Calcula la ganancia aquí
+                final gananciaPorArticulo =
+                    (precioEdit * porcentajeGananciaEdit) / 100;
 
                 if (descripcionEdit.isNotEmpty &&
                     precioEdit > 0 &&
                     cantidadEdit > 0 &&
-                    porcentajeGananciaEdit >= 0) {
-                  // Validación de porcentaje de ganancia
+                    porcentajeGananciaEdit >= 0 &&
+                    tipoEdit != null) {
                   final newItem = CotizacionItem(
-                      descripcion: descripcionEdit,
-                      tipo: tipoEdit,
-                      precioUnitario: precioEdit,
-                      cantidad: cantidadEdit,
-                      porcentajeGanancia: porcentajeGananciaEdit, // Agregado
-                      precioVenta: precioVentaEdit);
+                    descripcion: descripcionEdit,
+                    tipo: tipoEdit!,
+                    precioUnitario: precioEdit,
+                    cantidad: cantidadEdit,
+                    porcentajeGanancia: porcentajeGananciaEdit,
+                    ganancia:
+                        gananciaPorArticulo, // Asegúrate de incluir la ganancia
+                    precioVenta: precioEdit +
+                        gananciaPorArticulo, // Calcula el precio de venta
+                  );
 
                   final provider =
                       Provider.of<CotizacionProvider>(context, listen: false);
@@ -989,15 +1150,35 @@ class _FormularioScreenState extends State<FormularioScreen> {
                   Navigator.pop(context);
                 }
               },
-              child: Text(
-                'Guardar',
-                style: TextStyle(color: Color.fromARGB(255, 0, 98, 255)),
-              ),
+              child: Text('Guardar',
+                  style: TextStyle(color: Color.fromARGB(255, 0, 98, 255))),
             ),
           ],
         );
       },
     );
+  }
+
+  // Método para limpiar los campos
+  void _limpiarCampos() {
+    // Limpiar los controladores de texto
+    nombresController.clear();
+    telefonoController.clear();
+    emailController.clear();
+    descripcionController.clear();
+    precioController.clear();
+    personalizadoController.clear();
+    cantidadPersonalizadaController.clear();
+    porcentajeGananciaController.clear();
+    _descController.clear();
+
+    // Restablecer las variables seleccionadas
+    setState(() {
+      _selectedPersonType = null;
+      _selectedQuantity = '1'; // Valor por defecto
+      _selectedType = 'Producto'; // Valor por defecto
+      _selectedMetodoP = null;
+    });
   }
 
   void _guardarCotizacion(BuildContext context) async {

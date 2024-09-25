@@ -57,6 +57,13 @@ class CotizacionProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+    // Método para limpiar la lista de artículos
+  void clearItems() {
+    items.clear();
+    notifyListeners(); // Notifica a los oyentes que se ha actualizado la lista
+  }
+
 }
 
 class CotizacionItem {
@@ -74,7 +81,7 @@ class CotizacionItem {
     required this.tipo,
     required this.precioUnitario,
     required this.cantidad,
-    this.ganancia,
+    required this.ganancia,
     required this.porcentajeGanancia, // Asegúrate de recibir este valor
     required this.precioVenta,
   });

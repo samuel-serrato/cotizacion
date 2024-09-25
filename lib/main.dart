@@ -16,13 +16,7 @@ void main() {
           useMaterial3: true, // Habilita Material 3
           colorScheme: ColorScheme.fromSeed(
             seedColor: const Color.fromARGB(255, 0, 255,
-                225), // Color base para generar el esquema de colores
-            /*  primary: const Color.fromARGB(
-                255, 0, 255, 157), // Color primario para la aplicación */
-            /*  onPrimary: Colors
-                .white, // Color del texto y los íconos sobre el color primario
-            secondary: Colors.green, // Color secundario para otros elementos */
-            // Puedes agregar más colores aquí según lo necesites
+                225),
           ),
         ),
         debugShowCheckedModeBanner: false,
