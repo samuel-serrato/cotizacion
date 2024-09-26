@@ -30,11 +30,19 @@ class ControlScreenState extends State<ControlScreen>
 
   String? estadoActual;
 
+  bool _isDarkMode = false; // Estado del modo oscuro
+
   @override
   void initState() {
     super.initState();
     fetchDatos();
     _searchController.addListener(_filterDetails);
+  }
+
+  void _toggleDarkMode(bool value) {
+    setState(() {
+      _isDarkMode = value;
+    });
   }
 
   void _filterDetails() {
@@ -170,7 +178,12 @@ class ControlScreenState extends State<ControlScreen>
     'Cotización',
   ];
 
-  final List<String> tiposPago = ['Todos', 'Efectivo', 'Transferencia', 'No asignado'];
+  final List<String> tiposPago = [
+    'Todos',
+    'Efectivo',
+    'Transferencia',
+    'No asignado'
+  ];
 
   final List<String> facturas = [
     'Todos',
@@ -267,12 +280,169 @@ class ControlScreenState extends State<ControlScreen>
     final numberFormat = NumberFormat("#,##0.00", "en_US");
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 0, 27, 69),
-        title: Text(
-          'Control de Clientes y Ventas',
-          style: TextStyle(color: Colors.white),
+      backgroundColor: Color(0xFFf7f8fa),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(
+            100), // Ajusta la altura del AppBar según sea necesario
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.only(
+                  left: 16.0,
+                  right: 16.0,
+                  top: 20,
+                  bottom: 30), // Padding para todo el AppBar
+              decoration: BoxDecoration(
+                color: Colors.white,
+                // Puedes agregar otras decoraciones aquí si lo deseas
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment
+                    .spaceBetween, // Alinea los elementos de manera uniforme
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Control de Ventas',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      // Contenedor para el ícono de notificaciones centrado
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: GestureDetector(
+                          onTap: () {
+                            _toggleDarkMode(
+                                !_isDarkMode); // Cambia el estado al tocar
+                          },
+                          child: Container(
+                            width: 50, // Ancho del contenedor
+                            height: 30, // Altura del contenedor
+                            decoration: BoxDecoration(
+                              color: _isDarkMode
+                                  ? Colors.grey[800]
+                                  : Colors.grey[200],
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(color: Colors.white, width: 1),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: _isDarkMode
+                                      ? Colors.black45
+                                      : Colors.grey[400]!,
+                                  blurRadius: 4,
+                                  offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Stack(
+                              alignment: _isDarkMode
+                                  ? Alignment.centerRight
+                                  : Alignment.centerLeft,
+                              children: [
+                                AnimatedPositioned(
+                                  duration: Duration(milliseconds: 200),
+                                  left: _isDarkMode
+                                      ? 0
+                                      : 20, // Posición del círculo
+                                  child: Container(
+                                    width: 30, // Diámetro del círculo
+                                    height: 30,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(15),
+                                      border: Border.all(
+                                          color: Colors.white, width: 1),
+                                    ),
+                                    child: Icon(
+                                      _isDarkMode
+                                          ? Icons.wb_sunny
+                                          : Icons.nights_stay,
+                                      color: Colors.black,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      // Contenedor del ícono de notificación
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius:
+                                BorderRadius.circular(10), // Redondeo opcional
+                            border: Border.all(color: Colors.grey, width: 0.8),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  // Acción para notificaciones
+                                },
+                                splashColor: Colors.grey.withOpacity(
+                                    0.3), // Color del efecto al tocar
+                                highlightColor: Colors.grey.withOpacity(
+                                    0.2), // Color del efecto al seleccionar
+                                child: Center(
+                                  child: Icon(
+                                    Icons.notifications,
+                                    color: Colors.grey[800],
+                                    size: 22,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 20),
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: Color.fromARGB(255, 201, 205, 209),
+                            backgroundImage:
+                                AssetImage('assets/images/nora_watson.jpg'),
+                            radius: 18,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Usuario',
+                            style: TextStyle(
+                              color: Colors.grey[800],
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(width: 20),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Línea delgada gris
+            Container(
+              height: 1, // Altura de la línea
+              color: Colors.grey[300], // Color de la línea
+            ),
+          ],
         ),
       ),
       body: clientes.isEmpty || detalles.isEmpty
@@ -323,7 +493,7 @@ class ControlScreenState extends State<ControlScreen>
                           ),
                         ),
                       ),
-                    
+
                       Expanded(
                         child: DropdownButtonFormField<String>(
                           hint: Text('Estado'),

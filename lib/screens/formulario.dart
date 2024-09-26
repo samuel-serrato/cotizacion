@@ -83,7 +83,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     final provider = Provider.of<CotizacionProvider>(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xFFf7f8fa),
       appBar: AppBar(
         title: Text(
           'Formulario de Cliente',

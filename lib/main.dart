@@ -22,7 +22,7 @@ void main() {
         debugShowCheckedModeBanner: false,
         initialRoute: '/',
         routes: {
-          '/': (context) => NavigationRailScreen(),
+          '/': (context) => NavigationScreen(),
           //'/cotizacion': (context) => CotizacionScreen(mostrarIVA: true,),
         },
         localizationsDelegates: [
