@@ -959,7 +959,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 decoration: InputDecoration(
                   labelText: 'Método de pago',
                   labelStyle: TextStyle(
-                      color: Colors.black54, fontWeight: FontWeight.w500),
+                      color: Colors.black54, fontWeight: FontWeight.w500, fontSize: 14),
                   focusedBorder: OutlineInputBorder(
                     borderRadius:
                         BorderRadius.circular(30.0), // Bordes redondeados

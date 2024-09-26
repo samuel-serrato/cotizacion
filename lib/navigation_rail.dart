@@ -21,7 +21,7 @@ class _NavigationRailScreenState extends State<NavigationRailScreen> {
       if (_selectedIndex == 0) {
        
       } else if (_selectedIndex == 1) {
-        _controlKey.currentState?.fetchDetallesYArticulos(); // Método en ControlScreen
+        _controlKey.currentState?.fetchDatos(); // Método en ControlScreen
       }
     });
   }
