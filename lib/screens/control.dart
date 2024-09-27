@@ -1,3 +1,4 @@
+import 'package:cotizacion/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -63,6 +64,14 @@ class ControlScreenState extends State<ControlScreen>
         final factura =
             detalle['factura'] ?? 'No'; // Valor predeterminado si no hay campo
 
+        // Suponiendo que hay un campo 'fecha' en 'detalle' que almacena la fecha
+        final detalleDate = DateTime.parse(detalle['fecha_creacion'] ??
+            ''); // Asegúrate de que el formato sea compatible
+
+        // Obtener solo la parte de la fecha de detalle
+        final detalleDateOnly =
+            DateTime(detalleDate.year, detalleDate.month, detalleDate.day);
+
         // Filtrado
         final matchesQuery = cliente.contains(query);
         final matchesEstado =
@@ -71,22 +80,28 @@ class ControlScreenState extends State<ControlScreen>
             selectedMetodoPago == 'Todos' || tipoPago == selectedMetodoPago;
         final matchesFactura =
             selectedFactura == 'Todos' || factura == selectedFactura;
+        final matchesDate = selectedDate == null ||
+            detalleDateOnly.isAtSameMomentAs(DateTime(
+                selectedDate!.year, selectedDate!.month, selectedDate!.day));
 
         // Imprimir detalles de la coincidencia
         print('Cliente: "$cliente"');
         print('Estado actual: "$estado"');
         print('Método de pago: "$tipoPago"');
         print('Factura: "$factura"');
+        print('Fecha: "${detalle['fecha_creacion']}"');
         print('Coincide con búsqueda: $matchesQuery');
         print('Coincide con estado: $matchesEstado');
         print('Coincide con tipo de pago: $matchesMetodoPago');
         print('Coincide con factura: $matchesFactura');
+        print('Coincide con fecha: $matchesDate');
 
         // Retornar true si todas las condiciones de filtrado son verdaderas
         return matchesQuery &&
             matchesEstado &&
             matchesMetodoPago &&
-            matchesFactura;
+            matchesFactura &&
+            matchesDate;
       }).toList();
     });
   }
@@ -137,18 +152,17 @@ class ControlScreenState extends State<ControlScreen>
     return 'Desconocido';
   }
 
-  String formatDate(String? dateString) {
-    if (dateString == null || dateString.isEmpty) {
-      return 'Fecha desconocida';
-    }
-    try {
-      final date = DateTime.parse(dateString);
-      final DateFormat formatter =
-          DateFormat('d \'de\' MMMM \'de\' yyyy, h:mm a', 'es_ES');
-      return formatter.format(date);
-    } catch (e) {
-      return dateString; // Retorna el valor original si hay un error
-    }
+  bool _esCorta = true;
+
+  String formatDateCorta(DateTime fecha) {
+    DateFormat formatoCorto = DateFormat('dd/MM/yyyy', 'es_ES');
+    return formatoCorto.format(fecha);
+  }
+
+  String formatDateLarga(DateTime fecha) {
+    DateFormat formatoLargo =
+        DateFormat('EEEE, dd MMMM yyyy, hh:mm a', 'es_ES'); // Formato largo con hora
+    return formatoLargo.format(fecha);
   }
 
   String formatDateWithTime(String? dateString) {
@@ -274,176 +288,21 @@ class ControlScreenState extends State<ControlScreen>
     }
   }
 
+  // Variable para almacenar la fecha seleccionada
+  DateTime? selectedDate;
+
   @override
   Widget build(BuildContext context) {
     // Formateador de números
+    // Convierte la fecha de String a DateTime
     final numberFormat = NumberFormat("#,##0.00", "en_US");
 
     return Scaffold(
       backgroundColor: Color(0xFFf7f8fa),
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(
-            100), // Ajusta la altura del AppBar según sea necesario
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.only(
-                  left: 16.0,
-                  right: 16.0,
-                  top: 20,
-                  bottom: 30), // Padding para todo el AppBar
-              decoration: BoxDecoration(
-                color: Colors.white,
-                // Puedes agregar otras decoraciones aquí si lo deseas
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment
-                    .spaceBetween, // Alinea los elementos de manera uniforme
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'Control de Ventas',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      // Contenedor para el ícono de notificaciones centrado
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: GestureDetector(
-                          onTap: () {
-                            _toggleDarkMode(
-                                !_isDarkMode); // Cambia el estado al tocar
-                          },
-                          child: Container(
-                            width: 50, // Ancho del contenedor
-                            height: 30, // Altura del contenedor
-                            decoration: BoxDecoration(
-                              color: _isDarkMode
-                                  ? Colors.grey[800]
-                                  : Colors.grey[200],
-                              borderRadius: BorderRadius.circular(15),
-                              border: Border.all(color: Colors.white, width: 1),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: _isDarkMode
-                                      ? Colors.black45
-                                      : Colors.grey[400]!,
-                                  blurRadius: 4,
-                                  offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Stack(
-                              alignment: _isDarkMode
-                                  ? Alignment.centerRight
-                                  : Alignment.centerLeft,
-                              children: [
-                                AnimatedPositioned(
-                                  duration: Duration(milliseconds: 200),
-                                  left: _isDarkMode
-                                      ? 0
-                                      : 20, // Posición del círculo
-                                  child: Container(
-                                    width: 30, // Diámetro del círculo
-                                    height: 30,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(15),
-                                      border: Border.all(
-                                          color: Colors.white, width: 1),
-                                    ),
-                                    child: Icon(
-                                      _isDarkMode
-                                          ? Icons.wb_sunny
-                                          : Icons.nights_stay,
-                                      color: Colors.black,
-                                      size: 18,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 10),
-                      // Contenedor del ícono de notificación
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius:
-                                BorderRadius.circular(10), // Redondeo opcional
-                            border: Border.all(color: Colors.grey, width: 0.8),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: InkWell(
-                                onTap: () {
-                                  // Acción para notificaciones
-                                },
-                                splashColor: Colors.grey.withOpacity(
-                                    0.3), // Color del efecto al tocar
-                                highlightColor: Colors.grey.withOpacity(
-                                    0.2), // Color del efecto al seleccionar
-                                child: Center(
-                                  child: Icon(
-                                    Icons.notifications,
-                                    color: Colors.grey[800],
-                                    size: 22,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 20),
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: Color.fromARGB(255, 201, 205, 209),
-                            backgroundImage:
-                                AssetImage('assets/images/nora_watson.jpg'),
-                            radius: 18,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Usuario',
-                            style: TextStyle(
-                              color: Colors.grey[800],
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(width: 20),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            // Línea delgada gris
-            Container(
-              height: 1, // Altura de la línea
-              color: Colors.grey[300], // Color de la línea
-            ),
-          ],
-        ),
+      appBar: CustomAppBar(
+        isDarkMode: _isDarkMode,
+        toggleDarkMode: _toggleDarkMode,
+        title: 'Control de Ventas', // Título específico para esta pantalla
       ),
       body: clientes.isEmpty || detalles.isEmpty
           ? Center(
@@ -463,7 +322,7 @@ class ControlScreenState extends State<ControlScreen>
                   Row(
                     children: [
                       Expanded(
-                        flex: 4,
+                        flex: 3,
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: TextField(
@@ -493,7 +352,7 @@ class ControlScreenState extends State<ControlScreen>
                           ),
                         ),
                       ),
-
+                      SizedBox(width: 16.0), // Espacio entre los campos
                       Expanded(
                         child: DropdownButtonFormField<String>(
                           hint: Text('Estado'),
@@ -543,7 +402,7 @@ class ControlScreenState extends State<ControlScreen>
                           },
                         ),
                       ),
-                      SizedBox(width: 16.0), // Espacio entre los Dropdowns
+                      SizedBox(width: 16.0),
                       Expanded(
                         child: DropdownButtonFormField<String>(
                           hint: Text('Método de Pago'),
@@ -593,9 +452,7 @@ class ControlScreenState extends State<ControlScreen>
                           },
                         ),
                       ),
-                      SizedBox(
-                          width:
-                              16.0), // Espacio entre los Dropdown y el Switch
+                      SizedBox(width: 16.0),
                       Expanded(
                         child: DropdownButtonFormField<String>(
                           hint: Text('Factura'),
@@ -645,6 +502,108 @@ class ControlScreenState extends State<ControlScreen>
                           },
                         ),
                       ),
+                      SizedBox(width: 16.0),
+                      Expanded(
+                        child: SizedBox(
+                          height: 50, // Altura fija para el botón
+                          child: TextButton(
+                            onPressed: () async {
+                              DateTime? pickedDate = await showDatePicker(
+                                context: context,
+                                initialDate: selectedDate ?? DateTime.now(),
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(2101),
+                              );
+
+                              if (pickedDate != null &&
+                                  pickedDate != selectedDate) {
+                                setState(() {
+                                  selectedDate = pickedDate;
+                                  _filterDetails(); // Filtra al seleccionar la fecha
+                                });
+                              }
+                            },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.symmetric(
+                                  vertical: 0, horizontal: 10),
+                              backgroundColor:
+                                  Colors.white, // Color de fondo blanco
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                    30.0), // Bordes redondeados
+                                side: BorderSide(
+                                    color: Colors.grey.shade300,
+                                    width: 1.5), // Marco gris
+                              ),
+                            ),
+                            child: Text(
+                              selectedDate == null
+                                  ? 'Selecciona Fecha'
+                                  : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
+                              style: TextStyle(
+                                color: Colors.black87,
+                                fontSize: 14,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 16.0),
+                      Container(
+                        width: 60, // Establecer un ancho fijo
+                        height: 50, // Altura fija para el botón
+                        child: Tooltip(
+                          message: 'Restablecer fecha', // Mensaje del tooltip
+                          child: TextButton(
+                            onPressed: () {
+                              setState(() {
+                                selectedDate =
+                                    null; // Restablecer la fecha seleccionada
+                                _filterDetails(); // Filtra de nuevo para mostrar todos los detalles
+                              });
+                            },
+                            child: Stack(
+                              alignment: Alignment
+                                  .center, // Centrar los íconos en el Stack
+                              children: [
+                                Icon(
+                                  Icons.calendar_today, // Ícono de calendario
+                                  color: Colors.grey[
+                                      800], // Color gris oscuro para el ícono de fondo
+                                  size:
+                                      28, // Tamaño aumentado para mayor visibilidad
+                                ),
+                                Positioned(
+                                  left:
+                                      5, // Ajustar la posición hacia la izquierda
+                                  top: 8,
+                                  child: Icon(
+                                    Icons.refresh, // Ícono de recarga
+                                    color: Colors.grey[
+                                        800], // Color gris oscuro para el ícono de recarga
+                                    size:
+                                        18, // Tamaño aumentado para mayor visibilidad
+                                  ),
+                                ),
+                              ],
+                            ),
+                            style: TextButton.styleFrom(
+                              backgroundColor:
+                                  Colors.white, // Color de fondo blanco
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                    30.0), // Bordes redondeados
+                                side: BorderSide(
+                                    color: Colors.grey.shade300), // Marco gris
+                              ),
+                              padding: EdgeInsets.symmetric(
+                                  vertical: 0), // Espaciado vertical
+                            ),
+                          ),
+                        ),
+                      ),
+
                       SizedBox(width: 16.0),
                     ],
                   ),
@@ -717,51 +676,46 @@ class ControlScreenState extends State<ControlScreen>
                         final cliente = buscarClientePorNombre(nombreCliente);
 
                         return Card(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20)),
                           color: Colors.white,
                           margin: const EdgeInsets.symmetric(
-                              vertical: 8.0, horizontal: 16.0),
+                              vertical: 4, horizontal: 16.0),
                           elevation: 4,
                           child: Column(
                             children: [
                               ListTile(
                                 contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 16, vertical: 4),
-                                title: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                    horizontal: 16, vertical: 8),
+                                title: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      '${detalle['cliente'] ?? 'Cliente desconocido'} - ${detalle['nombre_venta'] ?? 'Venta sin nombre'}',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black87,
-                                      ),
-                                    ),
                                     Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(
-                                          '${formatDate(detalle['fecha_creacion'] as String?)}',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black87,
+                                        // Cliente y Venta
+                                        Expanded(
+                                          child: Text(
+                                            '${detalle['cliente'] ?? 'Cliente desconocido'} - ${detalle['nombre_venta'] ?? 'Venta sin nombre'}',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black87,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
-                                        SizedBox(
-                                            width:
-                                                16), // Espaciado entre el texto del estado y la fecha
-                                        // Contenedor para el círculo y el texto del estado
                                         Container(
                                           padding: EdgeInsets.symmetric(
-                                              vertical: 2, horizontal: 12),
+                                              vertical: 0, horizontal: 8),
                                           decoration: BoxDecoration(
                                             color: _getStatusColor(
                                                     _estadoPorFolio[folio] ??
                                                         estado!)
                                                 .withOpacity(0.09),
                                             borderRadius:
-                                                BorderRadius.circular(20),
+                                                BorderRadius.circular(24),
                                             border: Border.all(
                                               color: _getStatusColor(
                                                   _estadoPorFolio[folio] ??
@@ -770,10 +724,11 @@ class ControlScreenState extends State<ControlScreen>
                                             ),
                                           ),
                                           child: Row(
+                                            mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Container(
-                                                width: 12,
-                                                height: 12,
+                                                width: 10,
+                                                height: 10,
                                                 decoration: BoxDecoration(
                                                   shape: BoxShape.circle,
                                                   color: _getStatusColor(
@@ -781,155 +736,221 @@ class ControlScreenState extends State<ControlScreen>
                                                           estado!),
                                                 ),
                                               ),
-                                              SizedBox(width: 8),
-                                              DropdownButton<String>(
-                                                focusNode: _focusNode,
-                                                value: _estadoPorFolio[folio] ??
-                                                    estado,
-                                                onChanged:
-                                                    (String? newValue) async {
-                                                  if (newValue != null) {
-                                                    // Llama a la función para actualizar el estado y espera el resultado
-                                                    bool actualizado =
-                                                        await actualizarEstado(
-                                                            folio, newValue);
-                                                    // Solo actualiza el estado en la interfaz si la actualización fue exitosa
-                                                    if (actualizado) {
-                                                      setState(() {
-                                                        _estadoPorFolio[folio] =
-                                                            newValue; // Actualiza el estado específico para el folio
-                                                        fetchDatos();
-                                                      });
-                                                    } else {
-                                                      // Opcional: Si deseas revertir el estado al anterior en caso de error
-                                                      setState(() {
-                                                        _estadoPorFolio[folio] =
-                                                            estado; // Reemplaza 'estado' con el valor anterior si tienes acceso a él
-                                                      });
+                                              SizedBox(width: 4),
+                                              Container(
+                                                constraints: BoxConstraints(
+                                                    maxHeight: 40),
+                                                child: DropdownButton<String>(
+                                                  focusNode: _focusNode,
+                                                  value:
+                                                      _estadoPorFolio[folio] ??
+                                                          estado,
+                                                  onChanged:
+                                                      (String? newValue) async {
+                                                    if (newValue != null) {
+                                                      bool actualizado =
+                                                          await actualizarEstado(
+                                                              folio, newValue);
+                                                      if (actualizado) {
+                                                        setState(() {
+                                                          _estadoPorFolio[
+                                                              folio] = newValue;
+                                                          fetchDatos();
+                                                        });
+                                                      } else {
+                                                        setState(() {
+                                                          _estadoPorFolio[
+                                                              folio] = estado;
+                                                        });
+                                                      }
+                                                      _focusNode
+                                                          .unfocus(); // Quita el foco al seleccionar un nuevo valor
                                                     }
-                                                    _focusNode
-                                                        .unfocus(); // Quita el foco al seleccionar un nuevo valor
-
-                                                    setState(() {
-                                                      fetchDatos();
-                                                    });
-                                                  }
-                                                },
-                                                items: estados.map<
-                                                        DropdownMenuItem<
-                                                            String>>(
-                                                    (String value) {
-                                                  return DropdownMenuItem<
-                                                      String>(
-                                                    value: value,
-                                                    child: Text(value),
-                                                  );
-                                                }).toList(),
-                                                underline: SizedBox(),
+                                                  },
+                                                  items: estados.map<
+                                                          DropdownMenuItem<
+                                                              String>>(
+                                                      (String value) {
+                                                    return DropdownMenuItem<
+                                                        String>(
+                                                      value: value,
+                                                      child: Text(
+                                                        value,
+                                                        style: TextStyle(
+                                                            fontSize: 12),
+                                                      ),
+                                                    );
+                                                  }).toList(),
+                                                  underline: SizedBox(),
+                                                ),
                                               ),
                                             ],
                                           ),
                                         ),
                                       ],
                                     ),
+                                    SizedBox(height: 8),
+                                    // Contenedor para el estado y el DropdownButton
                                   ],
                                 ),
-                                subtitle: Padding(
-                                  padding: const EdgeInsets.only(top: 10),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      // Folio a la izquierda
-                                      Text(
-                                        'Folio: $folio',
-                                        style: TextStyle(
-                                          color: Color(0xFF00A1B0),
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Divider(), // Añadir un separador
+                                    // Cifras con más espaciado y columnas
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        // Columna con los precios
+                                        Expanded(
+                                          child: Wrap(
+                                            spacing: 16,
+                                            runSpacing: 4,
+                                            children: [
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text('Precio Compra:',
+                                                      style: TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.bold)),
+                                                  Text(
+                                                      '\$${totalCompra.toStringAsFixed(2)}',
+                                                      style: TextStyle(
+                                                          fontSize: 14)),
+                                                ],
+                                              ),
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text('Ganancia Total:',
+                                                      style: TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.bold)),
+                                                  Text(
+                                                      '\$${gananciaTotal.toStringAsFixed(2)}',
+                                                      style: TextStyle(
+                                                          fontSize: 14)),
+                                                ],
+                                              ),
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text('Subtotal:',
+                                                      style: TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.bold)),
+                                                  Text(
+                                                      '\$${detalle['subtotal'] ?? '0.00'}',
+                                                      style: TextStyle(
+                                                          fontSize: 14)),
+                                                ],
+                                              ),
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text('IVA:',
+                                                      style: TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.bold)),
+                                                  Text(
+                                                      '\$${detalle['iva'] ?? '0.00'}',
+                                                      style: TextStyle(
+                                                          fontSize: 14)),
+                                                ],
+                                              ),
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text('Total:',
+                                                      style: TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight:
+                                                              FontWeight.bold)),
+                                                  Text(
+                                                    '\$${detalle['total'] ?? '0.00'}',
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                      // Cifras a la derecha
-                                      Row(
-                                        children: [
-                                          Text(
-                                            'Precio Compra: ',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
+                                        // Total a la derecha
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                // Fecha de Creación
+                                                GestureDetector(
+                                                  onTap: () {
+                                                    setState(() {
+                                                      _esCorta = !_esCorta;
+                                                    });
+
+                                                    // Regresar al formato corto después de unos segundos
+                                                    Future.delayed(
+                                                        Duration(seconds: 2),
+                                                        () {
+                                                      setState(() {
+                                                        _esCorta = true;
+                                                      });
+                                                    });
+                                                  },
+                                                  child: AnimatedSwitcher(
+                                                    duration: Duration(
+                                                        milliseconds: 300),
+                                                    child: Text(
+                                                      _esCorta
+                                                          ? formatDateCorta(
+                                                              DateTime.parse(
+                                                                  detalle[
+                                                                      'fecha_creacion']))
+                                                          : formatDateLarga(
+                                                              DateTime.parse(
+                                                                  detalle[
+                                                                      'fecha_creacion'])),
+                                                      key: ValueKey<bool>(
+                                                          _esCorta),
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        color: Colors.black87,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                SizedBox(width: 12),
+                                                 Text(
+                                                  'Folio: $folio',
+                                                  style: TextStyle(
+                                                    color: Color(0xFF00A1B0),
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ),
-                                          Text(
-                                            '\$${totalCompra.toStringAsFixed(2)}',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          SizedBox(
-                                              width:
-                                                  16), // Espacio entre las cifras
-                                          Text(
-                                            'Ganancia Total: ',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          Text(
-                                            '\$${gananciaTotal.toStringAsFixed(2)}',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          SizedBox(width: 16),
-                                          Text(
-                                            'Subtotal: ',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          Text(
-                                            '\$${detalle['subtotal'] ?? '0.00'}',
-                                            style: TextStyle(
-                                              color: Colors.black87,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          SizedBox(width: 16),
-                                          Text(
-                                            'IVA: ',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          Text(
-                                            '\$${detalle['iva'] ?? '0.00'}',
-                                            style: TextStyle(
-                                              color: Colors.black87,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          SizedBox(width: 16),
-                                          Text(
-                                            'Total: ',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          Text(
-                                            '\$${detalle['total'] ?? '0.00'}',
-                                            style: TextStyle(
-                                              color: Colors.black87,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                                 trailing: Icon(
                                   isExpanded
@@ -942,9 +963,7 @@ class ControlScreenState extends State<ControlScreen>
                                       _expandedState.remove(folio);
                                     } else {
                                       _expandedState.forEach((key, value) {
-                                        if (value) {
-                                          _expandedState[key] = false;
-                                        }
+                                        if (value) _expandedState[key] = false;
                                       });
                                       _expandedState[folio] = true;
                                     }

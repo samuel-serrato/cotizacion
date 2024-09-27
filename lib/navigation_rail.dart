@@ -3,27 +3,6 @@ import 'package:flutter/material.dart';
 import 'screens/control.dart';
 import 'screens/formulario.dart';
 
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Custom SideMenu Demo',
-      theme: ThemeData(
-        brightness: Brightness.light, // Tema claro
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.white, // Fondo claro
-      ),
-      home: const NavigationScreen(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
-}
 
 class NavigationScreen extends StatefulWidget {
   const NavigationScreen({Key? key}) : super(key: key);
@@ -62,7 +41,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
       body: Row(
         children: [
           Container(
-            width: isMenuOpen ? 200 : 105, // Ancho del menú
+            width: isMenuOpen ? 200 : 110, // Ancho del menú
             child: SideMenu(
               controller: sideMenu,
               showToggle: false, // No mostrar el toggle integrado
@@ -93,8 +72,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
                         children: [
                           ConstrainedBox(
                             constraints: const BoxConstraints(
-                              maxHeight: 30,
-                              maxWidth: 30,
+                              maxHeight: 35,
+                              maxWidth: 35,
                             ),
                             child: Image.asset(
                               'assets/icono_codx.png', // Cambia con tu logo
@@ -133,7 +112,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                   onTap: (index, _) {
                     sideMenu.changePage(0);
                   },
-                  icon: const Icon(Icons.format_list_bulleted,
+                  icon: const Icon(Icons.assignment,
                       color: Colors.black),
                 ),
                 SideMenuItem(
@@ -141,7 +120,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                   onTap: (index, _) {
                     sideMenu.changePage(1);
                   },
-                  icon: const Icon(Icons.receipt, color: Colors.black),
+                  icon: const Icon(Icons.dashboard, color: Colors.black),
                 ),
               ],
             ),

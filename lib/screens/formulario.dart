@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cotizacion/custom_app_bar.dart';
 import 'package:cotizacion/screens/calculos.dart';
 import 'package:cotizacion/screens/control.dart';
 import 'package:cotizacion/screens/generarPDF.dart';
@@ -78,30 +79,35 @@ class _FormularioScreenState extends State<FormularioScreen> {
     generatePdf(provider); // Llamada correcta
   }
 
+  bool _isDarkMode = false; // Estado del modo oscuro
+
+  void _toggleDarkMode(bool value) {
+    setState(() {
+      _isDarkMode = value;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<CotizacionProvider>(context);
 
     return Scaffold(
       backgroundColor: Color(0xFFf7f8fa),
-      appBar: AppBar(
-        title: Text(
-          'Formulario de Cliente',
-          style: TextStyle(color: Colors.white),
-        ),
-        backgroundColor: const Color(0xFF001F3F),
+      appBar: CustomAppBar(
+        isDarkMode: _isDarkMode,
+        toggleDarkMode: _toggleDarkMode,
+        title: 'Formulario', // Título específico para esta pantalla
       ),
       body: Container(
         child: Stack(
           children: [
             SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(30, 30, 30,
+                padding: const EdgeInsets.fromLTRB(30, 10, 30,
                     100), // Ajusta el padding inferior para dejar espacio al botón
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // _buildInstructions(provider),
                     _buildSectionTitle('DESCRIPCIÓN DE COTIZACIÓN'),
                     _buildDesc(),
                     SizedBox(height: 20),
@@ -660,7 +666,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
       padding: const EdgeInsets.all(8.0),
       child: Text(
         title,
-        style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF001F3F)),
+        style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF001F3F), fontSize: 14),
       ),
     );
   }
@@ -697,33 +703,6 @@ class _FormularioScreenState extends State<FormularioScreen> {
     provider.setEmail(email);
 
     _handleGeneratePdf(context);
-  }
-
-  Widget _buildInstructions(CotizacionProvider provider) {
-    final total = provider.items.fold(0.0, (sum, item) => sum + item.total);
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'INSTRUCCIONES: ',
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF001F3F),
-                  fontSize: 20),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Por favor, complete toda la información del formulario para poder generar la cotización.',
-              style: TextStyle(color: Colors.black),
-            ),
-          ],
-        ),
-      ],
-    );
   }
 
   Widget _buildSummary(CotizacionProvider provider) {
@@ -790,7 +769,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                   _buildTableHeader('Ganancia por articulo'), // Nueva cabecera
                   _buildTableHeader('Precio de Venta'),
                   _buildTableHeader('Total'),
-                  _buildTableHeader('Herramientas'),
+                  _buildTableHeader('Acción'),
                 ],
               ),
               ...provider.items.map((item) {
