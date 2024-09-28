@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:cotizacion/screens/calculos.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -127,7 +128,7 @@ Future<void> generatePdf(CotizacionProvider provider) async {
                               children: [
                                 pw.Text('Fecha:',
                                     style: pw.TextStyle(fontSize: 12)),
-                                pw.SizedBox(width: 10),
+                                pw.SizedBox(width: 5),
                                 pw.Text(date,
                                     style: pw.TextStyle(fontSize: 12)),
                                 pw.SizedBox(width: 50),
@@ -138,8 +139,18 @@ Future<void> generatePdf(CotizacionProvider provider) async {
                               children: [
                                 pw.Text('Válido hasta:',
                                     style: pw.TextStyle(fontSize: 12)),
-                                pw.SizedBox(width: 10),
+                                pw.SizedBox(width: 5),
                                 pw.Text(validUntil,
+                                    style: pw.TextStyle(fontSize: 12)),
+                              ],
+                            ),
+                            pw.SizedBox(height: 10),
+                            pw.Row(
+                              children: [
+                                pw.Text('Folio:',
+                                    style: pw.TextStyle(fontSize: 12)),
+                                pw.SizedBox(width: 5),
+                                pw.Text(provider.folio ?? 'Sin folio',
                                     style: pw.TextStyle(fontSize: 12)),
                               ],
                             ),
@@ -405,8 +416,30 @@ Future<void> generatePdf(CotizacionProvider provider) async {
     ),
   );
 
-  await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => pdf.save());
+ // Extraer el nombre del cliente
+  final cliente = provider.cliente ?? 'Desconocido';
+
+  // Mostrar el explorador de archivos para seleccionar la ubicación de guardado
+  String? outputPath = await FilePicker.platform.saveFile(
+    dialogTitle: 'Guardar archivo como',
+    // Generar el nombre del archivo con el nombre del cliente
+    fileName: 'Cotización para $cliente.pdf',
+    allowedExtensions: ['pdf'],
+    type: FileType.custom,
+  );
+
+  if (outputPath != null) {
+    // Asegurarse de que el nombre del archivo contenga la extensión .pdf
+    if (!outputPath.toLowerCase().endsWith('.pdf')) {
+      outputPath += '.pdf';
+    }
+    // Guardar el archivo en la ubicación seleccionada
+    final file = File(outputPath);
+    await file.writeAsBytes(await pdf.save());
+    print('Archivo guardado en: $outputPath');
+  } else {
+    print('Guardado cancelado por el usuario.');
+  }
 }
 
 String formatCurrency(double amount) {

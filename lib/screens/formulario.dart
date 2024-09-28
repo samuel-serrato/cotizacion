@@ -36,6 +36,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
   List<String> articuloIds =
       []; // Variable para almacenar los IDs de los artículos
 
+  bool _cotizacionGuardada = false;
+  String? _folio; // Variable para almacenar el folio recibido
+
   final List<String> _personTypes = [
     'C.P.',
     'LIC.',
@@ -284,14 +287,12 @@ class _FormularioScreenState extends State<FormularioScreen> {
           child: Text(
             'Agregar',
             style: TextStyle(
-                color: Color(0xFF001F3F),
-                fontSize: 16,
-                fontWeight: FontWeight.w600),
+                color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
           ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Color(0xFF77E4C8),
+            backgroundColor: Color(0xFF008f8f),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8.0),
+              borderRadius: BorderRadius.circular(24),
             ),
           ),
         ),
@@ -305,11 +306,11 @@ class _FormularioScreenState extends State<FormularioScreen> {
       children: [
         Text(
           'Precio de Venta: \$${precioVenta.toStringAsFixed(2)}',
-          style: TextStyle(fontSize: 16, color: Colors.black),
+          style: TextStyle(fontSize: 14, color: Colors.black),
         ),
         Text(
           'Ganancia: \$${ganancia.toStringAsFixed(2)}',
-          style: TextStyle(fontSize: 16, color: Colors.black),
+          style: TextStyle(fontSize: 14, color: Colors.black),
         ),
         SizedBox(height: 30),
       ],
@@ -536,6 +537,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
       // Extraer el mensaje de respuesta del servidor
       final responseBody = json.decode(response.body);
       final message = responseBody['message'] ?? 'Venta guardada con éxito';
+      _folio = clienteId; // Almacena el folio de la venta
+      provider.setFolio(_folio!); // Actualiza el folio en el provider
 
       // Mostrar Snackbar con el mensaje de éxito
       ScaffoldMessenger.of(context).showSnackBar(
@@ -545,13 +548,15 @@ class _FormularioScreenState extends State<FormularioScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      // Limpiar los campos después de guardar la venta
-      _limpiarCampos();
-      provider.clearItems(); // Limpia los productos
+      // Actualizar el estado para habilitar el botón de generar PDF
+      setState(() {
+        _cotizacionGuardada = true;
+      });
+
+      print('Folio recibido: $_folio');
     } else {
       print('Error al guardar la venta: ${response.body}');
 
-      // Extraer el código de error y el mensaje de respuesta del servidor
       final errorMessage = json.decode(response.body);
       final errorCode = response.statusCode;
       final errorDetail = errorMessage['error'] ?? 'Error al guardar la venta.';
@@ -666,13 +671,18 @@ class _FormularioScreenState extends State<FormularioScreen> {
       padding: const EdgeInsets.all(8.0),
       child: Text(
         title,
-        style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF001F3F), fontSize: 14),
+        style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF001F3F),
+            fontSize: 14),
       ),
     );
   }
 
   void _actualizarDatosClientePDF(BuildContext context) {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
+
+    // Recolecta los datos del cliente desde los controladores
     final cliente = nombresController.text;
     final telefono = telefonoController.text;
     final email = emailController.text;
@@ -680,15 +690,23 @@ class _FormularioScreenState extends State<FormularioScreen> {
         ? personalizadoController.text
         : _selectedPersonType ?? '';
 
+    // Asigna los datos al proveedor
     provider.setTipoPersona(tipoPersona);
     provider.setCliente(cliente);
     provider.setTelefono(telefono);
     provider.setEmail(email);
 
+    // Asigna el folio al proveedor si está disponible
+    if (_folio != null) {
+      provider.setFolio(
+          _folio!); // Asegúrate de que `CotizacionProvider` tenga un método para setear el folio
+    }
+
+    // Genera el PDF con todos los datos del cliente y la venta
     _handleGeneratePdf(context);
   }
 
-  void _actualizarDatosCliente(BuildContext context) {
+  /* void _actualizarDatosCliente(BuildContext context) {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
     final cliente = nombresController.text;
     final telefono = telefonoController.text;
@@ -703,7 +721,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     provider.setEmail(email);
 
     _handleGeneratePdf(context);
-  }
+  } */
 
   Widget _buildSummary(CotizacionProvider provider) {
     // Calcular el total a pagar incluyendo el porcentaje de ganancia
@@ -892,7 +910,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.black,
-            fontSize: 16,
+            fontSize: 14,
           ),
         ),
       ],
@@ -938,7 +956,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 decoration: InputDecoration(
                   labelText: 'Método de pago',
                   labelStyle: TextStyle(
-                      color: Colors.black54, fontWeight: FontWeight.w500, fontSize: 14),
+                      color: Colors.black54,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14),
                   focusedBorder: OutlineInputBorder(
                     borderRadius:
                         BorderRadius.circular(30.0), // Bordes redondeados
@@ -1167,6 +1187,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   Widget _buildButtons() {
+    final provider = Provider.of<CotizacionProvider>(context, listen: false);
     return Container(
       padding: EdgeInsets.symmetric(vertical: 20),
       child: Align(
@@ -1174,41 +1195,84 @@ class _FormularioScreenState extends State<FormularioScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ElevatedButton(
+            _buildModernButton(
+              text: 'Guardar Cotización',
+              icon: Icons.save, // Ícono de guardar
               onPressed: () => _guardarCotizacion(context),
-              child: Text(
-                'Guardar Cotización',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              color: Color(0xFF008f8f), // Color original
+            ),
+            SizedBox(width: 15),
+            ElevatedButton.icon(
+              onPressed: _cotizacionGuardada
+                  ? () => _actualizarDatosClientePDF(context)
+                  : null, // Habilitar/Deshabilitar según el estado
+              icon: Icon(
+                Icons.picture_as_pdf, // Cambia este ícono según tus necesidades
+                color: Colors.white,
+              ),
+              label: Text(
+                'Generar PDF',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  letterSpacing: 1.2,
+                ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF77E4C8),
+                backgroundColor: _cotizacionGuardada
+                    ? Color(0xFF77E4C8)
+                    : Colors.grey, // Color de fondo
                 padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                foregroundColor: Color(0xFF001F3F),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.0),
+                  borderRadius: BorderRadius.circular(30), // Bordes redondeados
                 ),
+                elevation: 5, // Efecto de sombra
               ),
             ),
-            SizedBox(width: 10), // Espacio entre los botones
-            ElevatedButton(
+            SizedBox(width: 15),
+            _buildModernButton(
+              text: 'Limpiar Campos',
+              icon: Icons.clear_all, // Ícono de limpiar
               onPressed: () {
-                _actualizarDatosClientePDF(context);
+                _limpiarCampos();
+                provider.clearItems(); // Limpia los productos
               },
-              child: Text(
-                'Generar PDF',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF77E4C8),
-                padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                foregroundColor: Color(0xFF001F3F),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-              ),
+              color: Color(0xFF008f8f), // Color original
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildModernButton({
+    required String text,
+    required IconData icon, // Parámetro para el ícono
+    required VoidCallback onPressed,
+    required Color color,
+  }) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(
+        icon,
+        color: Colors.white,
+      ), // Ícono dentro del botón
+      label: Text(
+        text,
+        style: TextStyle(
+          fontSize: 14,
+          color: Colors.white,
+          letterSpacing: 1.2,
+        ),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color, // Color de fondo
+        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(30), // Bordes redondeados
+        ),
+        elevation: 5, // Efecto de sombra
       ),
     );
   }

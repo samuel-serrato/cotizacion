@@ -1,8 +1,14 @@
+import 'dart:io';
+
 import 'package:cotizacion/custom_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:file_picker/file_picker.dart';
 
 class ControlScreen extends StatefulWidget {
   const ControlScreen({Key? key}) : super(key: key); // Acepta el parámetro key
@@ -19,6 +25,9 @@ class ControlScreenState extends State<ControlScreen>
       []; // Lista filtrada para mostrar en el ListView
   final TextEditingController _searchController = TextEditingController();
 
+  Map<int, bool> esCortaMap =
+      {}; // Mapea los índices de la lista a su estado de fecha.
+
   String? selectedEstado = 'Todos';
   String? selectedMetodoPago = 'Todos';
   String? selectedFactura = 'Todos';
@@ -33,11 +42,16 @@ class ControlScreenState extends State<ControlScreen>
 
   bool _isDarkMode = false; // Estado del modo oscuro
 
+  // Variable para almacenar la fecha seleccionada
+  DateTime? selectedDate;
+
+  late FocusNode _focusNode;
   @override
   void initState() {
     super.initState();
     fetchDatos();
     _searchController.addListener(_filterDetails);
+    _focusNode = FocusNode(skipTraversal: true, canRequestFocus: false);
   }
 
   void _toggleDarkMode(bool value) {
@@ -48,31 +62,29 @@ class ControlScreenState extends State<ControlScreen>
 
   void _filterDetails() {
     final query = _searchController.text.toLowerCase();
-    print('Buscando: "$query"'); // Verifica el texto buscado
+    print('Buscando: "$query"');
 
     setState(() {
       filteredDetalles = detalles.where((detalle) {
         final cliente = detalle['cliente']?.toLowerCase() ?? '';
-
-        // Manejar estado_actual como lista
         final estadoList = detalle['estado_actual'] as List<dynamic>?;
         final estado = estadoList != null && estadoList.isNotEmpty
-            ? estadoList.first['estado'] // Extrae el estado de la lista
+            ? estadoList.first['estado']
             : '';
-
         final tipoPago = detalle['tipo_pago'] ?? '';
-        final factura =
-            detalle['factura'] ?? 'No'; // Valor predeterminado si no hay campo
+        final factura = detalle['factura'] ?? 'No';
 
-        // Suponiendo que hay un campo 'fecha' en 'detalle' que almacena la fecha
-        final detalleDate = DateTime.parse(detalle['fecha_creacion'] ??
-            ''); // Asegúrate de que el formato sea compatible
-
-        // Obtener solo la parte de la fecha de detalle
+        // Convertir 'fecha_creacion' a DateTime
+        final detalleDate = DateTime.parse(detalle['fecha_creacion'] ?? '');
         final detalleDateOnly =
             DateTime(detalleDate.year, detalleDate.month, detalleDate.day);
 
-        // Filtrado
+        // Imprimir para depuración
+        print('Detalle fecha: ${detalle['fecha_creacion']}');
+        print('Detalle Date: $detalleDate');
+        print('Selected Date: $selectedDate');
+
+        // Coincidencias
         final matchesQuery = cliente.contains(query);
         final matchesEstado =
             selectedEstado == 'Todos' || estado == selectedEstado;
@@ -80,16 +92,14 @@ class ControlScreenState extends State<ControlScreen>
             selectedMetodoPago == 'Todos' || tipoPago == selectedMetodoPago;
         final matchesFactura =
             selectedFactura == 'Todos' || factura == selectedFactura;
-        final matchesDate = selectedDate == null ||
-            detalleDateOnly.isAtSameMomentAs(DateTime(
-                selectedDate!.year, selectedDate!.month, selectedDate!.day));
 
-        // Imprimir detalles de la coincidencia
-        print('Cliente: "$cliente"');
-        print('Estado actual: "$estado"');
-        print('Método de pago: "$tipoPago"');
-        print('Factura: "$factura"');
-        print('Fecha: "${detalle['fecha_creacion']}"');
+        // Comparación de fechas
+        final matchesDate = selectedDate == null ||
+            (detalleDate.year == selectedDate!.year &&
+                detalleDate.month == selectedDate!.month &&
+                detalleDate.day == selectedDate!.day);
+
+        // Imprimir coincidencias para depuración
         print('Coincide con búsqueda: $matchesQuery');
         print('Coincide con estado: $matchesEstado');
         print('Coincide con tipo de pago: $matchesMetodoPago');
@@ -160,8 +170,8 @@ class ControlScreenState extends State<ControlScreen>
   }
 
   String formatDateLarga(DateTime fecha) {
-    DateFormat formatoLargo =
-        DateFormat('EEEE, dd MMMM yyyy, hh:mm a', 'es_ES'); // Formato largo con hora
+    DateFormat formatoLargo = DateFormat(
+        'EEEE, dd MMMM yyyy, hh:mm a', 'es_ES'); // Formato largo con hora
     return formatoLargo.format(fecha);
   }
 
@@ -180,6 +190,18 @@ class ControlScreenState extends State<ControlScreen>
   }
 
   final List<String> estados = [
+    'Esperando confirmación',
+    'Pago del cliente',
+    'Pago a proveedor',
+    'En espera de productos',
+    'Productos recibidos',
+    'Entrega a cliente',
+    'Finalizado',
+    'Cancelado',
+    'Cotización',
+  ];
+
+  final List<String> estadosFiltro = [
     'Todos', // Elemento extra para "reiniciar" el filtro
     'Esperando confirmación',
     'Pago del cliente',
@@ -230,8 +252,6 @@ class ControlScreenState extends State<ControlScreen>
         return Colors.green; // Color por defecto
     }
   }
-
-  final FocusNode _focusNode = FocusNode();
 
   Future<bool> actualizarEstado(String folio, String estado) async {
     try {
@@ -288,36 +308,33 @@ class ControlScreenState extends State<ControlScreen>
     }
   }
 
-  // Variable para almacenar la fecha seleccionada
-  DateTime? selectedDate;
-
   @override
   Widget build(BuildContext context) {
     // Formateador de números
     // Convierte la fecha de String a DateTime
     final numberFormat = NumberFormat("#,##0.00", "en_US");
 
-    return Scaffold(
-      backgroundColor: Color(0xFFf7f8fa),
-      appBar: CustomAppBar(
-        isDarkMode: _isDarkMode,
-        toggleDarkMode: _toggleDarkMode,
-        title: 'Control de Ventas', // Título específico para esta pantalla
-      ),
-      body: clientes.isEmpty || detalles.isEmpty
-          ? Center(
-              child: clientes.isEmpty && detalles.isEmpty
-                  ? Text(
-                      'No hay datos para mostrar',
-                      style: TextStyle(fontSize: 18, color: Colors.grey),
-                    )
-                  : CircularProgressIndicator(),
-            )
-          : GestureDetector(
-              onTap: () {
-                _focusNode.unfocus(); // Quita el foco al tocar fuera
-              },
-              child: Column(
+    return GestureDetector(
+      onTap: () {
+        _focusNode.unfocus(); // Quita el foco al tocar fuera
+      },
+      child: Scaffold(
+        backgroundColor: Color(0xFFf7f8fa),
+        appBar: CustomAppBar(
+          isDarkMode: _isDarkMode,
+          toggleDarkMode: _toggleDarkMode,
+          title: 'Control de Ventas', // Título específico para esta pantalla
+        ),
+        body: clientes.isEmpty || detalles.isEmpty
+            ? Center(
+                child: clientes.isEmpty && detalles.isEmpty
+                    ? Text(
+                        'No hay datos para mostrar',
+                        style: TextStyle(fontSize: 18, color: Colors.grey),
+                      )
+                    : CircularProgressIndicator(),
+              )
+            : Column(
                 children: [
                   Row(
                     children: [
@@ -384,7 +401,7 @@ class ControlScreenState extends State<ControlScreen>
                             color: Color(0xFF001F3F),
                           ),
                           dropdownColor: Colors.white,
-                          items: estados.map((estado) {
+                          items: estadosFiltro.map((estado) {
                             return DropdownMenuItem<String>(
                               value: estado,
                               child: Text(
@@ -539,7 +556,7 @@ class ControlScreenState extends State<ControlScreen>
                             child: Text(
                               selectedDate == null
                                   ? 'Selecciona Fecha'
-                                  : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
+                                  : formatDateCorta(selectedDate!),
                               style: TextStyle(
                                 color: Colors.black87,
                                 fontSize: 14,
@@ -675,6 +692,11 @@ class ControlScreenState extends State<ControlScreen>
                             detalle['cliente'] ?? 'desconocido';
                         final cliente = buscarClientePorNombre(nombreCliente);
 
+                        // Si no existe una entrada en el Map para este índice, se inicializa como true (formato corto).
+                        if (!esCortaMap.containsKey(index)) {
+                          esCortaMap[index] = true;
+                        }
+
                         return Card(
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20)),
@@ -739,7 +761,7 @@ class ControlScreenState extends State<ControlScreen>
                                               SizedBox(width: 4),
                                               Container(
                                                 constraints: BoxConstraints(
-                                                    maxHeight: 40),
+                                                    maxHeight: 30),
                                                 child: DropdownButton<String>(
                                                   focusNode: _focusNode,
                                                   value:
@@ -781,6 +803,11 @@ class ControlScreenState extends State<ControlScreen>
                                                       ),
                                                     );
                                                   }).toList(),
+                                                  onTap: () {
+                                                    FocusScope.of(context)
+                                                        .requestFocus(
+                                                            FocusNode());
+                                                  },
                                                   underline: SizedBox(),
                                                 ),
                                               ),
@@ -899,15 +926,18 @@ class ControlScreenState extends State<ControlScreen>
                                                 GestureDetector(
                                                   onTap: () {
                                                     setState(() {
-                                                      _esCorta = !_esCorta;
+                                                      // Cambia el estado solo para este elemento específico.
+                                                      esCortaMap[index] =
+                                                          !esCortaMap[index]!;
                                                     });
 
-                                                    // Regresar al formato corto después de unos segundos
+                                                    // Regresar al formato corto después de unos segundos.
                                                     Future.delayed(
                                                         Duration(seconds: 2),
                                                         () {
                                                       setState(() {
-                                                        _esCorta = true;
+                                                        esCortaMap[index] =
+                                                            true;
                                                       });
                                                     });
                                                   },
@@ -915,7 +945,8 @@ class ControlScreenState extends State<ControlScreen>
                                                     duration: Duration(
                                                         milliseconds: 300),
                                                     child: Text(
-                                                      _esCorta
+                                                      esCortaMap[
+                                                              index]! // Obtiene el estado de este elemento.
                                                           ? formatDateCorta(
                                                               DateTime.parse(
                                                                   detalle[
@@ -925,7 +956,7 @@ class ControlScreenState extends State<ControlScreen>
                                                                   detalle[
                                                                       'fecha_creacion'])),
                                                       key: ValueKey<bool>(
-                                                          _esCorta),
+                                                          esCortaMap[index]!),
                                                       style: TextStyle(
                                                         fontSize: 14,
                                                         fontWeight:
@@ -936,10 +967,10 @@ class ControlScreenState extends State<ControlScreen>
                                                   ),
                                                 ),
                                                 SizedBox(width: 12),
-                                                 Text(
+                                                Text(
                                                   'Folio: $folio',
                                                   style: TextStyle(
-                                                    color: Color(0xFF00A1B0),
+                                                    color: Color(0xFF008F8F),
                                                     fontSize: 14,
                                                     fontWeight: FontWeight.bold,
                                                   ),
@@ -966,6 +997,8 @@ class ControlScreenState extends State<ControlScreen>
                                         if (value) _expandedState[key] = false;
                                       });
                                       _expandedState[folio] = true;
+                                      FocusScope.of(context)
+                                          .requestFocus(FocusNode());
                                     }
                                   });
                                 },
@@ -988,9 +1021,15 @@ class ControlScreenState extends State<ControlScreen>
                                               children: [
                                                 Text(
                                                   'Teléfono: ${cliente != null ? cliente['telefono'] ?? 'No disponible' : 'Cliente no encontrado'}',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                  ),
                                                 ),
                                                 Text(
                                                   'Email: ${cliente != null ? cliente['email'] ?? 'No disponible' : 'Email no encontrado'}',
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                  ),
                                                 ),
                                               ],
                                             ),
@@ -1275,7 +1314,7 @@ class ControlScreenState extends State<ControlScreen>
                                                         style: TextStyle(
                                                           fontWeight:
                                                               FontWeight.bold,
-                                                          fontSize: 16,
+                                                          fontSize: 14,
                                                         ),
                                                       ),
                                                       SizedBox(width: 10),
@@ -1283,7 +1322,7 @@ class ControlScreenState extends State<ControlScreen>
                                                         '\$${detalle['subtotal'] ?? '0.00'}',
                                                         style: TextStyle(
                                                           color: Colors.black87,
-                                                          fontSize: 16,
+                                                          fontSize: 14,
                                                         ),
                                                       ),
                                                     ],
@@ -1296,7 +1335,7 @@ class ControlScreenState extends State<ControlScreen>
                                                         style: TextStyle(
                                                           fontWeight:
                                                               FontWeight.bold,
-                                                          fontSize: 16,
+                                                          fontSize: 14,
                                                         ),
                                                       ),
                                                       SizedBox(width: 10),
@@ -1305,7 +1344,7 @@ class ControlScreenState extends State<ControlScreen>
                                                             'No disponible',
                                                         style: TextStyle(
                                                           color: Colors.black87,
-                                                          fontSize: 16,
+                                                          fontSize: 14,
                                                         ),
                                                       ),
                                                     ],
@@ -1330,7 +1369,7 @@ class ControlScreenState extends State<ControlScreen>
                                                         style: TextStyle(
                                                           fontWeight:
                                                               FontWeight.bold,
-                                                          fontSize: 16,
+                                                          fontSize: 14,
                                                         ),
                                                       ),
                                                       SizedBox(width: 10),
@@ -1338,7 +1377,7 @@ class ControlScreenState extends State<ControlScreen>
                                                         '\$${detalle['iva'] ?? '0.00'}',
                                                         style: TextStyle(
                                                           color: Colors.black87,
-                                                          fontSize: 16,
+                                                          fontSize: 14,
                                                         ),
                                                       ),
                                                     ],
@@ -1351,7 +1390,7 @@ class ControlScreenState extends State<ControlScreen>
                                                         style: TextStyle(
                                                           fontWeight:
                                                               FontWeight.bold,
-                                                          fontSize: 16,
+                                                          fontSize: 14,
                                                         ),
                                                       ),
                                                       SizedBox(width: 10),
@@ -1359,7 +1398,7 @@ class ControlScreenState extends State<ControlScreen>
                                                         detalle['factura'],
                                                         style: TextStyle(
                                                           color: Colors.black87,
-                                                          fontSize: 16,
+                                                          fontSize: 14,
                                                         ),
                                                       ),
                                                     ],
@@ -1385,7 +1424,7 @@ class ControlScreenState extends State<ControlScreen>
                                                         style: TextStyle(
                                                           fontWeight:
                                                               FontWeight.bold,
-                                                          fontSize: 16,
+                                                          fontSize: 14,
                                                         ),
                                                       ),
                                                       SizedBox(width: 10),
@@ -1393,7 +1432,7 @@ class ControlScreenState extends State<ControlScreen>
                                                         '\$${detalle['total'] ?? '0.00'}',
                                                         style: TextStyle(
                                                           color: Colors.black87,
-                                                          fontSize: 16,
+                                                          fontSize: 14,
                                                         ),
                                                       ),
                                                     ],
@@ -1401,6 +1440,29 @@ class ControlScreenState extends State<ControlScreen>
                                                   Row(
                                                     // Elementos nuevos a la derecha
                                                     children: [
+                                                      TextButton(
+                                                        onPressed: () async {
+                                                          await generarPDF(
+                                                              detalle); // Llama a la función para generar el PDF
+                                                        },
+                                                        style: TextButton
+                                                            .styleFrom(
+                                                          shape:
+                                                              RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        8),
+                                                          ),
+                                                        ),
+                                                        child: Icon(
+                                                          Icons.picture_as_pdf,
+                                                          color: Color(
+                                                              0xFFB8001F), // Cambia el color del icono si lo deseas
+                                                          size:
+                                                              24, // Tamaño del icono
+                                                        ),
+                                                      ),
                                                       TextButton(
                                                         onPressed: () {
                                                           // Llamas a la función para mostrar el diálogo, pasando el contexto y los detalles
@@ -1418,9 +1480,9 @@ class ControlScreenState extends State<ControlScreen>
                                                               fontWeight:
                                                                   FontWeight
                                                                       .bold,
-                                                              fontSize: 16,
+                                                              fontSize: 14,
                                                               color: Color(
-                                                                  0xFF00A1B0)),
+                                                                  0xFF008F8F)),
                                                         ),
                                                       ),
                                                     ],
@@ -1441,7 +1503,7 @@ class ControlScreenState extends State<ControlScreen>
                   ),
                 ],
               ),
-            ),
+      ),
     );
   }
 
@@ -1547,5 +1609,100 @@ class ControlScreenState extends State<ControlScreen>
     _searchController.dispose();
     super.dispose();
     _focusNode.dispose();
+  }
+}
+
+Future<void> generarPDF(Map<String, dynamic> detalle) async {
+  final pdf = pw.Document();
+
+  // Añadimos una página al documento
+  pdf.addPage(
+    pw.Page(
+      pageFormat: PdfPageFormat.a4,
+      build: (pw.Context context) {
+        return pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text(
+              'Detalles de la Venta',
+              style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 16),
+            pw.Text('Folio: ${detalle['folio'] ?? 'desconocido'}',
+                style: pw.TextStyle(fontSize: 16)),
+            pw.Text('Factura: ${detalle['factura'] ?? 'No disponible'}',
+                style: pw.TextStyle(fontSize: 16)),
+            pw.Text('Tipo de Pago: ${detalle['tipo_pago'] ?? 'No asignado'}',
+                style: pw.TextStyle(fontSize: 16)),
+            pw.Text('Cliente: ${detalle['cliente'] ?? 'desconocido'}',
+                style: pw.TextStyle(fontSize: 16)),
+            pw.Text(
+                'Nombre de la Venta: ${detalle['nombre_venta'] ?? 'sin nombre'}',
+                style: pw.TextStyle(fontSize: 16)),
+            pw.Text(
+                'Fecha de Creación: ${detalle['fecha_creacion'] ?? 'desconocida'}',
+                style: pw.TextStyle(fontSize: 16)),
+            pw.SizedBox(height: 20),
+            pw.Text('Estado Actual:',
+                style:
+                    pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+            for (var estado in detalle['estado_actual'])
+              pw.Text('${estado['estado']} - ${estado['fechaestado']}',
+                  style: pw.TextStyle(fontSize: 14)),
+            pw.SizedBox(height: 20),
+            pw.Text('Artículos:',
+                style:
+                    pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+            pw.Table.fromTextArray(
+              headers: ['Descripción', 'Cantidad', 'Ganancia', 'Precio Venta'],
+              data: detalle['articulos']
+                  .map<List<String>>((articulo) => [
+                        articulo['descripcion']?.toString() ?? 'N/A',
+                        articulo['cantidad'].toString(),
+                        articulo['ganancia'].toString(),
+                        articulo['precio_venta'].toString(),
+                      ])
+                  .toList(),
+              cellAlignment: pw.Alignment.centerLeft,
+              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+              headerDecoration: pw.BoxDecoration(color: PdfColors.grey300),
+              cellPadding: pw.EdgeInsets.all(5),
+            ),
+            pw.SizedBox(height: 20),
+            pw.Text('Subtotal: ${detalle['subtotal'] ?? '0.00'}',
+                style: pw.TextStyle(fontSize: 18)),
+            pw.Text('IVA: ${detalle['iva'] ?? '0.00'}',
+                style: pw.TextStyle(fontSize: 18)),
+            pw.Text('Total: ${detalle['total'] ?? '0.00'}',
+                style: pw.TextStyle(fontSize: 18)),
+          ],
+        );
+      },
+    ),
+  );
+
+  // Extraer el nombre del cliente
+  final cliente = detalle['cliente'] ?? 'Desconocido';
+
+  // Mostrar el explorador de archivos para seleccionar la ubicación de guardado
+  String? outputPath = await FilePicker.platform.saveFile(
+    dialogTitle: 'Guardar archivo como',
+    // Generar el nombre del archivo con el nombre del cliente
+    fileName: 'Cotización para $cliente.pdf',
+    allowedExtensions: ['pdf'],
+    type: FileType.custom,
+  );
+
+  if (outputPath != null) {
+    // Asegurarse de que el nombre del archivo contenga la extensión .pdf
+    if (!outputPath.toLowerCase().endsWith('.pdf')) {
+      outputPath += '.pdf';
+    }
+    // Guardar el archivo en la ubicación seleccionada
+    final file = File(outputPath);
+    await file.writeAsBytes(await pdf.save());
+    print('Archivo guardado en: $outputPath');
+  } else {
+    print('Guardado cancelado por el usuario.');
   }
 }

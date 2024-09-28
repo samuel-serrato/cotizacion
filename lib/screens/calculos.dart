@@ -3,10 +3,20 @@ import 'package:intl/intl.dart';
 import 'package:number_to_words/number_to_words.dart';
 
 class CotizacionProvider extends ChangeNotifier {
+  String? _folio;
   String _cliente = '';
   String _telefono = '';
   String _email = '';
   String _tipoPersona = '';
+
+  // Getter para folio
+  String? get folio => _folio;
+
+// Setter para folio
+  void setFolio(String folio) {
+    _folio = folio;
+    notifyListeners();
+  }
 
   String get cliente => _cliente;
   String get telefono => _telefono;
@@ -58,12 +68,11 @@ class CotizacionProvider extends ChangeNotifier {
     }
   }
 
-    // Método para limpiar la lista de artículos
+  // Método para limpiar la lista de artículos
   void clearItems() {
     items.clear();
     notifyListeners(); // Notifica a los oyentes que se ha actualizado la lista
   }
-
 }
 
 class CotizacionItem {
