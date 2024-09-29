@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cotizacion/custom_app_bar.dart';
+import 'package:cotizacion/generarPDFControl.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -126,9 +127,9 @@ class ControlScreenState extends State<ControlScreen>
   Future<void> fetchDatos() async {
     try {
       final detallesResponse = await http
-          .get(Uri.parse('http://192.168.1.16:3000/api/v1/detalles/'));
+          .get(Uri.parse('http://192.168.1.13:3000/api/v1/detalles/'));
       final clientesResponse = await http
-          .get(Uri.parse('http://192.168.1.16:3000/api/v1/clientes/'));
+          .get(Uri.parse('http://192.168.1.13:3000/api/v1/clientes/'));
 
       if (detallesResponse.statusCode == 200) {
         setState(() {
@@ -256,7 +257,7 @@ class ControlScreenState extends State<ControlScreen>
   Future<bool> actualizarEstado(String folio, String estado) async {
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.1.16:3000/api/v1/estados/agregar'),
+        Uri.parse('http://192.168.1.13:3000/api/v1/estados/agregar'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -1442,8 +1443,26 @@ class ControlScreenState extends State<ControlScreen>
                                                     children: [
                                                       TextButton(
                                                         onPressed: () async {
-                                                          await generarPDF(
-                                                              detalle); // Llama a la función para generar el PDF
+                                                          // Asegúrate de que el cliente existe
+                                                          if (cliente != null) {
+                                                            // Crea un nuevo mapa que incluya los detalles del cliente
+                                                            Map<String, dynamic>
+                                                                pdfData = {
+                                                              ...detalle,
+                                                              'telefono': cliente[
+                                                                      'telefono'] ??
+                                                                  'No disponible',
+                                                              'email': cliente[
+                                                                      'email'] ??
+                                                                  'No disponible',
+                                                            };
+                                                            await generarPDF(
+                                                                pdfData); // Pasa el nuevo mapa a la función
+                                                          } else {
+                                                            // Maneja el caso de cliente no encontrado
+                                                            print(
+                                                                'Cliente no encontrado');
+                                                          }
                                                         },
                                                         style: TextButton
                                                             .styleFrom(
@@ -1609,100 +1628,5 @@ class ControlScreenState extends State<ControlScreen>
     _searchController.dispose();
     super.dispose();
     _focusNode.dispose();
-  }
-}
-
-Future<void> generarPDF(Map<String, dynamic> detalle) async {
-  final pdf = pw.Document();
-
-  // Añadimos una página al documento
-  pdf.addPage(
-    pw.Page(
-      pageFormat: PdfPageFormat.a4,
-      build: (pw.Context context) {
-        return pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text(
-              'Detalles de la Venta',
-              style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
-            ),
-            pw.SizedBox(height: 16),
-            pw.Text('Folio: ${detalle['folio'] ?? 'desconocido'}',
-                style: pw.TextStyle(fontSize: 16)),
-            pw.Text('Factura: ${detalle['factura'] ?? 'No disponible'}',
-                style: pw.TextStyle(fontSize: 16)),
-            pw.Text('Tipo de Pago: ${detalle['tipo_pago'] ?? 'No asignado'}',
-                style: pw.TextStyle(fontSize: 16)),
-            pw.Text('Cliente: ${detalle['cliente'] ?? 'desconocido'}',
-                style: pw.TextStyle(fontSize: 16)),
-            pw.Text(
-                'Nombre de la Venta: ${detalle['nombre_venta'] ?? 'sin nombre'}',
-                style: pw.TextStyle(fontSize: 16)),
-            pw.Text(
-                'Fecha de Creación: ${detalle['fecha_creacion'] ?? 'desconocida'}',
-                style: pw.TextStyle(fontSize: 16)),
-            pw.SizedBox(height: 20),
-            pw.Text('Estado Actual:',
-                style:
-                    pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-            for (var estado in detalle['estado_actual'])
-              pw.Text('${estado['estado']} - ${estado['fechaestado']}',
-                  style: pw.TextStyle(fontSize: 14)),
-            pw.SizedBox(height: 20),
-            pw.Text('Artículos:',
-                style:
-                    pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
-            pw.Table.fromTextArray(
-              headers: ['Descripción', 'Cantidad', 'Ganancia', 'Precio Venta'],
-              data: detalle['articulos']
-                  .map<List<String>>((articulo) => [
-                        articulo['descripcion']?.toString() ?? 'N/A',
-                        articulo['cantidad'].toString(),
-                        articulo['ganancia'].toString(),
-                        articulo['precio_venta'].toString(),
-                      ])
-                  .toList(),
-              cellAlignment: pw.Alignment.centerLeft,
-              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-              headerDecoration: pw.BoxDecoration(color: PdfColors.grey300),
-              cellPadding: pw.EdgeInsets.all(5),
-            ),
-            pw.SizedBox(height: 20),
-            pw.Text('Subtotal: ${detalle['subtotal'] ?? '0.00'}',
-                style: pw.TextStyle(fontSize: 18)),
-            pw.Text('IVA: ${detalle['iva'] ?? '0.00'}',
-                style: pw.TextStyle(fontSize: 18)),
-            pw.Text('Total: ${detalle['total'] ?? '0.00'}',
-                style: pw.TextStyle(fontSize: 18)),
-          ],
-        );
-      },
-    ),
-  );
-
-  // Extraer el nombre del cliente
-  final cliente = detalle['cliente'] ?? 'Desconocido';
-
-  // Mostrar el explorador de archivos para seleccionar la ubicación de guardado
-  String? outputPath = await FilePicker.platform.saveFile(
-    dialogTitle: 'Guardar archivo como',
-    // Generar el nombre del archivo con el nombre del cliente
-    fileName: 'Cotización para $cliente.pdf',
-    allowedExtensions: ['pdf'],
-    type: FileType.custom,
-  );
-
-  if (outputPath != null) {
-    // Asegurarse de que el nombre del archivo contenga la extensión .pdf
-    if (!outputPath.toLowerCase().endsWith('.pdf')) {
-      outputPath += '.pdf';
-    }
-    // Guardar el archivo en la ubicación seleccionada
-    final file = File(outputPath);
-    await file.writeAsBytes(await pdf.save());
-    print('Archivo guardado en: $outputPath');
-  } else {
-    print('Guardado cancelado por el usuario.');
   }
 }

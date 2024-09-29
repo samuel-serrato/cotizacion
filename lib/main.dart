@@ -1,6 +1,6 @@
 import 'package:cotizacion/navigation_rail.dart';
 import 'package:cotizacion/screens/calculos.dart';
-import 'package:cotizacion/screens/generarPDF.dart';
+import 'package:cotizacion/generarPDF.dart';
 import 'package:cotizacion/screens/formulario.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

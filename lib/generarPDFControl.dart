@@ -3,13 +3,14 @@ import 'package:cotizacion/screens/calculos.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:flutter/services.dart' show Uint8List, rootBundle;
 
-Future<void> generatePdf(CotizacionProvider provider) async {
+Future<void> generarPDF(Map<String, dynamic> detalle) async {
   // En el método generatePdf dentro de CotizacionScreen
   final codxIconData = await _loadAsset('assets/codxtransparente.png');
   final facebookIconData = await _loadAsset('assets/facebook.png');
@@ -31,16 +32,6 @@ Future<void> generatePdf(CotizacionProvider provider) async {
       DateFormat('dd/MM/yyyy').format(DateTime.now().add(Duration(days: 3)));
 
   const double marginAll = 40; // Márgenes para el contenido principal
-
-  const double ivaRate = 0.16; // Tasa de IVA
-
-  double subtotal = provider.items.fold(0, (sum, item) {
-    final precioVenta =
-        item.precioUnitario * (1 + item.porcentajeGanancia / 100);
-    return sum + (precioVenta * item.cantidad);
-  });
-  double iva = subtotal * ivaRate;
-  double total = subtotal + iva;
 
   pdf.addPage(
     pw.Page(
@@ -94,7 +85,7 @@ Future<void> generatePdf(CotizacionProvider provider) async {
                                     style: pw.TextStyle(fontSize: 12)),
                                 pw.SizedBox(width: 5),
                                 pw.Text(
-                                    '${provider.tipoPersona} ${provider.cliente}',
+                                    '${detalle['cliente'] ?? 'desconocido'}',
                                     style: pw.TextStyle(fontSize: 12)),
                                 pw.SizedBox(width: 50),
                               ],
@@ -105,7 +96,8 @@ Future<void> generatePdf(CotizacionProvider provider) async {
                                 pw.Text('Teléfono:',
                                     style: pw.TextStyle(fontSize: 12)),
                                 pw.SizedBox(width: 5),
-                                pw.Text(provider.telefono,
+                                pw.Text(
+                                    '${detalle['telefono'] ?? 'desconocido'}',
                                     style: pw.TextStyle(fontSize: 12)),
                               ],
                             ),
@@ -115,7 +107,7 @@ Future<void> generatePdf(CotizacionProvider provider) async {
                                 pw.Text('Correo:',
                                     style: pw.TextStyle(fontSize: 12)),
                                 pw.SizedBox(width: 5),
-                                pw.Text(provider.email,
+                                pw.Text('${detalle['email'] ?? 'desconocido'}',
                                     style: pw.TextStyle(fontSize: 12)),
                               ],
                             ),
@@ -150,7 +142,7 @@ Future<void> generatePdf(CotizacionProvider provider) async {
                                 pw.Text('Folio:',
                                     style: pw.TextStyle(fontSize: 12)),
                                 pw.SizedBox(width: 5),
-                                pw.Text(provider.folio ?? 'Sin folio',
+                                pw.Text('${detalle['folio'] ?? 'desconocido'}',
                                     style: pw.TextStyle(fontSize: 12)),
                               ],
                             ),
@@ -173,17 +165,21 @@ Future<void> generatePdf(CotizacionProvider provider) async {
                           'Precio Unitario', // Mantén el texto "Precio Unitario"
                           'Total',
                         ],
-                        ...provider.items.map((item) {
-                          // Calcula el precio de venta
-                          final precioVenta = item.precioUnitario *
-                              (1 + item.porcentajeGanancia / 100);
+                        ...detalle['articulos'].map<List<String>>((articulo) {
+                          double precioVenta = articulo['precio_venta']
+                              .toDouble(); // Asegúrate de que sea double
+                          int cantidad = articulo[
+                              'cantidad']; // Suponiendo que 'cantidad' es un entero
+                          double total =
+                              precioVenta * cantidad; // Calcula el total
+
                           return [
-                            item.cantidad.toString(),
-                            item.descripcion,
+                            cantidad.toString(), // Cantidad como string
+                            articulo['descripcion']
+                                .toString(), // Descripción como string
                             formatCurrency(
-                                precioVenta), // Muestra el precio de venta en lugar del precio unitario
-                            formatCurrency(precioVenta *
-                                item.cantidad), // Total calculado con el precio de venta
+                                precioVenta), // Formatea el precio unitario
+                            formatCurrency(total), // Formatea el total
                           ];
                         }),
                       ],
@@ -246,7 +242,8 @@ Future<void> generatePdf(CotizacionProvider provider) async {
                                 ),
                               ),
                               child: pw.Text(
-                                NumberToWords.convertDouble(total),
+                                NumberToWords.convertDouble(
+                                    double.tryParse(detalle['total']) ?? 0.00),
                                 style: pw.TextStyle(
                                     fontSize: 9, letterSpacing: -0.5),
                               ),
@@ -257,8 +254,17 @@ Future<void> generatePdf(CotizacionProvider provider) async {
                           crossAxisAlignment: pw.CrossAxisAlignment.start,
                           children: [
                             _buildPriceRow(
-                                'Subtotal', formatCurrency(subtotal)),
-                            _buildPriceRow('IVA', '${formatCurrency(iva)}'),
+                              'Subtotal',
+                              formatCurrency(double.tryParse(
+                                      detalle['subtotal'].toString()) ??
+                                  0.0), // Convierte subtotal a double
+                            ),
+                            _buildPriceRow(
+                              'IVA',
+                              formatCurrency(
+                                  double.tryParse(detalle['iva'].toString()) ??
+                                      0.0), // Convierte subtotal a double
+                            ),
                             pw.Row(
                               mainAxisAlignment:
                                   pw.MainAxisAlignment.spaceBetween,
@@ -289,7 +295,9 @@ Future<void> generatePdf(CotizacionProvider provider) async {
                                   padding: pw.EdgeInsets.only(
                                       right: 10, left: 10, top: 6),
                                   child: pw.Text(
-                                    formatCurrency(total),
+                                    formatCurrency(
+                                        double.tryParse(detalle['total']) ??
+                                            0.00),
                                     style: pw.TextStyle(fontSize: 10),
                                   ),
                                 ),
@@ -416,8 +424,8 @@ Future<void> generatePdf(CotizacionProvider provider) async {
     ),
   );
 
- // Extraer el nombre del cliente
-  final cliente = provider.cliente ?? 'Desconocido';
+  // Extraer el nombre del cliente
+  final cliente = detalle['cliente'] ?? 'Desconocido';
 
   // Mostrar el explorador de archivos para seleccionar la ubicación de guardado
   String? outputPath = await FilePicker.platform.saveFile(
@@ -437,6 +445,10 @@ Future<void> generatePdf(CotizacionProvider provider) async {
     final file = File(outputPath);
     await file.writeAsBytes(await pdf.save());
     print('Archivo guardado en: $outputPath');
+
+    // Abre el archivo PDF usando la librería open_file
+    final openResult = await OpenFile.open(outputPath);
+    print('Resultado de la apertura: ${openResult.message}');
   } else {
     print('Guardado cancelado por el usuario.');
   }

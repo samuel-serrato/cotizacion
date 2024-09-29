@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:cotizacion/custom_app_bar.dart';
 import 'package:cotizacion/screens/calculos.dart';
 import 'package:cotizacion/screens/control.dart';
-import 'package:cotizacion/screens/generarPDF.dart';
+import 'package:cotizacion/generarPDF.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -401,7 +401,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     };
 
     final response = await http.post(
-      Uri.parse('http://192.168.1.16:3000/api/v1/clientes/agregar'),
+      Uri.parse('http://192.168.1.13:3000/api/v1/clientes/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -441,7 +441,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.1.16:3000/api/v1/articulos/agregar'),
+      Uri.parse('http://192.168.1.13:3000/api/v1/articulos/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body), // Enviar como array directamente
     );
@@ -524,7 +524,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.1.16:3000/api/v1/ventas/agregar'),
+      Uri.parse('http://192.168.1.13:3000/api/v1/ventas/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -835,7 +835,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
-                          '\$${(item.precioUnitario + (item.precioUnitario * item.porcentajeGanancia / 100) * item.cantidad).toStringAsFixed(2)}'), // Total
+                        '\$${totalVenta.toStringAsFixed(2)}', // Total correcto
+                      ),
                     ),
                     Padding(
                       padding: const EdgeInsets.all(8.0),
@@ -1195,11 +1196,33 @@ class _FormularioScreenState extends State<FormularioScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _buildModernButton(
-              text: 'Guardar Cotización',
-              icon: Icons.save, // Ícono de guardar
-              onPressed: () => _guardarCotizacion(context),
-              color: Color(0xFF008f8f), // Color original
+            ElevatedButton.icon(
+              onPressed: _cotizacionGuardada
+                  ? null
+                  : () => _guardarCotizacion(context),
+              icon: Icon(
+                Icons.save, // Ícono de guardar
+                color: Colors.white,
+              ),
+              label: Text(
+                'Guardar Cotización',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _cotizacionGuardada
+                    ? Colors.grey
+                    : Color(0xFF008f8f), // Color de fondo
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30), // Bordes redondeados
+                ),
+                elevation: 5, // Efecto de sombra
+              ),
             ),
             SizedBox(width: 15),
             ElevatedButton.icon(
@@ -1221,9 +1244,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _cotizacionGuardada
-                    ? Color(0xFF77E4C8)
+                    ? Color(0xFF008f8f)
                     : Colors.grey, // Color de fondo
-                padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30), // Bordes redondeados
                 ),
@@ -1231,14 +1254,36 @@ class _FormularioScreenState extends State<FormularioScreen> {
               ),
             ),
             SizedBox(width: 15),
-            _buildModernButton(
-              text: 'Limpiar Campos',
-              icon: Icons.clear_all, // Ícono de limpiar
+            ElevatedButton.icon(
               onPressed: () {
                 _limpiarCampos();
                 provider.clearItems(); // Limpia los productos
+                setState(() {
+                  _cotizacionGuardada =
+                      false; // Habilita el botón de Guardar Cotización
+                });
               },
-              color: Color(0xFF008f8f), // Color original
+              icon: Icon(
+                Icons.clear_all, // Ícono de limpiar
+                color: Colors.white,
+              ),
+              label: Text(
+                'Limpiar Campos',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF008f8f), // Color original
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30), // Bordes redondeados
+                ),
+                elevation: 5, // Efecto de sombra
+              ),
             ),
           ],
         ),

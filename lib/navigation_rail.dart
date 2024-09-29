@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'screens/control.dart';
 import 'screens/formulario.dart';
 
-
 class NavigationScreen extends StatefulWidget {
   const NavigationScreen({Key? key}) : super(key: key);
 
@@ -61,7 +60,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
               ),
               title: Padding(
                 padding:
-                    const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+                    const EdgeInsets.symmetric(vertical: 16.0, horizontal: 6),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -70,13 +69,11 @@ class _NavigationScreenState extends State<NavigationScreen> {
                       padding: const EdgeInsets.only(left: 10),
                       child: Row(
                         children: [
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              maxHeight: 35,
-                              maxWidth: 35,
-                            ),
+                          SizedBox(
+                            width: 40,
+                            height: 40,
                             child: Image.asset(
-                              'assets/icono_codx.png', // Cambia con tu logo
+                              'assets/cotix logo solo circulo.png',
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -85,8 +82,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
                               'COTIX',
                               style: TextStyle(
                                 color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 24,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 28,
+                                fontFamily: 'Fredoka',
                               ),
                             ),
                         ],
@@ -106,14 +104,49 @@ class _NavigationScreenState extends State<NavigationScreen> {
                   ],
                 ),
               ),
+              footer: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text('Developed by',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 12,
+                              fontFamily: 'Verdana',
+                              fontWeight: FontWeight.w100,
+                            )),
+                        SizedBox(height: 2),
+                        Container(
+                          alignment: Alignment
+                              .center, // Centra el contenido dentro del Container
+                          height: 30, // Ajusta la altura según lo necesites
+                          width: 200, // Ajusta el ancho según lo necesites
+
+                          child: SizedBox(
+                            width: 80,
+                            height: 80,
+                            child: Image.asset(
+                              'assets/codx_transparente_full_negro.png',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
               items: [
                 SideMenuItem(
                   title: 'Formulario',
                   onTap: (index, _) {
                     sideMenu.changePage(0);
                   },
-                  icon: const Icon(Icons.assignment,
-                      color: Colors.black),
+                  icon: const Icon(Icons.assignment, color: Colors.black),
                 ),
                 SideMenuItem(
                   title: 'Control',
