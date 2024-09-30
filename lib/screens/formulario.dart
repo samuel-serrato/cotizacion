@@ -728,7 +728,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
         errorStyle: TextStyle(
           // Estilo del mensaje de error
           color: Colors.red, // Color del mensaje de error
-          fontSize: 12, // Tamaño del mensaje de error
+          fontSize: 10, // Tamaño del mensaje de error
         ),
       ),
       validator: validator,
@@ -743,51 +743,50 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
   // Actualiza este método para recalcular la ganancia total
   void _agregararticulo() {
-  final provider = Provider.of<CotizacionProvider>(context, listen: false);
-  final descripcion = descripcionController.text;
-  final tipo = _selectedType!;
-  final precioCompra =
-      double.tryParse(precioController.text.replaceAll(',', '')) ?? 0;
-  final cantidad = _selectedQuantity == 'OTRO'
-      ? int.tryParse(cantidadPersonalizadaController.text) ?? 1
-      : int.tryParse(_selectedQuantity!) ?? 1;
-  final porcentajeGanancia =
-      double.tryParse(porcentajeGananciaController.text) ?? 0;
+    final provider = Provider.of<CotizacionProvider>(context, listen: false);
+    final descripcion = descripcionController.text;
+    final tipo = _selectedType!;
+    final precioCompra =
+        double.tryParse(precioController.text.replaceAll(',', '')) ?? 0;
+    final cantidad = _selectedQuantity == 'OTRO'
+        ? int.tryParse(cantidadPersonalizadaController.text) ?? 1
+        : int.tryParse(_selectedQuantity!) ?? 1;
+    final porcentajeGanancia =
+        double.tryParse(porcentajeGananciaController.text) ?? 0;
 
-  // Calcular la ganancia y el precio de venta
-  final nuevaGanancia = (precioCompra * porcentajeGanancia) / 100;
-  final nuevoPrecioVenta = precioCompra + nuevaGanancia;
+    // Calcular la ganancia y el precio de venta
+    final nuevaGanancia = (precioCompra * porcentajeGanancia) / 100;
+    final nuevoPrecioVenta = precioCompra + nuevaGanancia;
 
-  if (descripcion.isNotEmpty && precioCompra > 0 && cantidad > 0) {
-    final item = CotizacionItem(
-      descripcion: descripcion,
-      tipo: tipo,
-      precioUnitario: precioCompra,
-      cantidad: cantidad,
-      ganancia: nuevaGanancia,
-      porcentajeGanancia: porcentajeGanancia,
-      precioVenta: nuevoPrecioVenta, // Precio de venta calculado
-    );
+    if (descripcion.isNotEmpty && precioCompra > 0 && cantidad > 0) {
+      final item = CotizacionItem(
+        descripcion: descripcion,
+        tipo: tipo,
+        precioUnitario: precioCompra,
+        cantidad: cantidad,
+        ganancia: nuevaGanancia,
+        porcentajeGanancia: porcentajeGanancia,
+        precioVenta: nuevoPrecioVenta, // Precio de venta calculado
+      );
 
-    provider.addItem(item);
+      provider.addItem(item);
 
-    _calcularGananciaTotal(); // Recalcular ganancia total después de agregar artículo
+      _calcularGananciaTotal(); // Recalcular ganancia total después de agregar artículo
 
-    // Limpiar campos
-    descripcionController.clear();
-    precioController.clear();
-    cantidadPersonalizadaController.clear();
-    porcentajeGananciaController.clear();
-    _selectedQuantity = '1';
+      // Limpiar campos
+      descripcionController.clear();
+      precioController.clear();
+      cantidadPersonalizadaController.clear();
+      porcentajeGananciaController.clear();
+      _selectedQuantity = '1';
 
-    // Reiniciar las variables de ganancia y precio de venta
-    setState(() {
-      ganancia = 0.0; // Reiniciar ganancia
-      precioVenta = 0.0; // Reiniciar precio de venta
-    });
+      // Reiniciar las variables de ganancia y precio de venta
+      setState(() {
+        ganancia = 0.0; // Reiniciar ganancia
+        precioVenta = 0.0; // Reiniciar precio de venta
+      });
+    }
   }
-}
-
 
   void _calcularGananciaTotal() {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
@@ -1332,17 +1331,40 @@ class _FormularioScreenState extends State<FormularioScreen> {
               onPressed: _cotizacionGuardada
                   ? null
                   : () {
-                      if (_formKey.currentState!.validate()) {
-                        _guardarCotizacion(
-                            context); // Llamar a la función de guardado si todo es válido
-                      } else {
+                      final provider = Provider.of<CotizacionProvider>(context,
+                          listen: false);
+
+                      bool hayErrores = false;
+
+                      // 1. Verificar si la lista de artículos está vacía
+                      if (provider.items.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                                'Por favor, corrige los errores antes de continuar.'),
+                                'No se puede guardar la cotización porque no se han agregado artículos.'),
                             backgroundColor: Colors.red,
                           ),
                         );
+                        hayErrores = true; // Marca que hubo un error
+                      }
+
+                      // 2. Validar el formulario (sin salir de la función si hay errores)
+                      if (!_formKey.currentState!.validate()) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'Por favor, corrige los errores del formulario antes de continuar.'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        hayErrores =
+                            true; // Marca que hubo un error en el formulario
+                      }
+
+                      // 3. Si no hay errores, proceder a guardar la cotización
+                      if (!hayErrores) {
+                        _guardarCotizacion(
+                            context); // Guardar cotización si todo es válido
                       }
                     },
               icon: Icon(
