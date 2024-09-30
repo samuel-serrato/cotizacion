@@ -26,6 +26,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
       TextEditingController(); // Nuevo campo para el % de ganancia
   final TextEditingController _descController = TextEditingController();
 
+  final GlobalKey<FormState> _formKey =
+      GlobalKey<FormState>(); // Clave del formulario
+
   String? _selectedPersonType;
   String? _selectedQuantity = '1';
   String? _selectedType = 'Producto';
@@ -108,27 +111,30 @@ class _FormularioScreenState extends State<FormularioScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(30, 10, 30,
                     100), // Ajusta el padding inferior para dejar espacio al botón
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionTitle('DESCRIPCIÓN DE COTIZACIÓN'),
-                    _buildDesc(),
-                    SizedBox(height: 20),
-                    _buildSectionTitle('CLIENTE'),
-                    SizedBox(height: 10),
-                    _buildClienteInfo(),
-                    SizedBox(height: 30),
-                    _buildSectionTitle('PRODUCTO'),
-                    SizedBox(height: 10),
-                    _buildarticuloInfo(),
-                    SizedBox(height: 30),
-                    _buildGananciaYPrecioVenta(), // Nuevo widget para mostrar ganancia y precio de venta
-                    _buildSectionTitle('RESUMEN'),
-                    _buildSummary(provider),
-                    SizedBox(height: 20),
-                    _buildProductTable(
-                        provider), // Tabla de articulos con ganancia total
-                  ],
+                child: Form(
+                  key: _formKey, // Asigna la clave al formulario
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionTitle('DESCRIPCIÓN DE COTIZACIÓN'),
+                      _buildDesc(),
+                      SizedBox(height: 20),
+                      _buildSectionTitle('CLIENTE'),
+                      SizedBox(height: 10),
+                      _buildClienteInfo(),
+                      SizedBox(height: 30),
+                      _buildSectionTitle('PRODUCTO'),
+                      SizedBox(height: 10),
+                      _buildarticuloInfo(),
+                      SizedBox(height: 30),
+                      _buildGananciaYPrecioVenta(), // Nuevo widget para mostrar ganancia y precio de venta
+                      _buildSectionTitle('RESUMEN'),
+                      _buildSummary(provider),
+                      SizedBox(height: 20),
+                      _buildProductTable(
+                          provider), // Tabla de articulos con ganancia total
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -173,20 +179,73 @@ class _FormularioScreenState extends State<FormularioScreen> {
               ),
             ),
             SizedBox(width: 10),
+
+            // Campo de texto para el cliente
             Expanded(
               flex: 4,
-              child: _buildTextField(nombresController, 'Cliente'),
+              child: _buildTextFieldValidator(
+                controller: nombresController,
+                label: 'Cliente',
+                inputType: TextInputType.text,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, ingrese el nombre del cliente';
+                  }
+                  return null;
+                },
+              ),
             ),
             SizedBox(width: 10),
+            // Campo de texto para el teléfono
             Expanded(
               flex: 3,
-              child: _buildTextField(
-                  telefonoController, 'Teléfono', TextInputType.phone),
+              child: _buildTextFieldValidator(
+                controller: telefonoController,
+                label: 'Teléfono',
+                inputType: TextInputType.number,
+                validator: (value) {
+                  // Validación: verificar que el campo no esté vacío
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, ingrese un número de teléfono';
+                  }
+
+                  // Validación: verificar que el número tenga exactamente 10 dígitos
+                  if (value.length != 10) {
+                    return 'El número de teléfono debe tener 10 dígitos';
+                  }
+
+                  // Validación: verificar que solo contenga dígitos
+                  if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                    return 'El número de teléfono solo debe contener dígitos';
+                  }
+
+                  // Si todas las validaciones pasan
+                  return null;
+                },
+              ),
             ),
+
             SizedBox(width: 10),
+            // Campo de texto para el correo
             Expanded(
               flex: 4,
-              child: _buildTextField(emailController, 'Correo'),
+              child: _buildTextFieldValidator(
+                controller: emailController,
+                label: 'Correo',
+                inputType: TextInputType.emailAddress,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor, ingrese un correo electrónico';
+                  }
+                  // Validación de formato de correo
+                  const pattern = r'^[^@]+@[^@]+\.[^@]+';
+                  final regex = RegExp(pattern);
+                  if (!regex.hasMatch(value)) {
+                    return 'Ingrese un correo válido';
+                  }
+                  return null;
+                },
+              ),
             ),
           ],
         ),
@@ -389,7 +448,18 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
+  void _mostrarMensajeError(BuildContext context, String mensaje) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensaje),
+        duration: Duration(seconds: 2),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
   Future<void> _guardarCliente() async {
+    /*  String nombres = '$_selectedPersonType ${nombresController.text}'; */
     String nombres = nombresController.text;
     String telefono = telefonoController.text;
     String email = emailController.text;
@@ -612,46 +682,112 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
+  Widget _buildTextFieldValidator({
+    required TextEditingController controller,
+    required String label,
+    TextInputType inputType = TextInputType.text,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      style:
+          TextStyle(color: Colors.black87, fontSize: 14), // Texto más visible
+      keyboardType: inputType,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(
+          color: Colors.black54,
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
+        ),
+        floatingLabelBehavior:
+            FloatingLabelBehavior.auto, // Efecto flotante suave
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30.0),
+          borderSide: BorderSide(color: Color(0xFF001F3F)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30.0),
+          borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          // Agrega este borde
+          borderRadius: BorderRadius.circular(30.0),
+          borderSide:
+              BorderSide(color: Colors.red, width: 1.5), // Borde rojo al error
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          // Borde al enfocarse en error
+          borderRadius: BorderRadius.circular(30.0),
+          borderSide: BorderSide(
+              color: Colors.red, width: 1.5), // Borde rojo al error enfocado
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 25),
+        errorStyle: TextStyle(
+          // Estilo del mensaje de error
+          color: Colors.red, // Color del mensaje de error
+          fontSize: 12, // Tamaño del mensaje de error
+        ),
+      ),
+      validator: validator,
+      inputFormatters: label == 'Cantidad' ||
+              label == 'Precio de Compra' ||
+              label == '% Ganancia' ||
+              label == 'Teléfono'
+          ? [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))]
+          : [],
+    );
+  }
+
   // Actualiza este método para recalcular la ganancia total
   void _agregararticulo() {
-    final provider = Provider.of<CotizacionProvider>(context, listen: false);
-    final descripcion = descripcionController.text;
-    final tipo = _selectedType!;
-    final precioCompra =
-        double.tryParse(precioController.text.replaceAll(',', '')) ?? 0;
-    final cantidad = _selectedQuantity == 'OTRO'
-        ? int.tryParse(cantidadPersonalizadaController.text) ?? 1
-        : int.tryParse(_selectedQuantity!) ?? 1;
-    final porcentajeGanancia =
-        double.tryParse(porcentajeGananciaController.text) ?? 0;
+  final provider = Provider.of<CotizacionProvider>(context, listen: false);
+  final descripcion = descripcionController.text;
+  final tipo = _selectedType!;
+  final precioCompra =
+      double.tryParse(precioController.text.replaceAll(',', '')) ?? 0;
+  final cantidad = _selectedQuantity == 'OTRO'
+      ? int.tryParse(cantidadPersonalizadaController.text) ?? 1
+      : int.tryParse(_selectedQuantity!) ?? 1;
+  final porcentajeGanancia =
+      double.tryParse(porcentajeGananciaController.text) ?? 0;
 
-    // Calcular la ganancia y el precio de venta
-    final ganancia = (precioCompra * porcentajeGanancia) / 100;
-    final precioVenta = precioCompra + ganancia;
+  // Calcular la ganancia y el precio de venta
+  final nuevaGanancia = (precioCompra * porcentajeGanancia) / 100;
+  final nuevoPrecioVenta = precioCompra + nuevaGanancia;
 
-    if (descripcion.isNotEmpty && precioCompra > 0 && cantidad > 0) {
-      final item = CotizacionItem(
-        descripcion: descripcion,
-        tipo: tipo,
-        precioUnitario: precioCompra,
-        cantidad: cantidad,
-        ganancia: ganancia,
-        porcentajeGanancia: porcentajeGanancia,
-        precioVenta: precioVenta, // Precio de venta calculado
-      );
+  if (descripcion.isNotEmpty && precioCompra > 0 && cantidad > 0) {
+    final item = CotizacionItem(
+      descripcion: descripcion,
+      tipo: tipo,
+      precioUnitario: precioCompra,
+      cantidad: cantidad,
+      ganancia: nuevaGanancia,
+      porcentajeGanancia: porcentajeGanancia,
+      precioVenta: nuevoPrecioVenta, // Precio de venta calculado
+    );
 
-      provider.addItem(item);
+    provider.addItem(item);
 
-      _calcularGananciaTotal(); // Recalcular ganancia total después de agregar artículo
+    _calcularGananciaTotal(); // Recalcular ganancia total después de agregar artículo
 
-      // Limpiar campos
-      descripcionController.clear();
-      precioController.clear();
-      cantidadPersonalizadaController.clear();
-      porcentajeGananciaController.clear();
-      _selectedQuantity = '1';
-    }
+    // Limpiar campos
+    descripcionController.clear();
+    precioController.clear();
+    cantidadPersonalizadaController.clear();
+    porcentajeGananciaController.clear();
+    _selectedQuantity = '1';
+
+    // Reiniciar las variables de ganancia y precio de venta
+    setState(() {
+      ganancia = 0.0; // Reiniciar ganancia
+      precioVenta = 0.0; // Reiniciar precio de venta
+    });
   }
+}
+
 
   void _calcularGananciaTotal() {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
@@ -919,35 +1055,34 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   Widget _buildDesc() {
-    // Lista de opciones para el dropdown
-    final List<String> _metodos = [
-      'Transferencia',
-      'Efectivo',
-    ];
+    final List<String> _metodos = ['Transferencia', 'Efectivo'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Fila con TextField a la izquierda y Checkbox a la derecha
         Row(
           children: [
             // Campo de texto para descripción
             Expanded(
-              flex: 3, // Controla el espacio que ocupa el TextField
+              flex: 3,
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10),
-                child: _buildTextField(
-                  _descController, // Controlador del TextField
-                  'Nombre o Descripción',
-                  TextInputType.text,
+                child: _buildTextFieldValidator(
+                  controller: _descController,
+                  label: 'Nombre o Descripcion',
+                  inputType: TextInputType.text,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor, ingrese la descripción de la venta';
+                    }
+                    return null;
+                  },
                 ),
               ),
             ),
-
-            // Espacio flexible entre el TextField y el Dropdown
             Spacer(),
 
-            // Dropdown a la izquierda del checkbox
+            // Dropdown para el método de pago
             Expanded(
               child: DropdownButtonFormField<String>(
                 value: _selectedMetodoP,
@@ -997,6 +1132,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
               ),
             ),
             SizedBox(width: 20),
+
             // Texto y Checkbox a la derecha con diseño
             Row(
               children: [
@@ -1004,27 +1140,23 @@ class _FormularioScreenState extends State<FormularioScreen> {
                   '¿Requiere Factura?',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey.shade800, // Color del texto
+                    color: Colors.grey.shade800,
                   ),
                 ),
-                SizedBox(width: 10), // Espacio entre el texto y el checkbox
+                SizedBox(width: 10),
                 Theme(
                   data: ThemeData(
-                    unselectedWidgetColor: Colors.grey
-                        .shade400, // Color del borde del checkbox cuando no está seleccionado
+                    unselectedWidgetColor: Colors.grey.shade400,
                   ),
                   child: Checkbox(
-                    value: _requiereFactura, // Valor fijo por ahora
+                    value: _requiereFactura,
                     onChanged: (bool? value) {
                       setState(() {
-                        _requiereFactura =
-                            value ?? false; // Actualiza el estado
+                        _requiereFactura = value ?? false;
                       });
                     },
-                    activeColor:
-                        Color(0xFF001F3F), // Color cuando está seleccionado
-                    checkColor:
-                        Colors.white, // Color de la marca de verificación
+                    activeColor: Color(0xFF001F3F),
+                    checkColor: Colors.white,
                   ),
                 ),
               ],
@@ -1199,7 +1331,20 @@ class _FormularioScreenState extends State<FormularioScreen> {
             ElevatedButton.icon(
               onPressed: _cotizacionGuardada
                   ? null
-                  : () => _guardarCotizacion(context),
+                  : () {
+                      if (_formKey.currentState!.validate()) {
+                        _guardarCotizacion(
+                            context); // Llamar a la función de guardado si todo es válido
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'Por favor, corrige los errores antes de continuar.'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    },
               icon: Icon(
                 Icons.save, // Ícono de guardar
                 color: Colors.white,
