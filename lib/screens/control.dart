@@ -1644,7 +1644,7 @@ class ControlScreenState extends State<ControlScreen>
       child: TextButton(
         style: TextButton.styleFrom(
           foregroundColor: isActive ? Colors.white : Colors.black,
-          backgroundColor: isActive ? Colors.blueAccent : Colors.grey[200],
+          backgroundColor: isActive ? Color(0xFF001F3F) : Colors.grey[200],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
