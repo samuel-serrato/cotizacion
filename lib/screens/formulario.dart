@@ -6,6 +6,7 @@ import 'package:cotizacion/screens/control.dart';
 import 'package:cotizacion/generarPDF.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 
@@ -33,6 +34,17 @@ class _FormularioScreenState extends State<FormularioScreen> {
   String? _selectedQuantity = '1';
   String? _selectedType = 'Producto';
   String? _selectedMetodoP; // Variable para almacenar la opción seleccionada
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Agregar listener al controlador de cantidad personalizada
+    cantidadPersonalizadaController.addListener(() {
+      setState(
+          () {}); // Actualizar el estado cuando el usuario escriba en el campo
+    });
+  }
 
 //DATOS PARA LAS PETICIONES HTTP
   String clienteId = ''; // Variable para almacenar el ID del cliente
@@ -254,6 +266,16 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
+  double _getCantidad() {
+    // Priorizar la cantidad personalizada si se ha ingresado un valor válido
+    if (cantidadPersonalizadaController.text.isNotEmpty) {
+      return double.tryParse(cantidadPersonalizadaController.text) ?? 0;
+    }
+
+    // Usar la cantidad seleccionada del Dropdown si está disponible
+    return double.tryParse(_selectedQuantity ?? '0') ?? 0;
+  }
+
   Widget _buildarticuloInfo() {
     return Row(
       children: [
@@ -312,6 +334,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
             onChanged: (value) {
               setState(() {
                 _selectedQuantity = value!;
+                 cantidadPersonalizadaController.clear(); // Limpiar el campo personalizado al cambiar el Dropdown
               });
             },
             customController: cantidadPersonalizadaController,
@@ -363,12 +386,16 @@ class _FormularioScreenState extends State<FormularioScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Precio de Venta: \$${precioVenta.toStringAsFixed(2)}',
+        Text(formatAmount(
+           'Precio de Venta: \$${formatAmount(precioVenta)}',),
           style: TextStyle(fontSize: 14, color: Colors.black),
         ),
         Text(
-          'Ganancia: \$${ganancia.toStringAsFixed(2)}',
+          'Precio de Venta Total: \$${NumberFormat("#,##0.00").format(precioVenta * _getCantidad())}',
+          style: TextStyle(fontSize: 14, color: Colors.black),
+        ),
+        Text(
+          'Ganancia: \$${formatAmount(ganancia)}',
           style: TextStyle(fontSize: 14, color: Colors.black),
         ),
         SizedBox(height: 30),
@@ -743,51 +770,50 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
   // Actualiza este método para recalcular la ganancia total
   void _agregararticulo() {
-  final provider = Provider.of<CotizacionProvider>(context, listen: false);
-  final descripcion = descripcionController.text;
-  final tipo = _selectedType!;
-  final precioCompra =
-      double.tryParse(precioController.text.replaceAll(',', '')) ?? 0;
-  final cantidad = _selectedQuantity == 'OTRO'
-      ? int.tryParse(cantidadPersonalizadaController.text) ?? 1
-      : int.tryParse(_selectedQuantity!) ?? 1;
-  final porcentajeGanancia =
-      double.tryParse(porcentajeGananciaController.text) ?? 0;
+    final provider = Provider.of<CotizacionProvider>(context, listen: false);
+    final descripcion = descripcionController.text;
+    final tipo = _selectedType!;
+    final precioCompra =
+        double.tryParse(precioController.text.replaceAll(',', '')) ?? 0;
+    final cantidad = _selectedQuantity == 'OTRO'
+        ? int.tryParse(cantidadPersonalizadaController.text) ?? 1
+        : int.tryParse(_selectedQuantity!) ?? 1;
+    final porcentajeGanancia =
+        double.tryParse(porcentajeGananciaController.text) ?? 0;
 
-  // Calcular la ganancia y el precio de venta
-  final nuevaGanancia = (precioCompra * porcentajeGanancia) / 100;
-  final nuevoPrecioVenta = precioCompra + nuevaGanancia;
+    // Calcular la ganancia y el precio de venta
+    final nuevaGanancia = (precioCompra * porcentajeGanancia) / 100;
+    final nuevoPrecioVenta = precioCompra + nuevaGanancia;
 
-  if (descripcion.isNotEmpty && precioCompra > 0 && cantidad > 0) {
-    final item = CotizacionItem(
-      descripcion: descripcion,
-      tipo: tipo,
-      precioUnitario: precioCompra,
-      cantidad: cantidad,
-      ganancia: nuevaGanancia,
-      porcentajeGanancia: porcentajeGanancia,
-      precioVenta: nuevoPrecioVenta, // Precio de venta calculado
-    );
+    if (descripcion.isNotEmpty && precioCompra > 0 && cantidad > 0) {
+      final item = CotizacionItem(
+        descripcion: descripcion,
+        tipo: tipo,
+        precioUnitario: precioCompra,
+        cantidad: cantidad,
+        ganancia: nuevaGanancia,
+        porcentajeGanancia: porcentajeGanancia,
+        precioVenta: nuevoPrecioVenta, // Precio de venta calculado
+      );
 
-    provider.addItem(item);
+      provider.addItem(item);
 
-    _calcularGananciaTotal(); // Recalcular ganancia total después de agregar artículo
+      _calcularGananciaTotal(); // Recalcular ganancia total después de agregar artículo
 
-    // Limpiar campos
-    descripcionController.clear();
-    precioController.clear();
-    cantidadPersonalizadaController.clear();
-    porcentajeGananciaController.clear();
-    _selectedQuantity = '1';
+      // Limpiar campos
+      descripcionController.clear();
+      precioController.clear();
+      cantidadPersonalizadaController.clear();
+      porcentajeGananciaController.clear();
+      _selectedQuantity = '1';
 
-    // Reiniciar las variables de ganancia y precio de venta
-    setState(() {
-      ganancia = 0.0; // Reiniciar ganancia
-      precioVenta = 0.0; // Reiniciar precio de venta
-    });
+      // Reiniciar las variables de ganancia y precio de venta
+      setState(() {
+        ganancia = 0.0; // Reiniciar ganancia
+        precioVenta = 0.0; // Reiniciar precio de venta
+      });
+    }
   }
-}
-
 
   void _calcularGananciaTotal() {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
@@ -1466,4 +1492,11 @@ class _FormularioScreenState extends State<FormularioScreen> {
       ),
     );
   }
+}
+
+String formatAmount(dynamic value) {
+  if (value is num) {
+    return NumberFormat("#,##0").format(value);
+  }
+  return value.toString();
 }

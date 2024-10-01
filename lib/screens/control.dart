@@ -25,6 +25,8 @@ class ControlScreenState extends State<ControlScreen>
   List<dynamic> filteredDetalles =
       []; // Lista filtrada para mostrar en el ListView
   final TextEditingController _searchController = TextEditingController();
+  int currentPage = 0;
+  final int itemsPerPage = 10;
 
   Map<int, bool> esCortaMap =
       {}; // Mapea los índices de la lista a su estado de fecha.
@@ -314,6 +316,12 @@ class ControlScreenState extends State<ControlScreen>
     // Formateador de números
     // Convierte la fecha de String a DateTime
     final numberFormat = NumberFormat("#,##0.00", "en_US");
+
+      int totalPages = (filteredDetalles.length / itemsPerPage).ceil();
+    List currentItems = filteredDetalles
+        .skip(currentPage * itemsPerPage)
+        .take(itemsPerPage)
+        .toList();
 
     return GestureDetector(
       onTap: () {
@@ -627,9 +635,9 @@ class ControlScreenState extends State<ControlScreen>
                   ),
                   Expanded(
                     child: ListView.builder(
-                      itemCount: filteredDetalles.length,
+                      itemCount: currentItems.length,
                       itemBuilder: (context, index) {
-                        final detalle = filteredDetalles[index];
+                        final detalle = currentItems[index];
                         final folio = detalle['folio'] ?? 'desconocido';
                         final isExpanded = _expandedState[folio] ?? false;
 
@@ -1520,11 +1528,140 @@ class ControlScreenState extends State<ControlScreen>
                       },
                     ),
                   ),
+                     _buildPagination(totalPages),
                 ],
               ),
       ),
     );
   }
+
+    Widget _buildPagination(int totalPages) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Página ${currentPage + 1} de $totalPages',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+          ),
+          Row(
+            children: [
+              _buildFirstPreviousButtons(),
+              _buildThreePageButtons(totalPages),
+              _buildNextLastButtons(totalPages),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFirstPreviousButtons() {
+    return Row(
+      children: [
+        TextButton(
+          onPressed: currentPage > 0
+              ? () {
+                  setState(() {
+                    currentPage = 0; // Ir a la primera página
+                  });
+                }
+              : null,
+          child: const Icon(Icons.keyboard_double_arrow_left),
+        ),
+        TextButton(
+          onPressed: currentPage > 0
+              ? () {
+                  setState(() {
+                    currentPage--; // Ir a la página anterior
+                  });
+                }
+              : null,
+          child: const Icon(Icons.keyboard_arrow_left),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildThreePageButtons(int totalPages) {
+    List<Widget> buttons = [];
+    int startPage = (currentPage > 1) ? currentPage - 1 : 0;
+    int endPage = (currentPage < totalPages - 2) ? currentPage + 1 : totalPages - 1;
+
+    if (endPage - startPage < 2) {
+      if (currentPage == totalPages - 1) {
+        startPage = totalPages - 3 > 0 ? totalPages - 3 : 0;
+      } else if (currentPage == totalPages - 2) {
+        startPage = totalPages - 2;
+      }
+    }
+
+    endPage = startPage + 2 < totalPages ? startPage + 2 : totalPages - 1;
+
+    for (int i = startPage; i <= endPage; i++) {
+      buttons.add(_buildPageButton(i, (i + 1).toString()));
+    }
+
+    return Row(children: buttons);
+  }
+
+  Widget _buildNextLastButtons(int totalPages) {
+    return Row(
+      children: [
+        TextButton(
+          onPressed: currentPage < totalPages - 1
+              ? () {
+                  setState(() {
+                    currentPage++; // Ir a la página siguiente
+                  });
+                }
+              : null,
+          child: const Icon(Icons.keyboard_arrow_right),
+        ),
+        TextButton(
+          onPressed: currentPage < totalPages - 1
+              ? () {
+                  setState(() {
+                    currentPage = totalPages - 1; // Ir a la última página
+                  });
+                }
+              : null,
+          child: const Icon(Icons.keyboard_double_arrow_right),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPageButton(int pageIndex, String label) {
+    bool isActive = currentPage == pageIndex;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: TextButton(
+        style: TextButton.styleFrom(
+          foregroundColor: isActive ? Colors.white : Colors.black,
+          backgroundColor: isActive ? Colors.blueAccent : Colors.grey[200],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        onPressed: () {
+          setState(() {
+            currentPage = pageIndex;
+          });
+        },
+        child: Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+
 
   void mostrarDetallesEstado(
       BuildContext context, List<dynamic> estadosActuales) {
