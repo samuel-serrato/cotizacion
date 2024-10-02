@@ -348,10 +348,11 @@ class ControlScreenState extends State<ControlScreen>
                   Row(
                     children: [
                       Expanded(
-                        flex: 3,
+                        flex: 5,
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: TextField(
+                            style: TextStyle(fontSize: 14),
                             controller: _searchController,
                             decoration: InputDecoration(
                               labelText: 'Buscar cliente',
@@ -380,6 +381,7 @@ class ControlScreenState extends State<ControlScreen>
                       ),
                       SizedBox(width: 16.0), // Espacio entre los campos
                       Expanded(
+                        flex: 3,
                         child: DropdownButtonFormField<String>(
                           hint: Text('Estado'),
                           value: selectedEstado,
@@ -430,6 +432,7 @@ class ControlScreenState extends State<ControlScreen>
                       ),
                       SizedBox(width: 16.0),
                       Expanded(
+                        flex: 2,
                         child: DropdownButtonFormField<String>(
                           hint: Text('Método de Pago'),
                           value: selectedMetodoPago,
@@ -480,6 +483,7 @@ class ControlScreenState extends State<ControlScreen>
                       ),
                       SizedBox(width: 16.0),
                       Expanded(
+                        flex: 2,
                         child: DropdownButtonFormField<String>(
                           hint: Text('Factura'),
                           value: selectedFactura,
@@ -530,6 +534,7 @@ class ControlScreenState extends State<ControlScreen>
                       ),
                       SizedBox(width: 16.0),
                       Expanded(
+                        flex: 2,
                         child: SizedBox(
                           height: 50, // Altura fija para el botón
                           child: TextButton(
@@ -1561,31 +1566,37 @@ class ControlScreenState extends State<ControlScreen>
   }
 
   Widget _buildFirstPreviousButtons() {
-    return Row(
-      children: [
-        TextButton(
-          onPressed: currentPage > 0
-              ? () {
-                  setState(() {
-                    currentPage = 0; // Ir a la primera página
-                  });
-                }
-              : null,
-          child: const Icon(Icons.keyboard_double_arrow_left),
+  return Row(
+    children: [
+      TextButton(
+        onPressed: currentPage > 0
+            ? () {
+                setState(() {
+                  currentPage = 0; // Ir a la primera página
+                });
+              }
+            : null,
+        child: Icon(
+          Icons.keyboard_double_arrow_left,
+          color: currentPage > 0 ? Color(0xFF008F8F) : Colors.grey, // Color condicional
         ),
-        TextButton(
-          onPressed: currentPage > 0
-              ? () {
-                  setState(() {
-                    currentPage--; // Ir a la página anterior
-                  });
-                }
-              : null,
-          child: const Icon(Icons.keyboard_arrow_left),
+      ),
+      TextButton(
+        onPressed: currentPage > 0
+            ? () {
+                setState(() {
+                  currentPage--; // Ir a la página anterior
+                });
+              }
+            : null,
+        child: Icon(
+          Icons.keyboard_arrow_left,
+          color: currentPage > 0 ? Color(0xFF008F8F) : Colors.grey, // Color condicional
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   Widget _buildThreePageButtons(int totalPages) {
     List<Widget> buttons = [];
@@ -1609,32 +1620,38 @@ class ControlScreenState extends State<ControlScreen>
     return Row(children: buttons);
   }
 
-  Widget _buildNextLastButtons(int totalPages) {
-    return Row(
-      children: [
-        TextButton(
-          onPressed: currentPage < totalPages - 1
-              ? () {
-                  setState(() {
-                    currentPage++; // Ir a la página siguiente
-                  });
-                }
-              : null,
-          child: const Icon(Icons.keyboard_arrow_right),
+ Widget _buildNextLastButtons(int totalPages) {
+  return Row(
+    children: [
+      TextButton(
+        onPressed: currentPage < totalPages - 1
+            ? () {
+                setState(() {
+                  currentPage++; // Ir a la página siguiente
+                });
+              }
+            : null,
+        child: Icon(
+          Icons.keyboard_arrow_right,
+          color: currentPage < totalPages - 1 ? Color(0xFF008F8F) : Colors.grey, // Color condicional
         ),
-        TextButton(
-          onPressed: currentPage < totalPages - 1
-              ? () {
-                  setState(() {
-                    currentPage = totalPages - 1; // Ir a la última página
-                  });
-                }
-              : null,
-          child: const Icon(Icons.keyboard_double_arrow_right),
+      ),
+      TextButton(
+        onPressed: currentPage < totalPages - 1
+            ? () {
+                setState(() {
+                  currentPage = totalPages - 1; // Ir a la última página
+                });
+              }
+            : null,
+        child: Icon(
+          Icons.keyboard_double_arrow_right,
+          color: currentPage < totalPages - 1 ? Color(0xFF008F8F) : Colors.grey, // Color condicional
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   Widget _buildPageButton(int pageIndex, String label) {
     bool isActive = currentPage == pageIndex;

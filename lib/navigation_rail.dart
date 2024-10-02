@@ -1,3 +1,4 @@
+import 'package:cotizacion/screens/estadisticas.dart';
 import 'package:easy_sidemenu/easy_sidemenu.dart';
 import 'package:flutter/material.dart';
 import 'screens/control.dart';
@@ -155,6 +156,13 @@ class _NavigationScreenState extends State<NavigationScreen> {
                   },
                   icon: const Icon(Icons.dashboard, color: Colors.black),
                 ),
+                SideMenuItem(
+                  title: 'Estadísticas',
+                  onTap: (index, _) {
+                    sideMenu.changePage(2);
+                  },
+                  icon: const Icon(Icons.stacked_bar_chart_sharp, color: Colors.black),
+                ),
               ],
             ),
           ),
@@ -169,6 +177,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
               children: [
                 FormularioScreen(),
                 ControlScreen(key: _controlKey),
+                EstadisticasScreen()
               ],
             ),
           ),
