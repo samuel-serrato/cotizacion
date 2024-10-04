@@ -10,6 +10,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:file_picker/file_picker.dart';
+import '../ip.dart'; // Importar el archivo de la IP
 
 class ControlScreen extends StatefulWidget {
   const ControlScreen({Key? key}) : super(key: key); // Acepta el parámetro key
@@ -128,10 +129,13 @@ class ControlScreenState extends State<ControlScreen>
 
   Future<void> fetchDatos() async {
     try {
-      final detallesResponse = await http
-          .get(Uri.parse('http://192.168.0.107:3000/api/v1/detalles/'));
-      final clientesResponse = await http
-          .get(Uri.parse('http://192.168.0.107:3000/api/v1/clientes/'));
+        final detallesResponse = await http.get(
+      Uri.parse('http://$baseUrl:3000/api/v1/detalles/'),
+    );
+    final clientesResponse = await http.get(
+      Uri.parse('http://$baseUrl:3000/api/v1/clientes/'),
+    );
+
 
       if (detallesResponse.statusCode == 200) {
         setState(() {
@@ -259,7 +263,7 @@ class ControlScreenState extends State<ControlScreen>
   Future<bool> actualizarEstado(String folio, String estado) async {
     try {
       final response = await http.post(
-        Uri.parse('http://192.168.0.107:3000/api/v1/estados/agregar'),
+        Uri.parse('http://$baseUrl:3000/api/v1/estados/agregar'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -317,7 +321,7 @@ class ControlScreenState extends State<ControlScreen>
     // Convierte la fecha de String a DateTime
     final numberFormat = NumberFormat("#,##0.00", "en_US");
 
-    int totalPages = (filteredDetalles.length / itemsPerPage).ceil();
+      int totalPages = (filteredDetalles.length / itemsPerPage).ceil();
     List currentItems = filteredDetalles
         .skip(currentPage * itemsPerPage)
         .take(itemsPerPage)
@@ -1533,14 +1537,14 @@ class ControlScreenState extends State<ControlScreen>
                       },
                     ),
                   ),
-                  _buildPagination(totalPages),
+                     _buildPagination(totalPages),
                 ],
               ),
       ),
     );
   }
 
-  Widget _buildPagination(int totalPages) {
+    Widget _buildPagination(int totalPages) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -1566,47 +1570,42 @@ class ControlScreenState extends State<ControlScreen>
   }
 
   Widget _buildFirstPreviousButtons() {
-    return Row(
-      children: [
-        TextButton(
-          onPressed: currentPage > 0
-              ? () {
-                  setState(() {
-                    currentPage = 0; // Ir a la primera página
-                  });
-                }
-              : null,
-          child: Icon(
-            Icons.keyboard_double_arrow_left,
-            color: currentPage > 0
-                ? Color(0xFF008F8F)
-                : Colors.grey, // Color condicional
-          ),
+  return Row(
+    children: [
+      TextButton(
+        onPressed: currentPage > 0
+            ? () {
+                setState(() {
+                  currentPage = 0; // Ir a la primera página
+                });
+              }
+            : null,
+        child: Icon(
+          Icons.keyboard_double_arrow_left,
+          color: currentPage > 0 ? Color(0xFF008F8F) : Colors.grey, // Color condicional
         ),
-        TextButton(
-          onPressed: currentPage > 0
-              ? () {
-                  setState(() {
-                    currentPage--; // Ir a la página anterior
-                  });
-                }
-              : null,
-          child: Icon(
-            Icons.keyboard_arrow_left,
-            color: currentPage > 0
-                ? Color(0xFF008F8F)
-                : Colors.grey, // Color condicional
-          ),
+      ),
+      TextButton(
+        onPressed: currentPage > 0
+            ? () {
+                setState(() {
+                  currentPage--; // Ir a la página anterior
+                });
+              }
+            : null,
+        child: Icon(
+          Icons.keyboard_arrow_left,
+          color: currentPage > 0 ? Color(0xFF008F8F) : Colors.grey, // Color condicional
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   Widget _buildThreePageButtons(int totalPages) {
     List<Widget> buttons = [];
     int startPage = (currentPage > 1) ? currentPage - 1 : 0;
-    int endPage =
-        (currentPage < totalPages - 2) ? currentPage + 1 : totalPages - 1;
+    int endPage = (currentPage < totalPages - 2) ? currentPage + 1 : totalPages - 1;
 
     if (endPage - startPage < 2) {
       if (currentPage == totalPages - 1) {
@@ -1625,42 +1624,38 @@ class ControlScreenState extends State<ControlScreen>
     return Row(children: buttons);
   }
 
-  Widget _buildNextLastButtons(int totalPages) {
-    return Row(
-      children: [
-        TextButton(
-          onPressed: currentPage < totalPages - 1
-              ? () {
-                  setState(() {
-                    currentPage++; // Ir a la página siguiente
-                  });
-                }
-              : null,
-          child: Icon(
-            Icons.keyboard_arrow_right,
-            color: currentPage < totalPages - 1
-                ? Color(0xFF008F8F)
-                : Colors.grey, // Color condicional
-          ),
+ Widget _buildNextLastButtons(int totalPages) {
+  return Row(
+    children: [
+      TextButton(
+        onPressed: currentPage < totalPages - 1
+            ? () {
+                setState(() {
+                  currentPage++; // Ir a la página siguiente
+                });
+              }
+            : null,
+        child: Icon(
+          Icons.keyboard_arrow_right,
+          color: currentPage < totalPages - 1 ? Color(0xFF008F8F) : Colors.grey, // Color condicional
         ),
-        TextButton(
-          onPressed: currentPage < totalPages - 1
-              ? () {
-                  setState(() {
-                    currentPage = totalPages - 1; // Ir a la última página
-                  });
-                }
-              : null,
-          child: Icon(
-            Icons.keyboard_double_arrow_right,
-            color: currentPage < totalPages - 1
-                ? Color(0xFF008F8F)
-                : Colors.grey, // Color condicional
-          ),
+      ),
+      TextButton(
+        onPressed: currentPage < totalPages - 1
+            ? () {
+                setState(() {
+                  currentPage = totalPages - 1; // Ir a la última página
+                });
+              }
+            : null,
+        child: Icon(
+          Icons.keyboard_double_arrow_right,
+          color: currentPage < totalPages - 1 ? Color(0xFF008F8F) : Colors.grey, // Color condicional
         ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
+}
 
   Widget _buildPageButton(int pageIndex, String label) {
     bool isActive = currentPage == pageIndex;
@@ -1687,6 +1682,7 @@ class ControlScreenState extends State<ControlScreen>
       ),
     );
   }
+
 
   void mostrarDetallesEstado(
       BuildContext context, List<dynamic> estadosActuales) {

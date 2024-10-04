@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
+import '../ip.dart'; // Importar el archivo de la IP
 
 class FormularioScreen extends StatefulWidget {
   @override
@@ -511,7 +512,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     };
 
     final response = await http.post(
-      Uri.parse('http://192.168.0.107:3000/api/v1/clientes/agregar'),
+      Uri.parse('http://$baseUrl:3000/api/v1/clientes/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -551,7 +552,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.0.107:3000/api/v1/articulos/agregar'),
+      Uri.parse('http://$baseUrl:3000/api/v1/articulos/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body), // Enviar como array directamente
     );
@@ -634,7 +635,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.0.107:3000/api/v1/ventas/agregar'),
+      Uri.parse('http://$baseUrl:3000/api/v1/ventas/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -819,6 +820,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
       cantidadPersonalizadaController.clear();
       porcentajeGananciaController.clear();
       _selectedQuantity = '1';
+      _selectedType = 'Producto';
 
       // Reiniciar las variables de ganancia y precio de venta
       setState(() {
@@ -942,7 +944,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
             border: TableBorder.all(color: Colors.grey.shade400),
             columnWidths: {
               0: FlexColumnWidth(1),
-              1: FlexColumnWidth(1),
+              1: FlexColumnWidth(0.8),
               2: FlexColumnWidth(3),
               3: FlexColumnWidth(1),
               4: FlexColumnWidth(1),
@@ -951,6 +953,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
               7: FlexColumnWidth(1),
               8: FlexColumnWidth(1),
               9: FlexColumnWidth(1),
+              10: FlexColumnWidth(1),
             },
             children: [
               TableRow(
@@ -958,11 +961,12 @@ class _FormularioScreenState extends State<FormularioScreen> {
                   _buildTableHeader('Tipo'),
                   _buildTableHeader('Cantidad'),
                   _buildTableHeader('Descripción'),
-                  _buildTableHeader('Precio de Compra'),
+                  _buildTableHeader('Precio Compra por articulo'),
+                  _buildTableHeader('Precio Compra Total'),
                   _buildTableHeader('% Ganancia'),
                   _buildTableHeader('Ganancia por articulo'), // Nueva cabecera
                   _buildTableHeader('Ganancia Total'), // Nueva cabecera
-                  _buildTableHeader('Precio de Venta'),
+                  _buildTableHeader('Precio Venta por Articulo'),
                   _buildTableHeader('Total'),
                   _buildTableHeader('Acción'),
                 ],
@@ -998,6 +1002,12 @@ class _FormularioScreenState extends State<FormularioScreen> {
                       child:
                           Text('\$${item.precioUnitario.toStringAsFixed(2)}'),
                     ),
+                    //PRECIO COMPRA TOTAL
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child:
+                          Text('\$${(item.precioUnitario * item.cantidad).toStringAsFixed(2)}'),
+                    ),
                     //% GANANCIA
                     Padding(
                       padding: const EdgeInsets.all(8.0),
@@ -1014,7 +1024,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
-                          '\$${(item.precioUnitario * item.porcentajeGanancia / 100).toStringAsFixed(2)}'),
+                          '\$${((item.precioUnitario * item.porcentajeGanancia / 100) * item.cantidad).toStringAsFixed(2)}'),
                     ),
                     //PRECIO VENTA
                     Padding(
@@ -1334,6 +1344,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
                   final provider =
                       Provider.of<CotizacionProvider>(context, listen: false);
                   provider.updateItem(item, newItem);
+
+                  _calcularGananciaTotal(); // Recalcular ganancia total después de agregar artículo
 
                   Navigator.pop(context);
                 }

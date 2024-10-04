@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:cotizacion/custom_app_bar.dart';
+import 'package:cotizacion/ip.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:fl_chart/fl_chart.dart';
@@ -204,7 +205,7 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
 
   Future<List<ClienteData>> fetchClienteData() async {
     final response = await http.get(Uri.parse(
-        'http://192.168.0.107:3000/api/v1/estadisticas/totalclientesxmes'));
+        'http://$baseUrl:3000/api/v1/estadisticas/totalclientesxmes'));
     if (response.statusCode == 200) {
       List jsonResponse = json.decode(response.body);
       return jsonResponse.map((data) => ClienteData.fromJson(data)).toList();
