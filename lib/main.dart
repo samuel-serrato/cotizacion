@@ -15,8 +15,7 @@ void main() {
         theme: ThemeData(
           useMaterial3: true, // Habilita Material 3
           colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color.fromARGB(255, 0, 255,
-                225),
+            seedColor: const Color.fromARGB(255, 0, 255, 225),
           ),
         ),
         debugShowCheckedModeBanner: false,

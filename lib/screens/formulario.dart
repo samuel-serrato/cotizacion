@@ -18,6 +18,7 @@ class FormularioScreen extends StatefulWidget {
 
 class _FormularioScreenState extends State<FormularioScreen> {
   final nombresController = TextEditingController();
+  final busquedaController = TextEditingController();
   final telefonoController = TextEditingController();
   final emailController = TextEditingController();
   final descripcionController = TextEditingController();
@@ -31,10 +32,50 @@ class _FormularioScreenState extends State<FormularioScreen> {
   final GlobalKey<FormState> _formKey =
       GlobalKey<FormState>(); // Clave del formulario
 
+  OverlayEntry? _overlayEntry;
+  final LayerLink _layerLink = LayerLink(); // Enlace para posicionar el overlay
+
   String? _selectedPersonType;
   String? _selectedQuantity = '1';
   String? _selectedType = 'Producto';
   String? _selectedMetodoP; // Variable para almacenar la opción seleccionada
+
+  List<dynamic> filteredClients = []; // Lista para almacenar los resultados
+  bool _showClientSearchField = false;
+
+  List<dynamic> filteredList =
+      []; // Lista para almacenar los resultados de la API
+  bool _showSuggestions = false; // Para controlar cuándo mostrar el menú
+  Map<String, dynamic>?
+      selectedClient; // Variable para almacenar el cliente seleccionado
+
+  @override
+  void dispose() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+    busquedaController.dispose();
+    super.dispose();
+  }
+
+  Future<void> fetchClients(String query) async {
+    final String url = 'http://192.168.0.109:3000/api/v1/clientes/$query';
+
+    try {
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> clients = json.decode(response.body);
+        setState(() {
+          filteredList = clients; // Almacenar los resultados
+          _showSuggestions = true; // Mostrar el menú si hay resultados
+        });
+      } else {
+        throw Exception('Failed to load clients');
+      }
+    } catch (e) {
+      print('Error fetching clients: $e');
+    }
+  }
 
   @override
   void initState() {
@@ -44,6 +85,20 @@ class _FormularioScreenState extends State<FormularioScreen> {
     cantidadPersonalizadaController.addListener(() {
       setState(
           () {}); // Actualizar el estado cuando el usuario escriba en el campo
+    });
+
+    busquedaController.addListener(() {
+      // Solo realizar la búsqueda si hay más de 2 caracteres
+      if (busquedaController.text.length > 2) {
+        fetchClients(busquedaController.text);
+      } else {
+        setState(() {
+          filteredList.clear(); // Limpiar si hay menos de 3 caracteres
+          _showSuggestions =
+              false; // No mostrar el menú si el texto es muy corto
+          selectedClient = null; // Limpiar la selección actual
+        });
+      }
     });
   }
 
@@ -68,6 +123,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     'PROF.',
     'ABG.',
     'ABGDA.',
+    'No asignado',
     'OTRO'
   ];
 
@@ -172,97 +228,291 @@ class _FormularioScreenState extends State<FormularioScreen> {
         ));
   }
 
-  Widget _buildClienteInfo() {
-    return Column(
-      children: [
-        Row(
+  void _showSuggestionsOverlay(BuildContext context) {
+    if (_overlayEntry != null) {
+      _overlayEntry!.remove(); // Eliminar el overlay anterior si existe
+    }
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) => GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () {
+          // Detectar clic fuera del overlay
+          _overlayEntry?.remove();
+          _overlayEntry = null;
+        },
+        child: Stack(
           children: [
-            Expanded(
-              flex: 2,
-              child: _buildDropdownWithCustom(
-                label: 'Tipo de Persona',
-                value: _selectedPersonType,
-                items: _personTypes,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedPersonType = value;
-                  });
-                },
-                customController: personalizadoController,
-              ),
-            ),
-            SizedBox(width: 10),
-
-            // Campo de texto para el cliente
-            Expanded(
-              flex: 4,
-              child: _buildTextFieldValidator(
-                controller: nombresController,
-                label: 'Cliente',
-                inputType: TextInputType.text,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese el nombre del cliente';
-                  }
-                  return null;
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () {
+                  _overlayEntry?.remove();
+                  _overlayEntry = null; // Limpiar referencia
                 },
               ),
             ),
-            SizedBox(width: 10),
-            // Campo de texto para el teléfono
-            Expanded(
-              flex: 3,
-              child: _buildTextFieldValidator(
-                controller: telefonoController,
-                label: 'Teléfono',
-                inputType: TextInputType.number,
-                validator: (value) {
-                  // Validación: verificar que el campo no esté vacío
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese un número de teléfono';
-                  }
-
-                  // Validación: verificar que el número tenga exactamente 10 dígitos
-                  if (value.length != 10) {
-                    return 'El número de teléfono debe tener 10 dígitos';
-                  }
-
-                  // Validación: verificar que solo contenga dígitos
-                  if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                    return 'El número de teléfono solo debe contener dígitos';
-                  }
-
-                  // Si todas las validaciones pasan
-                  return null;
-                },
-              ),
-            ),
-
-            SizedBox(width: 10),
-            // Campo de texto para el correo
-            Expanded(
-              flex: 4,
-              child: _buildTextFieldValidator(
-                controller: emailController,
-                label: 'Correo',
-                inputType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, ingrese un correo electrónico';
-                  }
-                  // Validación de formato de correo
-                  const pattern = r'^[^@]+@[^@]+\.[^@]+';
-                  final regex = RegExp(pattern);
-                  if (!regex.hasMatch(value)) {
-                    return 'Ingrese un correo válido';
-                  }
-                  return null;
-                },
+            Positioned(
+              width: 400, // Ancho del overlay
+              child: CompositedTransformFollower(
+                link: _layerLink,
+                showWhenUnlinked: false,
+                offset:
+                    Offset(0.0, 60.0), // Posicionar justo debajo del TextField
+                child: Material(
+                  elevation: 4.0,
+                  child: Container(
+                    height: 200, // Ajusta la altura según sea necesario
+                    child: ListView.builder(
+                      itemCount: filteredList.length,
+                      itemBuilder: (context, index) {
+                        return GestureDetector(
+                          onTap: () {
+                            final client = filteredList[index];
+                            // Manejar la selección del cliente y cerrar el overlay
+                            setState(() {
+                              busquedaController.text = client['nombres'] ?? '';
+                              _selectedPersonType = _personTypes
+                                      .contains(client['tipo_cliente'])
+                                  ? client['tipo_cliente']
+                                  : 'No asignado'; // Asegurar que el valor exista en la lista
+                              nombresController.text = client['nombres'] ?? '';
+                              telefonoController.text =
+                                  client['telefono'] ?? '';
+                              emailController.text = client['email'] ?? '';
+                              print(
+                                  "Valor de tipo_cliente: ${client['tipo_cliente']}");
+                            });
+                            _overlayEntry?.remove();
+                            _overlayEntry = null; // Cerrar el overlay
+                          },
+                          child: ListTile(
+                            title: Text(filteredList[index]['nombres'] ??
+                                'Nombre no disponible'),
+                            subtitle: Text(
+                                'Tel: ${filteredList[index]['telefono'] ?? "No disponible"}'),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
         ),
-        SizedBox(height: 20),
+      ),
+    );
+
+    Overlay.of(context)?.insert(_overlayEntry!);
+  }
+
+  Widget _buildClienteInfo() {
+    return StatefulBuilder(
+      builder: (BuildContext context, StateSetter setState) {
+        return Column(
+          children: [
+            Row(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start, // Alineación superior
+              children: [
+                // CLIENTE REGISTRADO SWITCH + TextField Dinámico
+                Container(
+                  width: 90,
+                  //color: Colors.red,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('¿Ya es Cliente?', style: TextStyle(fontSize: 12)),
+                      Switch(
+                        value: _showClientSearchField,
+                        onChanged: (value) {
+                          setState(() {
+                            _showClientSearchField = value;
+                            if (!value) {
+                              // Limpiar los campos cuando se desactiva el Switch
+                              nombresController.clear();
+                              _selectedPersonType = null;
+                              telefonoController.clear();
+                              emailController.clear();
+                              busquedaController.clear();
+                              filteredList
+                                  .clear(); // Limpiar la lista de sugerencias
+                              if (_overlayEntry != null) {
+                                // Eliminar el overlay si está visible
+                                _overlayEntry?.remove();
+                                _overlayEntry = null;
+                              }
+                            }
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                // Campo dinámico: TextField para buscar cliente
+                if (_showClientSearchField)
+                  Expanded(
+                    flex: 3,
+                    child: _buildClienteSearchField(),
+                  ),
+                SizedBox(width: 10),
+                Expanded(
+                  flex: _showClientSearchField
+                      ? 3
+                      : 3, // Ajustar flex dinámicamente
+                  child: _buildDropdownWithCustom(
+                    label: 'Tipo de Persona',
+                    value: _selectedPersonType,
+                    items: _personTypes,
+                    onChanged: (value) {
+                      setState(() {
+                        if (_personTypes.contains(value)) {
+                          _selectedPersonType = value;
+                        } else {
+                          _selectedPersonType =
+                              'No asignado'; // Establecer un valor predeterminado si no coincide
+                        }
+                      });
+                    },
+                    customController: personalizadoController,
+                  ),
+                ),
+                SizedBox(width: 10),
+                // Campo de texto para el nombre del cliente
+                Expanded(
+                  flex: _showClientSearchField
+                      ? 5
+                      : 6, // Ajustar flex dinámicamente
+                  child: _buildTextFieldValidator(
+                    controller: nombresController,
+                    label: 'Cliente',
+                    inputType: TextInputType.text,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor, ingrese el nombre del cliente';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                SizedBox(width: 10), // Espaciado entre columnas
+
+                // Campo de texto para el teléfono
+                Expanded(
+                  flex: _showClientSearchField ? 3 : 4,
+                  child: _buildTextFieldValidator(
+                    controller: telefonoController,
+                    label: 'Teléfono',
+                    inputType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor, ingrese un número de teléfono';
+                      }
+                      if (value.length != 10) {
+                        return 'El número de teléfono debe tener 10 dígitos';
+                      }
+                      if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                        return 'El número de teléfono solo debe contener dígitos';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                SizedBox(width: 10), // Espaciado entre columnas
+
+                // Campo de texto para el correo
+                Expanded(
+                  flex: _showClientSearchField ? 4 : 6,
+                  child: _buildTextFieldValidator(
+                    controller: emailController,
+                    label: 'Correo',
+                    inputType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor, ingrese un correo electrónico';
+                      }
+                      const pattern = r'^[^@]+@[^@]+\.[^@]+';
+                      final regex = RegExp(pattern);
+                      if (!regex.hasMatch(value)) {
+                        return 'Ingrese un correo válido';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 20), // Espacio debajo de la fila
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildClienteSearchField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CompositedTransformTarget(
+          link: _layerLink, // Vincula el campo de texto con el Overlay
+          child: TextField(
+            controller: busquedaController,
+            decoration: InputDecoration(
+              labelText: 'Nombre o Teléfono',
+              labelStyle: TextStyle(
+                color: Colors.black54,
+                fontWeight: FontWeight.w500,
+                fontSize: 14,
+              ),
+              floatingLabelBehavior:
+                  FloatingLabelBehavior.auto, // Efecto flotante suave
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30.0),
+                borderSide: BorderSide(color: Color(0xFF001F3F)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30.0),
+                borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+              ),
+              errorBorder: OutlineInputBorder(
+                // Agrega este borde
+                borderRadius: BorderRadius.circular(30.0),
+                borderSide: BorderSide(
+                    color: Colors.red, width: 1.5), // Borde rojo al error
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                // Borde al enfocarse en error
+                borderRadius: BorderRadius.circular(30.0),
+                borderSide: BorderSide(
+                    color: Colors.red,
+                    width: 1.5), // Borde rojo al error enfocado
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding:
+                  EdgeInsets.symmetric(vertical: 15, horizontal: 25),
+              errorStyle: TextStyle(
+                // Estilo del mensaje de error
+                color: Colors.red, // Color del mensaje de error
+                fontSize: 10, // Tamaño del mensaje de error
+              ),
+            ),
+            onChanged: (value) {
+              if (value.length > 2) {
+                fetchClients(value); // Realiza la búsqueda en la API
+                _showSuggestionsOverlay(
+                    context); // Mostrar el overlay cuando se escribe
+              } else {
+                setState(() {
+                  filteredList
+                      .clear(); // Limpiar la lista si el texto es muy corto
+                  _overlayEntry?.remove(); // Eliminar el overlay actual
+                  _overlayEntry = null; // Limpiar referencia del overlay
+                });
+              }
+            },
+          ),
+        ),
       ],
     );
   }
@@ -944,7 +1194,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
             border: TableBorder.all(color: Colors.grey.shade400),
             columnWidths: {
               0: FlexColumnWidth(1),
-              1: FlexColumnWidth(0.8),
+              1: FlexColumnWidth(1),
               2: FlexColumnWidth(3),
               3: FlexColumnWidth(1),
               4: FlexColumnWidth(1),
@@ -1005,8 +1255,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
                     //PRECIO COMPRA TOTAL
                     Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child:
-                          Text('\$${(item.precioUnitario * item.cantidad).toStringAsFixed(2)}'),
+                      child: Text(
+                          '\$${(item.precioUnitario * item.cantidad).toStringAsFixed(2)}'),
                     ),
                     //% GANANCIA
                     Padding(
