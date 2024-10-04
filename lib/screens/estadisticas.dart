@@ -10,7 +10,8 @@ class ClienteData {
   final double totalMes;
   final String mesAno;
 
-  ClienteData({required this.cliente, required this.totalMes, required this.mesAno});
+  ClienteData(
+      {required this.cliente, required this.totalMes, required this.mesAno});
 
   factory ClienteData.fromJson(Map<String, dynamic> json) {
     return ClienteData(
@@ -30,14 +31,16 @@ class ClienteChart extends StatelessWidget {
   final int month;
   final int year;
 
-  const ClienteChart({Key? key, required this.data, required this.month, required this.year})
+  const ClienteChart(
+      {Key? key, required this.data, required this.month, required this.year})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     List<ClienteData> monthlyData = data.where((d) {
       final monthYear = d.mesAno.split('-');
-      return int.parse(monthYear[0]) - 1 == month && int.parse(monthYear[1]) == year; // Filtra por mes y año
+      return int.parse(monthYear[0]) - 1 == month &&
+          int.parse(monthYear[1]) == year; // Filtra por mes y año
     }).toList();
 
     Map<String, double> totalsByClient = {};
@@ -59,7 +62,8 @@ class ClienteChart extends StatelessWidget {
         barRods: [
           BarChartRodData(
             toY: total,
-            color: Colors.primaries[index % Colors.primaries.length].withOpacity(0.7),
+            color: Colors.primaries[index % Colors.primaries.length]
+                .withOpacity(0.7),
             width: 16,
             borderRadius: BorderRadius.circular(8),
           ),
@@ -68,7 +72,8 @@ class ClienteChart extends StatelessWidget {
       ));
     });
 
-    double maxY = roundUpToNearestMultiple(totalsByClient.values.reduce((a, b) => a > b ? a : b), 5000);
+    double maxY = roundUpToNearestMultiple(
+        totalsByClient.values.reduce((a, b) => a > b ? a : b), 5000);
     double minY = 0;
 
     return SizedBox(
@@ -88,12 +93,16 @@ class ClienteChart extends StatelessWidget {
                   sideTitles: SideTitles(
                     showTitles: true,
                     getTitlesWidget: (value, meta) {
-                      if (value.toInt() >= totalsByClient.length) return Container();
+                      if (value.toInt() >= totalsByClient.length)
+                        return Container();
                       return SideTitleWidget(
                         axisSide: meta.axisSide,
                         child: Text(
                           totalsByClient.keys.elementAt(value.toInt()),
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blueGrey),
                         ),
                       );
                     },
@@ -109,20 +118,28 @@ class ClienteChart extends StatelessWidget {
                         axisSide: meta.axisSide,
                         child: Text(
                           '${value.toInt()}',
-                          style: TextStyle(fontSize: 12, color: Colors.blueGrey, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.blueGrey,
+                              fontWeight: FontWeight.bold),
                         ),
                       );
                     },
                   ),
                 ),
-                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles:
+                    AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles:
+                    AxisTitles(sideTitles: SideTitles(showTitles: false)),
               ),
               gridData: FlGridData(
                 show: true,
                 horizontalInterval: 10000,
                 getDrawingHorizontalLine: (value) {
-                  return FlLine(color: Colors.grey.withOpacity(0.2), strokeWidth: 1, dashArray: [5, 5]);
+                  return FlLine(
+                      color: Colors.grey.withOpacity(0.2),
+                      strokeWidth: 1,
+                      dashArray: [5, 5]);
                 },
                 drawVerticalLine: false,
               ),
@@ -143,7 +160,6 @@ class ClienteChart extends StatelessWidget {
   }
 }
 
- 
 BarTouchData get barTouchData => BarTouchData(
       enabled: true,
       touchTooltipData: BarTouchTooltipData(
@@ -187,7 +203,8 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
   }
 
   Future<List<ClienteData>> fetchClienteData() async {
-    final response = await http.get(Uri.parse('http://192.168.1.13:3000/api/v1/estadisticas/totalclientesxmes'));
+    final response = await http.get(Uri.parse(
+        'http://192.168.0.107:3000/api/v1/estadisticas/totalclientesxmes'));
     if (response.statusCode == 200) {
       List jsonResponse = json.decode(response.body);
       return jsonResponse.map((data) => ClienteData.fromJson(data)).toList();
@@ -213,9 +230,11 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
             height: 200,
             width: 200,
             child: ListView.builder(
-              itemCount: 20, // Puedes ajustar el número de años que desees mostrar
+              itemCount:
+                  20, // Puedes ajustar el número de años que desees mostrar
               itemBuilder: (context, index) {
-                int year = DateTime.now().year - index; // Años desde el actual hacia atrás
+                int year = DateTime.now().year -
+                    index; // Años desde el actual hacia atrás
                 return ListTile(
                   title: Text(year.toString()),
                   onTap: () {
@@ -232,22 +251,24 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
       },
     );
   }
- bool _isDarkMode = false; // Estado del modo oscuro
-  
-    void _toggleDarkMode(bool value) {
+
+  bool _isDarkMode = false; // Estado del modo oscuro
+
+  void _toggleDarkMode(bool value) {
     setState(() {
       _isDarkMode = value;
     });
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFFf7f8fa),
       appBar: CustomAppBar(
-          isDarkMode: _isDarkMode,
-          toggleDarkMode: _toggleDarkMode,
-          title: 'Estadísticas', // Título específico para esta pantalla
-        ),
+        isDarkMode: _isDarkMode,
+        toggleDarkMode: _toggleDarkMode,
+        title: 'Estadísticas', // Título específico para esta pantalla
+      ),
       body: FutureBuilder<List<ClienteData>>(
         future: futureData,
         builder: (context, snapshot) {
@@ -260,7 +281,8 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
               children: [
                 // Fila de selección de meses y año
                 Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 8.0, horizontal: 16.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -268,25 +290,47 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
                       Row(
                         children: List.generate(12, (index) {
                           const months = [
-                            'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 
-                            'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+                            'Ene',
+                            'Feb',
+                            'Mar',
+                            'Abr',
+                            'May',
+                            'Jun',
+                            'Jul',
+                            'Ago',
+                            'Sep',
+                            'Oct',
+                            'Nov',
+                            'Dic'
                           ];
                           return GestureDetector(
                             onTap: () => updateMonth(index),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: selectedMonth == index ? Color(0xFF001F3F) : Colors.grey[200],
+                                color: selectedMonth == index
+                                    ? Color(0xFF001F3F)
+                                    : Colors.grey[200],
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: selectedMonth == index
-                                    ? [BoxShadow(color: Colors.blueAccent.withOpacity(0.3), blurRadius: 6, offset: Offset(0, 3))]
+                                    ? [
+                                        BoxShadow(
+                                            color: Colors.blueAccent
+                                                .withOpacity(0.3),
+                                            blurRadius: 6,
+                                            offset: Offset(0, 3))
+                                      ]
                                     : null,
                               ),
-                              padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 10.0),
-                              margin: const EdgeInsets.only(right: 8.0), // Espacio entre meses
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12.0, horizontal: 10.0),
+                              margin: const EdgeInsets.only(
+                                  right: 8.0), // Espacio entre meses
                               child: Text(
                                 months[index],
                                 style: TextStyle(
-                                  color: selectedMonth == index ? Colors.white : Colors.black87,
+                                  color: selectedMonth == index
+                                      ? Colors.white
+                                      : Colors.black87,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 16,
                                 ),
@@ -301,11 +345,13 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
                         children: [
                           Text(
                             'Año: $selectedYear',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                           IconButton(
                             icon: Icon(Icons.calendar_today),
-                            onPressed: () => selectYear(context), // Muestra el selector de año
+                            onPressed: () => selectYear(
+                                context), // Muestra el selector de año
                           ),
                         ],
                       ),
@@ -315,7 +361,10 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
 
                 // Gráfico de Clientes
                 Expanded(
-                  child: ClienteChart(data: snapshot.data!, month: selectedMonth, year: selectedYear),
+                  child: ClienteChart(
+                      data: snapshot.data!,
+                      month: selectedMonth,
+                      year: selectedYear),
                 ),
               ],
             );

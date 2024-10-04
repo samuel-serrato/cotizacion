@@ -334,7 +334,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
             onChanged: (value) {
               setState(() {
                 _selectedQuantity = value!;
-                 cantidadPersonalizadaController.clear(); // Limpiar el campo personalizado al cambiar el Dropdown
+                cantidadPersonalizadaController
+                    .clear(); // Limpiar el campo personalizado al cambiar el Dropdown
               });
             },
             customController: cantidadPersonalizadaController,
@@ -386,16 +387,18 @@ class _FormularioScreenState extends State<FormularioScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(formatAmount(
-           'Precio de Venta: \$${formatAmount(precioVenta)}',),
+        Text(
+          formatAmount(
+            'Precio de Venta: \$${formatAmount(precioVenta)}',
+          ),
           style: TextStyle(fontSize: 14, color: Colors.black),
         ),
         Text(
-          'Precio de Venta Total: \$${NumberFormat("#,##0.00").format(precioVenta * _getCantidad())}',
+          'Precio de Venta Total: \$${formatAmount(precioVenta * _getCantidad())}',
           style: TextStyle(fontSize: 14, color: Colors.black),
         ),
         Text(
-          'Ganancia: \$${formatAmount(ganancia)}',
+          'Ganancia: \$${formatAmount(ganancia * _getCantidad())}',
           style: TextStyle(fontSize: 14, color: Colors.black),
         ),
         SizedBox(height: 30),
@@ -485,9 +488,19 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
+  String formatNombres(String? selectedPersonType, String nombres) {
+    // Si `selectedPersonType` es nulo o está vacío, solo retorna `nombres`.
+    if (selectedPersonType == null || selectedPersonType.isEmpty) {
+      return nombres;
+    }
+    // Si `selectedPersonType` tiene contenido, concatenarlo con `nombres`.
+    return '$selectedPersonType $nombres';
+  }
+
   Future<void> _guardarCliente() async {
-    /*  String nombres = '$_selectedPersonType ${nombresController.text}'; */
-    String nombres = nombresController.text;
+    //String nombres = '$_selectedPersonType ${nombresController.text}';
+    /* String nombres = nombresController.text; */
+    String nombres = formatNombres(_selectedPersonType, nombresController.text);
     String telefono = telefonoController.text;
     String email = emailController.text;
 
@@ -498,7 +511,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     };
 
     final response = await http.post(
-      Uri.parse('http://192.168.1.13:3000/api/v1/clientes/agregar'),
+      Uri.parse('http://192.168.0.107:3000/api/v1/clientes/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -538,7 +551,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.1.13:3000/api/v1/articulos/agregar'),
+      Uri.parse('http://192.168.0.107:3000/api/v1/articulos/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body), // Enviar como array directamente
     );
@@ -621,7 +634,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://192.168.1.13:3000/api/v1/ventas/agregar'),
+      Uri.parse('http://192.168.0.107:3000/api/v1/ventas/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -836,7 +849,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
         style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Color(0xFF001F3F),
-            fontSize: 14),
+            fontSize: 12),
       ),
     );
   }
@@ -937,6 +950,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
               6: FlexColumnWidth(1),
               7: FlexColumnWidth(1),
               8: FlexColumnWidth(1),
+              9: FlexColumnWidth(1),
             },
             children: [
               TableRow(
@@ -947,6 +961,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                   _buildTableHeader('Precio de Compra'),
                   _buildTableHeader('% Ganancia'),
                   _buildTableHeader('Ganancia por articulo'), // Nueva cabecera
+                  _buildTableHeader('Ganancia Total'), // Nueva cabecera
                   _buildTableHeader('Precio de Venta'),
                   _buildTableHeader('Total'),
                   _buildTableHeader('Acción'),
@@ -962,44 +977,59 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
                 return TableRow(
                   children: [
+                    //TIPO
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(item.tipo.toString()),
                     ),
+                    //CANTIDAD
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(item.cantidad.toString()),
                     ),
+                    //DESCRIPCIÓN
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(item.descripcion),
                     ),
+                    //PRECIO COMPRA
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child:
                           Text('\$${item.precioUnitario.toStringAsFixed(2)}'),
                     ),
+                    //% GANANCIA
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
                           '${item.porcentajeGanancia.toStringAsFixed(2)}%'),
                     ),
+                    //GANANCIA POR ARTÍCULO
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
                           '\$${(item.precioUnitario * item.porcentajeGanancia / 100).toStringAsFixed(2)}'),
                     ),
+                    //GANANCIA TOTAL
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                          '\$${(item.precioUnitario * item.porcentajeGanancia / 100).toStringAsFixed(2)}'),
+                    ),
+                    //PRECIO VENTA
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
                           '\$${(item.precioUnitario + (item.precioUnitario * item.porcentajeGanancia / 100)).toStringAsFixed(2)}'),
                     ),
+                    //TOTAL
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
                         '\$${totalVenta.toStringAsFixed(2)}', // Total correcto
                       ),
                     ),
+                    //ACCIÓN
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Row(

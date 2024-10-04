@@ -94,10 +94,8 @@ Future<void> generatePdf(CotizacionProvider provider) async {
                                 pw.Text('Cliente:',
                                     style: pw.TextStyle(fontSize: 12)),
                                 pw.SizedBox(width: 5),
-                             /*     pw.Text(
-                                    '${provider.tipoPersona} '), */
-                                pw.Text(
-                                    provider.cliente,
+                                pw.Text('${provider.tipoPersona} '),
+                                pw.Text(provider.cliente,
                                     style: pw.TextStyle(fontSize: 12)),
                                 pw.SizedBox(width: 50),
                               ],
