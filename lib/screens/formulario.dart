@@ -103,14 +103,14 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
 //DATOS PARA LAS PETICIONES HTTP
-  String idDetalleVentaExistente = ''; // ID del detalle de venta para cliente existente
-String idDetalleVentaCreado = ''; // ID del detalle de venta para cliente nuevo
-bool esClienteNuevo = false; // Variable para verificar si es un cliente nuevo
-
+  String idDetalleVentaExistente =
+      ''; // ID del detalle de venta para cliente existente
+  String idDetalleVentaCreado =
+      ''; // ID del detalle de venta para cliente nuevo
+  bool esClienteNuevo = false; // Variable para verificar si es un cliente nuevo
 
   List<String> articuloIds =
       []; // Variable para almacenar los IDs de los artículos
-      
 
   bool _cotizacionGuardada = false;
   String? _folio; // Variable para almacenar el folio recibido
@@ -234,109 +234,111 @@ bool esClienteNuevo = false; // Variable para verificar si es un cliente nuevo
   }
 
   Future<void> _enviarIdCliente(String idCliente) async {
-  final String url = "http://$baseUrl:3000/api/v1/detalles/agregar";
-  
-  try {
-    final response = await http.post(
-      Uri.parse(url),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-      body: jsonEncode({'idcliente': idCliente}),
-    );
+    final String url = "http://$baseUrl:3000/api/v1/detalles/agregar";
 
-    if (response.statusCode == 201) {
-      final responseData = jsonDecode(response.body);
-      idDetalleVentaExistente = responseData['id']; // Almacena el ID
-      print("ID del detalle de venta recibido: $idDetalleVentaExistente");
-    } else {
-      print("Error al enviar el idcliente: ${response.statusCode}");
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode({'idcliente': idCliente}),
+      );
+
+      if (response.statusCode == 201) {
+        final responseData = jsonDecode(response.body);
+        idDetalleVentaExistente = responseData['id']; // Almacena el ID
+        print("ID del detalle de venta recibido: $idDetalleVentaExistente");
+      } else {
+        print("Error al enviar el idcliente: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Excepción: $e");
     }
-  } catch (e) {
-    print("Excepción: $e");
   }
-}
-
 
   void _showSuggestionsOverlay(BuildContext context) {
-  if (_overlayEntry != null) {
-    _overlayEntry!.remove(); // Eliminar el overlay anterior si existe
-  }
+    if (_overlayEntry != null) {
+      _overlayEntry!.remove(); // Eliminar el overlay anterior si existe
+    }
 
-  _overlayEntry = OverlayEntry(
-    builder: (context) => GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: () {
-        // Detectar clic fuera del overlay
-        _overlayEntry?.remove();
-        _overlayEntry = null;
-      },
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: () {
-                _overlayEntry?.remove();
-                _overlayEntry = null; // Limpiar referencia
-              },
+    _overlayEntry = OverlayEntry(
+      builder: (context) => GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () {
+          // Detectar clic fuera del overlay
+          _overlayEntry?.remove();
+          _overlayEntry = null;
+        },
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () {
+                  _overlayEntry?.remove();
+                  _overlayEntry = null; // Limpiar referencia
+                },
+              ),
             ),
-          ),
-          Positioned(
-            width: 400, // Ancho del overlay
-            child: CompositedTransformFollower(
-              link: _layerLink,
-              showWhenUnlinked: false,
-              offset: Offset(0.0, 60.0), // Posicionar justo debajo del TextField
-              child: Material(
-                elevation: 4.0,
-                child: Container(
-                  height: 200, // Ajusta la altura según sea necesario
-                  child: ListView.builder(
-                    itemCount: filteredList.length,
-                    itemBuilder: (context, index) {
-                      return GestureDetector(
-                        onTap: () {
-  final client = filteredList[index];
-  // Manejar la selección del cliente y cerrar el overlay
-  setState(() {
-    busquedaController.text = client['nombres'] ?? '';
-    _selectedPersonType = _personTypes.contains(client['tipo_cliente'])
-        ? client['tipo_cliente']
-        : 'No asignado';
-    nombresController.text = client['nombres'] ?? '';
-    telefonoController.text = client['telefono'] ?? '';
-    emailController.text = client['email'] ?? '';
+            Positioned(
+              width: 400, // Ancho del overlay
+              child: CompositedTransformFollower(
+                link: _layerLink,
+                showWhenUnlinked: false,
+                offset:
+                    Offset(0.0, 60.0), // Posicionar justo debajo del TextField
+                child: Material(
+                  elevation: 4.0,
+                  child: Container(
+                    height: 200, // Ajusta la altura según sea necesario
+                    child: ListView.builder(
+                      itemCount: filteredList.length,
+                      itemBuilder: (context, index) {
+                        return GestureDetector(
+                          onTap: () {
+                            final client = filteredList[index];
+                            setState(() {
+                              // Actualiza los datos del cliente seleccionado
+                              busquedaController.text = client['nombres'] ?? '';
+                              nombresController.text = client['nombres'] ?? '';
+                              telefonoController.text =
+                                  client['telefono'] ?? '';
+                              emailController.text = client['email'] ?? '';
+                              _selectedPersonType =
+                                  client['tipo_cliente'] ?? 'No asignado';
 
-    // Asigna el idCliente seleccionado
-    idDetalleVentaExistente = client['idcliente']; // Asegúrate que este es el campo correcto
-    print("ID del cliente seleccionado: $idDetalleVentaExistente");
-  });
+                              // Asigna el ID del cliente existente
+                              idDetalleVentaExistente = client['idcliente'];
+                              esClienteNuevo =
+                                  false; // Marca como cliente existente
+                            });
 
-  // Llamar al método para enviar el idcliente
-  _enviarIdCliente(client['idcliente']); // Aquí asumiendo que 'idcliente' es el campo correcto
+                            // Llama al método para enviar el idcliente y obtener iddetalleventa
+                            _enviarIdCliente(client['idcliente']);
 
-  _overlayEntry?.remove();
-  _overlayEntry = null; // Cerrar el overlay
-},
-
-                        child: ListTile(
-                          title: Text(filteredList[index]['nombres'] ?? 'Nombre no disponible'),
-                          subtitle: Text('Tel: ${filteredList[index]['telefono'] ?? "No disponible"}'),
-                        ),
-                      );
-                    },
+                            _overlayEntry?.remove(); // Cierra el overlay
+                            _overlayEntry = null; // Limpiar referencia
+                          },
+                          child: ListTile(
+                            title: Text(filteredList[index]['nombres'] ??
+                                'Nombre no disponible'),
+                            subtitle: Text(
+                                'Tel: ${filteredList[index]['telefono'] ?? "No disponible"}'),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
 
-  Overlay.of(context)?.insert(_overlayEntry!);
-}
+    Overlay.of(context)?.insert(_overlayEntry!);
+  }
 
   Widget _buildClienteInfo() {
     return StatefulBuilder(
@@ -361,19 +363,21 @@ bool esClienteNuevo = false; // Variable para verificar si es un cliente nuevo
                           setState(() {
                             _showClientSearchField = value;
                             if (!value) {
-                              // Limpiar los campos cuando se desactiva el Switch
+                              // Limpiar campos y variables al desactivar el switch de cliente registrado
                               nombresController.clear();
-                              _selectedPersonType = null;
                               telefonoController.clear();
                               emailController.clear();
                               busquedaController.clear();
+                              _selectedPersonType = null;
+                              idDetalleVentaCreado = '';
+                              idDetalleVentaExistente = '';
+                              esClienteNuevo = false; // Resetea el estado
+
                               filteredList
-                                  .clear(); // Limpiar la lista de sugerencias
-                              if (_overlayEntry != null) {
-                                // Eliminar el overlay si está visible
-                                _overlayEntry?.remove();
-                                _overlayEntry = null;
-                              }
+                                  .clear(); // Limpiar lista de sugerencias
+                              _overlayEntry
+                                  ?.remove(); // Eliminar overlay si existe
+                              _overlayEntry = null; // Limpiar referencia
                             }
                           });
                         },
@@ -799,14 +803,14 @@ bool esClienteNuevo = false; // Variable para verificar si es un cliente nuevo
       body: json.encode(body),
     );
 
-     // Código para preparar y enviar la solicitud para crear un nuevo cliente...
-  if (response.statusCode == 201) {
-    final responseData = json.decode(response.body);
-    idDetalleVentaCreado = responseData['id']; // Almacena el ID
-        esClienteNuevo = true; // Marca como cliente nuevo
+    // Código para preparar y enviar la solicitud para crear un nuevo cliente...
+    if (response.statusCode == 201) {
+      final responseData = json.decode(response.body);
+      idDetalleVentaCreado = responseData['id']; // Almacena el ID
+      esClienteNuevo = true; // Marca como cliente nuevo
 
-    print('IdDetalleVentaCreado con éxito: $idDetalleVentaCreado');
-  }
+      print('IdDetalleVentaCreado con éxito: $idDetalleVentaCreado');
+    }
   }
 
   Future<void> _guardararticulo(BuildContext context) async {
@@ -869,97 +873,102 @@ bool esClienteNuevo = false; // Variable para verificar si es un cliente nuevo
   }
 
   // Método para guardar la venta
-Future<void> _guardarVenta(BuildContext context) async {
-  final provider = Provider.of<CotizacionProvider>(context, listen: false);
-  List<CotizacionItem> articulos = provider.items;
+  Future<void> _guardarVenta(BuildContext context) async {
+    final provider = Provider.of<CotizacionProvider>(context, listen: false);
+    List<CotizacionItem> articulos = provider.items;
 
-  // Verifica que se hayan guardado artículos y que haya IDs disponibles
-  if (articuloIds.isEmpty) {
-    print('Error: No se han recibido IDs de artículos.');
-    return;
-  }
+    // Verifica que se hayan guardado artículos y que haya IDs disponibles
+    if (articuloIds.isEmpty) {
+      print('Error: No se han recibido IDs de artículos.');
+      return;
+    }
 
-  // Asegúrate de que el número de IDs coincida con el número de artículos
-  if (articuloIds.length != articulos.length) {
-    print('Error: El número de IDs de artículos no coincide con el número de artículos.');
-    return;
-  }
+    // Asegúrate de que el número de IDs coincida con el número de artículos
+    if (articuloIds.length != articulos.length) {
+      print(
+          'Error: El número de IDs de artículos no coincide con el número de artículos.');
+      return;
+    }
 
-  // Array de productos basado en los artículos almacenados
-  List<Map<String, dynamic>> productos = [];
-  for (int i = 0; i < articulos.length; i++) {
-    final item = articulos[i];
-    productos.add({
-      "idarticulo": articuloIds[i],
-      "precio_venta": item.precioVenta,
-      "ganancia": item.ganancia,
-      "porcentaje": item.porcentajeGanancia,
-      "cantidad": item.cantidad,
-    });
-  }
+    // Array de productos basado en los artículos almacenados
+    List<Map<String, dynamic>> productos = [];
+    for (int i = 0; i < articulos.length; i++) {
+      final item = articulos[i];
+      productos.add({
+        "idarticulo": articuloIds[i],
+        "precio_venta": item.precioVenta,
+        "ganancia": item.ganancia,
+        "porcentaje": item.porcentajeGanancia,
+        "cantidad": item.cantidad,
+      });
+    }
 
-  // Cuerpo del POST
-  final body = {
-      "iddetalleventa": esClienteNuevo ? idDetalleVentaCreado : idDetalleVentaExistente, // Determina el ID a usar
-    "nombre_venta": _descController.text,
-    "productos": productos,
-    "factura": _requiereFactura ? "Si" : "No",
-    "tipo_pago": (_selectedMetodoP == null || _selectedMetodoP!.isEmpty)
-        ? "No asignado"
-        : _selectedMetodoP,
-    "subtotal": _calcularSubtotal(articulos),
-    "iva": _calcularIVA(articulos),
-    "total": _calcularTotal(articulos),
-  };
+    // Cuerpo del POST
+    final body = {
+      "iddetalleventa": esClienteNuevo
+          ? idDetalleVentaCreado
+          : idDetalleVentaExistente, // Determina el ID a usar
+      "nombre_venta": _descController.text,
+      "productos": productos,
+      "factura": _requiereFactura ? "Si" : "No",
+      "tipo_pago": (_selectedMetodoP == null || _selectedMetodoP!.isEmpty)
+          ? "No asignado"
+          : _selectedMetodoP,
+      "subtotal": _calcularSubtotal(articulos),
+      "iva": _calcularIVA(articulos),
+      "total": _calcularTotal(articulos),
+    };
 
-  // Imprimir el cuerpo del POST antes de enviarlo
-  print('Datos de la venta a enviar: ${json.encode(body)}');
+    // Imprimir el cuerpo del POST antes de enviarlo
+    print('Datos de la venta a enviar: ${json.encode(body)}');
 
-  // Hacer el POST request
-  final response = await http.post(
-    Uri.parse('http://$baseUrl:3000/api/v1/ventas/agregar'),
-    headers: {'Content-Type': 'application/json'},
-    body: json.encode(body),
-  );
-
-  print('Código de estado: ${response.statusCode}');
-
-  if (response.statusCode == 201) {
-    print('Venta guardada con éxito');
-    final responseBody = json.decode(response.body);
-    final message = responseBody['message'] ?? 'Venta guardada con éxito';
-    _folio = esClienteNuevo ? idDetalleVentaCreado : idDetalleVentaExistente; // Determina el ID a usar; // Almacena el folio de la venta
-    provider.setFolio(_folio!);
-
-    // Mostrar Snackbar con el mensaje de éxito
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: Duration(seconds: 2),
-        backgroundColor: Colors.green,
-      ),
+    // Hacer el POST request
+    final response = await http.post(
+      Uri.parse('http://$baseUrl:3000/api/v1/ventas/agregar'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(body),
     );
 
-    setState(() {
-      _cotizacionGuardada = true;
-    });
+    print('Código de estado: ${response.statusCode}');
 
-    print('Folio recibido: $_folio');
-  } else {
-    print('Error al guardar la venta: ${response.body}');
-    final errorMessage = json.decode(response.body);
-    final errorCode = response.statusCode;
-    final errorDetail = errorMessage['error'] ?? 'Error al guardar la venta.';
+    if (response.statusCode == 201) {
+      print('Venta guardada con éxito');
+      final responseBody = json.decode(response.body);
+      final message = responseBody['message'] ?? 'Venta guardada con éxito';
+      _folio = esClienteNuevo
+          ? idDetalleVentaCreado
+          : idDetalleVentaExistente; // Determina el ID a usar; // Almacena el folio de la venta
+      provider.setFolio(_folio!);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Error $errorCode: $errorDetail'),
-        duration: Duration(seconds: 2),
-        backgroundColor: Colors.red,
-      ),
-    );
+      // Mostrar Snackbar con el mensaje de éxito
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      setState(() {
+        _cotizacionGuardada = true;
+      });
+
+      print('Folio recibido: $_folio');
+    } else {
+      print('Error al guardar la venta: ${response.body}');
+      final errorMessage = json.decode(response.body);
+      final errorCode = response.statusCode;
+      final errorDetail = errorMessage['error'] ?? 'Error al guardar la venta.';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error $errorCode: $errorDetail'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
-}
 
   Widget _buildTextField(TextEditingController controller, String label,
       [TextInputType keyboardType = TextInputType.text,
@@ -1664,13 +1673,12 @@ Future<void> _guardarVenta(BuildContext context) async {
     await _guardarCliente(); // Espera a que se guarde el cliente
     await _guardararticulo(context); // Espera a que se guarden los artículos
     if (esClienteNuevo && idDetalleVentaCreado.isNotEmpty) {
-  await _guardarVenta(context);
-} else if (!esClienteNuevo && idDetalleVentaExistente.isNotEmpty) {
-  await _guardarVenta(context);
-} else {
-  print('Error: iddetalleventa está vacío.'); // Manejo de error
-}
-
+      await _guardarVenta(context);
+    } else if (!esClienteNuevo && idDetalleVentaExistente.isNotEmpty) {
+      await _guardarVenta(context);
+    } else {
+      print('Error: iddetalleventa está vacío.'); // Manejo de error
+    }
   }
 
   Widget _buildButtons() {
