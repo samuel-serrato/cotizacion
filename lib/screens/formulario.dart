@@ -261,47 +261,59 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   void _showSuggestionsOverlay(BuildContext context) {
-    if (_overlayEntry != null) {
-      _overlayEntry!.remove(); // Eliminar el overlay anterior si existe
-    }
+  if (_overlayEntry != null) {
+    _overlayEntry!.remove(); // Eliminar el overlay anterior si existe
+  }
 
-    _overlayEntry = OverlayEntry(
-      builder: (context) => GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: () {
-          // Detectar clic fuera del overlay
-          _overlayEntry?.remove();
-          _overlayEntry = null;
-        },
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: () {
-                  _overlayEntry?.remove();
-                  _overlayEntry = null; // Limpiar referencia
-                },
-              ),
+  _overlayEntry = OverlayEntry(
+    builder: (context) => GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () {
+        // Detectar clic fuera del overlay
+        _overlayEntry?.remove();
+        _overlayEntry = null;
+      },
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: () {
+                _overlayEntry?.remove();
+                _overlayEntry = null; // Limpiar referencia
+              },
             ),
-            Positioned(
-              width: 400, // Ancho del overlay
-              child: CompositedTransformFollower(
-                link: _layerLink,
-                showWhenUnlinked: false,
-                offset:
-                    Offset(0.0, 60.0), // Posicionar justo debajo del TextField
-                child: Material(
-                  elevation: 4.0,
-                  child: Container(
-                    height: 200, // Ajusta la altura según sea necesario
+          ),
+          Positioned(
+            width: 400, // Ancho del overlay
+            child: CompositedTransformFollower(
+              link: _layerLink,
+              showWhenUnlinked: false,
+              offset: Offset(0.0, 60.0), // Posicionar justo debajo del TextField
+              child: Material(
+                color: Colors.transparent, // Fondo transparente para efectos
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12.0), // Bordes redondeados
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 8.0, // Efecto de sombra
+                        spreadRadius: 1.0,
+                        offset: Offset(0, 2), // Sombra desplazada hacia abajo
+                      ),
+                    ],
+                  ),
+                  height: 250, // Ajusta la altura según sea necesario
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12.0), // Aplicar bordes redondeados
                     child: ListView.builder(
                       itemCount: filteredList.length,
                       itemBuilder: (context, index) {
+                        final client = filteredList[index];
                         return GestureDetector(
                           onTap: () {
-                            final client = filteredList[index];
                             setState(() {
-                              // Actualiza los datos del cliente seleccionado
                               busquedaController.text = client['nombres'] ?? '';
                               nombresController.text = client['nombres'] ?? '';
                               telefonoController.text =
@@ -310,22 +322,44 @@ class _FormularioScreenState extends State<FormularioScreen> {
                               _selectedPersonType =
                                   client['tipo_cliente'] ?? 'No asignado';
 
-                              // Asigna el ID del cliente existente
                               idDetalleVentaExistente = client['idcliente'];
                               esClienteNuevo = false; // Marca como cliente existente
                             });
 
-                            // Llama al método para enviar el idcliente y obtener iddetalleventa
                             _enviarIdCliente(client['idcliente']);
 
                             _overlayEntry?.remove(); // Cierra el overlay
                             _overlayEntry = null; // Limpiar referencia
                           },
-                          child: ListTile(
-                            title: Text(filteredList[index]['nombres'] ??
-                                'Nombre no disponible'),
-                            subtitle: Text(
-                                'Tel: ${filteredList[index]['telefono'] ?? "No disponible"}'),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: index % 2 == 0
+                                  ? Colors.grey[100]
+                                  : Colors.grey[200], // Alternar colores
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey.shade300,
+                                  width: 1.0, // Línea divisoria entre elementos
+                                ),
+                              ),
+                            ),
+                            child: ListTile(
+                              title: Text(
+                                client['nombres'] ?? 'Nombre no disponible',
+                                style: TextStyle(
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Tel: ${client['telefono'] ?? "No disponible"}',
+                                style: TextStyle(color: Colors.black54),
+                              ),
+                              trailing: Icon(
+                                Icons.person,
+                                color: Colors.blueAccent,
+                              ),
+                            ),
                           ),
                         );
                       },
@@ -334,13 +368,15 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
+    ),
+  );
 
-    Overlay.of(context)?.insert(_overlayEntry!);
-  }
+  Overlay.of(context)?.insert(_overlayEntry!);
+}
+
 
   Widget _buildClienteInfo() {
   return StatefulBuilder(
