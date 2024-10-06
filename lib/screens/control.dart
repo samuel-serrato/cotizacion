@@ -1497,7 +1497,19 @@ class ControlScreenState extends State<ControlScreen>
                                                           size:
                                                               24, // Tamaño del icono
                                                         ),
+                                                        
                                                       ),
+                                                      // Botón para editar la venta
+    TextButton(
+      onPressed: () {
+        mostrarDialogoEdicion(context, detalle);
+      },
+      child: Icon(
+        Icons.edit,
+        color: Colors.blue, // Cambia el color si lo deseas
+        size: 24,
+      ),
+    ),
                                                       TextButton(
                                                         onPressed: () {
                                                           // Llamas a la función para mostrar el diálogo, pasando el contexto y los detalles
@@ -1542,6 +1554,89 @@ class ControlScreenState extends State<ControlScreen>
       ),
     );
   }
+
+  void mostrarDialogoEdicion(BuildContext context, Map<String, dynamic> detalle) {
+  TextEditingController nombreController = TextEditingController(text: detalle['nombre_venta']);
+  TextEditingController facturaController = TextEditingController(text: detalle['factura']);
+  TextEditingController tipoPagoController = TextEditingController(text: detalle['tipo_pago']);
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: Text('Editar Venta'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              TextField(
+                controller: nombreController,
+                decoration: InputDecoration(labelText: 'Nombre de la Venta'),
+              ),
+              SizedBox(height: 10),
+              TextField(
+                controller: facturaController,
+                decoration: InputDecoration(labelText: 'Factura (Si/No)'),
+              ),
+              SizedBox(height: 10),
+              TextField(
+                controller: tipoPagoController,
+                decoration: InputDecoration(labelText: 'Tipo de Pago (Efectivo/Crédito)'),
+              ),
+            ],
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: Text("Cancelar"),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+          TextButton(
+            child: Text("Guardar"),
+            onPressed: () async {
+              // Llamar a la función de edición de venta
+              await editarVenta(detalle['idventa'], {
+                'nombre_venta': nombreController.text,
+                'factura': facturaController.text,
+                'tipo_pago': tipoPagoController.text,
+                'productos': detalle['productos'],
+                'subtotal': detalle['subtotal'],
+                'iva': detalle['iva'],
+                'total': detalle['total']
+              });
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
+Future<void> editarVenta(String idVenta, Map<String, dynamic> ventaEditada) async {
+  final String url = 'http://192.168.1.14:3000/api/v1/ventas/editar/$idVenta';
+
+  try {
+    final response = await http.put(
+      Uri.parse(url),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(ventaEditada),
+    );
+
+    if (response.statusCode == 200) {
+      print('Venta editada correctamente');
+    } else {
+      print('Error al editar la venta: ${response.body}');
+    }
+  } catch (e) {
+    print('Error: $e');
+  }
+}
+
+
 
   Widget _buildPagination(int totalPages) {
     return Container(
