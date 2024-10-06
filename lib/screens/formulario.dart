@@ -107,7 +107,10 @@ class _FormularioScreenState extends State<FormularioScreen> {
       ''; // ID del detalle de venta para cliente existente
   String idDetalleVentaCreado =
       ''; // ID del detalle de venta para cliente nuevo
-  bool esClienteNuevo = false; // Variable para verificar si es un cliente nuevo
+  bool esClienteNuevo = true; // Variable para verificar si es un cliente nuevo
+
+  bool camposEditables = true; // Controla si los campos están habilitados
+
 
   List<String> articuloIds =
       []; // Variable para almacenar los IDs de los artículos
@@ -309,8 +312,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
                               // Asigna el ID del cliente existente
                               idDetalleVentaExistente = client['idcliente'];
-                              esClienteNuevo =
-                                  false; // Marca como cliente existente
+                              esClienteNuevo = false; // Marca como cliente existente
                             });
 
                             // Llama al método para enviar el idcliente y obtener iddetalleventa
@@ -341,58 +343,56 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   Widget _buildClienteInfo() {
-    return StatefulBuilder(
-      builder: (BuildContext context, StateSetter setState) {
-        return Column(
-          children: [
-            Row(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start, // Alineación superior
-              children: [
-                // CLIENTE REGISTRADO SWITCH + TextField Dinámico
-                Container(
-                  width: 90,
-                  //color: Colors.red,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('¿Ya es Cliente?', style: TextStyle(fontSize: 12)),
-                      Switch(
-                        value: _showClientSearchField,
-                        onChanged: (value) {
-                          setState(() {
-                            _showClientSearchField = value;
-                            if (!value) {
-                              // Limpiar campos y variables al desactivar el switch de cliente registrado
-                              nombresController.clear();
-                              telefonoController.clear();
-                              emailController.clear();
-                              busquedaController.clear();
-                              _selectedPersonType = null;
-                              idDetalleVentaCreado = '';
-                              idDetalleVentaExistente = '';
-                              esClienteNuevo = false; // Resetea el estado
+  return StatefulBuilder(
+    builder: (BuildContext context, StateSetter setState) {
+      return Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // CLIENTE REGISTRADO SWITCH + TextField Dinámico
+              Container(
+                width: 90,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('¿Ya es cliente?', style: TextStyle(fontSize: 12)),
+                    Switch(
+                      value: _showClientSearchField,
+                      onChanged: (value) {
+                        setState(() {
+                          _showClientSearchField = value;
+                          camposEditables = !value; // Controla los campos editables
 
-                              filteredList
-                                  .clear(); // Limpiar lista de sugerencias
-                              _overlayEntry
-                                  ?.remove(); // Eliminar overlay si existe
-                              _overlayEntry = null; // Limpiar referencia
-                            }
-                          });
-                        },
-                      ),
-                    ],
-                  ),
+                          if (!value) {
+                            // Limpiar campos y variables al desactivar el switch de cliente registrado
+                            nombresController.clear();
+                            telefonoController.clear();
+                            emailController.clear();
+                            busquedaController.clear();
+                            _selectedPersonType = null;
+                            idDetalleVentaCreado = '';
+                            idDetalleVentaExistente = '';
+                            esClienteNuevo = true; // Resetea el estado
+                            camposEditables = true; // Habilitar edición
+
+                            filteredList.clear(); // Limpiar lista de sugerencias
+                            _overlayEntry?.remove(); // Eliminar overlay si existe
+                            _overlayEntry = null; // Limpiar referencia
+                          }
+                        });
+                      },
+                    ),
+                  ],
                 ),
-                // Campo dinámico: TextField para buscar cliente
-                if (_showClientSearchField)
-                  Expanded(
-                    flex: 3,
-                    child: _buildClienteSearchField(),
-                  ),
-                SizedBox(width: 10),
+              ),
+              if (_showClientSearchField)
                 Expanded(
+                  flex: 3,
+                  child: _buildClienteSearchField(),
+                ),
+              SizedBox(width: 10),
+              Expanded(
                   flex: _showClientSearchField
                       ? 3
                       : 3, // Ajustar flex dinámicamente
@@ -411,79 +411,77 @@ class _FormularioScreenState extends State<FormularioScreen> {
                       });
                     },
                     customController: personalizadoController,
+                    enabled: camposEditables, // Pasa la propiedad habilitada
                   ),
                 ),
                 SizedBox(width: 10),
-                // Campo de texto para el nombre del cliente
-                Expanded(
-                  flex: _showClientSearchField
-                      ? 5
-                      : 6, // Ajustar flex dinámicamente
-                  child: _buildTextFieldValidator(
-                    controller: nombresController,
-                    label: 'Cliente',
-                    inputType: TextInputType.text,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor, ingrese el nombre del cliente';
-                      }
-                      return null;
-                    },
-                  ),
+              Expanded(
+                flex: _showClientSearchField ? 5 : 6,
+                child: _buildTextFieldValidator(
+                  controller: nombresController,
+                  label: 'Cliente',
+                  inputType: TextInputType.text,
+                  enabled: camposEditables,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor, ingrese el nombre del cliente';
+                    }
+                    return null;
+                  },
                 ),
-                SizedBox(width: 10), // Espaciado entre columnas
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                flex: _showClientSearchField ? 3 : 4,
+                child: _buildTextFieldValidator(
+                  controller: telefonoController,
+                  label: 'Teléfono',
+                  inputType: TextInputType.number,
+                  enabled: camposEditables,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor, ingrese un número de teléfono';
+                    }
+                    if (value.length != 10) {
+                      return 'El número de teléfono debe tener 10 dígitos';
+                    }
+                    if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                      return 'El número de teléfono solo debe contener dígitos';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                flex: _showClientSearchField ? 4 : 6,
+                child: _buildTextFieldValidator(
+                  controller: emailController,
+                  label: 'Correo',
+                  inputType: TextInputType.emailAddress,
+                  enabled: camposEditables,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor, ingrese un correo electrónico';
+                    }
+                    const pattern = r'^[^@]+@[^@]+\.[^@]+';
+                    final regex = RegExp(pattern);
+                    if (!regex.hasMatch(value)) {
+                      return 'Ingrese un correo válido';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 20),
+        ],
+      );
+    },
+  );
+}
 
-                // Campo de texto para el teléfono
-                Expanded(
-                  flex: _showClientSearchField ? 3 : 4,
-                  child: _buildTextFieldValidator(
-                    controller: telefonoController,
-                    label: 'Teléfono',
-                    inputType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor, ingrese un número de teléfono';
-                      }
-                      if (value.length != 10) {
-                        return 'El número de teléfono debe tener 10 dígitos';
-                      }
-                      if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                        return 'El número de teléfono solo debe contener dígitos';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                SizedBox(width: 10), // Espaciado entre columnas
-
-                // Campo de texto para el correo
-                Expanded(
-                  flex: _showClientSearchField ? 4 : 6,
-                  child: _buildTextFieldValidator(
-                    controller: emailController,
-                    label: 'Correo',
-                    inputType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor, ingrese un correo electrónico';
-                      }
-                      const pattern = r'^[^@]+@[^@]+\.[^@]+';
-                      final regex = RegExp(pattern);
-                      if (!regex.hasMatch(value)) {
-                        return 'Ingrese un correo válido';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 20), // Espacio debajo de la fila
-          ],
-        );
-      },
-    );
-  }
 
   Widget _buildClienteSearchField() {
     return Column(
@@ -705,65 +703,72 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   Widget _buildDropdownWithCustom({
-    required String label,
-    required String? value,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-    required TextEditingController? customController,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        DropdownButtonFormField<String>(
-          hint: Text('Elige',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 14)),
-          value: value,
-          onChanged: onChanged,
-          decoration: InputDecoration(
-            labelText: label,
-            labelStyle:
-                TextStyle(color: Colors.black54, fontWeight: FontWeight.w500),
-            focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30.0), // Bordes redondeados
-                borderSide: BorderSide(
-                  color: Color(0xFF001F3F),
-                )),
-            enabledBorder: OutlineInputBorder(
+  required String label,
+  required String? value,
+  required List<String> items,
+  required ValueChanged<String?> onChanged,
+  required TextEditingController? customController,
+  bool enabled = true, // Nueva propiedad para habilitar/deshabilitar
+}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      DropdownButtonFormField<String>(
+        hint: Text('Elige',
+            style: TextStyle(color: Colors.grey.shade500, 
+            fontSize: 14)),
+        value: value,
+        onChanged: enabled ? onChanged : null, // Controla el cambio
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: Colors.black54, fontWeight: FontWeight.w500),
+          focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30.0),
-              borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
-            ),
-            filled: true,
-            fillColor:
-                Colors.white, // Fondo blanco para consistencia con el TextField
-            contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+              borderSide: BorderSide(
+                color: Color(0xFF001F3F),
+              )),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30.0),
+            borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
           ),
-          icon: Icon(
-            Icons.arrow_drop_down,
-            color: Color(0xFF001F3F),
-          ), // Icono personalizado
-          dropdownColor: Colors.white, // Color del menú desplegable
-          items: items.map((item) {
-            return DropdownMenuItem(
-              value: item,
-              child: Text(
-                item,
-                style: TextStyle(
-                    color: Colors.black87,
-                    fontSize: 14), // Texto más visible en el menú
-              ),
-            );
-          }).toList(),
+          disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30.0),
+            borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5), // Borde deshabilitado
+          ),
+          filled: true,
+          fillColor: enabled ? Colors.white : Colors.grey.shade100, // Color de fondo según estado
+          contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
         ),
-        if (value == 'OTRO') SizedBox(height: 10),
-        if (value == 'OTRO')
-          SizedBox(
-            width: 200, // Tamaño más compacto para el campo personalizado
-            child: _buildTextField(
-                customController!, 'Otro', TextInputType.number),
-          ),
-      ],
-    );
-  }
+        icon: Icon(
+          Icons.arrow_drop_down,
+          color: enabled ? Color(0xFF001F3F) : Colors.grey[600]
+        ),
+        dropdownColor: Colors.white,
+        items: items.map((item) {
+          return DropdownMenuItem(
+            value: item,
+            child: Text(
+              item,
+              style: TextStyle(
+                  color: enabled ? Colors.black87 : Colors.grey[600],
+                  fontSize: 14,
+                  fontWeight: FontWeight.normal,
+                  ),
+            ),
+          );
+        }).toList(),
+      ),
+      if (value == 'OTRO') SizedBox(height: 10),
+      if (value == 'OTRO')
+        SizedBox(
+          width: 200,
+          child: _buildTextField(
+              customController!, 'Otro', TextInputType.number),
+        ),
+    ],
+  );
+}
+
 
   void _mostrarMensajeError(BuildContext context, String mensaje) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1011,64 +1016,69 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
-  Widget _buildTextFieldValidator({
-    required TextEditingController controller,
-    required String label,
-    TextInputType inputType = TextInputType.text,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      style:
-          TextStyle(color: Colors.black87, fontSize: 14), // Texto más visible
-      keyboardType: inputType,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(
-          color: Colors.black54,
-          fontWeight: FontWeight.w500,
-          fontSize: 14,
-        ),
-        floatingLabelBehavior:
-            FloatingLabelBehavior.auto, // Efecto flotante suave
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.0),
-          borderSide: BorderSide(color: Color(0xFF001F3F)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.0),
-          borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
-        ),
-        errorBorder: OutlineInputBorder(
-          // Agrega este borde
-          borderRadius: BorderRadius.circular(30.0),
-          borderSide:
-              BorderSide(color: Colors.red, width: 1.5), // Borde rojo al error
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          // Borde al enfocarse en error
-          borderRadius: BorderRadius.circular(30.0),
-          borderSide: BorderSide(
-              color: Colors.red, width: 1.5), // Borde rojo al error enfocado
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 25),
-        errorStyle: TextStyle(
-          // Estilo del mensaje de error
-          color: Colors.red, // Color del mensaje de error
-          fontSize: 10, // Tamaño del mensaje de error
-        ),
+  
+Widget _buildTextFieldValidator({
+  required TextEditingController controller,
+  required String label,
+  TextInputType inputType = TextInputType.text,
+  String? Function(String?)? validator,
+  bool enabled = true, // Nueva propiedad para habilitar/deshabilitar
+}) {
+  return TextFormField(
+    controller: controller,
+    enabled: enabled, // Controla si el campo está habilitado o no
+    style: TextStyle(
+      color: enabled ? Colors.black87 : Colors.grey[600], // Cambia el color según el estado
+      fontSize: 14,
+    ),
+    keyboardType: inputType,
+    decoration: InputDecoration(
+      labelText: label,
+      labelStyle: TextStyle(
+        color: Colors.black54,
+        fontWeight: FontWeight.w500,
+        fontSize: 14,
       ),
-      validator: validator,
-      inputFormatters: label == 'Cantidad' ||
-              label == 'Precio de Compra' ||
-              label == '% Ganancia' ||
-              label == 'Teléfono'
-          ? [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))]
-          : [],
-    );
-  }
+      floatingLabelBehavior: FloatingLabelBehavior.auto, // Efecto flotante suave
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30.0),
+        borderSide: BorderSide(color: enabled ? Color(0xFF001F3F) : Colors.grey), // Ajusta el color del borde
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30.0),
+        borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+      ),
+      disabledBorder: OutlineInputBorder(
+        // Estilo del borde cuando el campo está deshabilitado
+        borderRadius: BorderRadius.circular(30.0),
+        borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30.0),
+        borderSide: BorderSide(color: Colors.red, width: 1.5), // Borde rojo al error
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30.0),
+        borderSide: BorderSide(color: Colors.red, width: 1.5), // Borde rojo al error enfocado
+      ),
+      filled: true,
+      fillColor: enabled ? Colors.white : Colors.grey.shade100, // Color de fondo al deshabilitar
+      contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 25),
+      errorStyle: TextStyle(
+        color: Colors.red,
+        fontSize: 10,
+      ),
+    ),
+    validator: validator,
+    inputFormatters: label == 'Cantidad' ||
+            label == 'Precio de Compra' ||
+            label == '% Ganancia' ||
+            label == 'Teléfono'
+        ? [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))]
+        : [],
+  );
+}
+
 
   // Actualiza este método para recalcular la ganancia total
   void _agregararticulo() {
@@ -1145,31 +1155,34 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   void _actualizarDatosClientePDF(BuildContext context) {
-    final provider = Provider.of<CotizacionProvider>(context, listen: false);
+  final provider = Provider.of<CotizacionProvider>(context, listen: false);
 
-    // Recolecta los datos del cliente desde los controladores
-    final cliente = nombresController.text;
-    final telefono = telefonoController.text;
-    final email = emailController.text;
-    final tipoPersona = _selectedPersonType == 'OTRO'
-        ? personalizadoController.text
-        : _selectedPersonType ?? '';
+  // Recolecta los datos del cliente desde los controladores
+  final cliente = nombresController.text;
+  final telefono = telefonoController.text;
+  final email = emailController.text;
+  final tipoPersona = _selectedPersonType == 'OTRO'
+      ? personalizadoController.text
+      : _selectedPersonType ?? '';
 
-    // Asigna los datos al proveedor
+  // Asigna los datos al proveedor
+  if (tipoPersona != 'No asignado') {
     provider.setTipoPersona(tipoPersona);
-    provider.setCliente(cliente);
-    provider.setTelefono(telefono);
-    provider.setEmail(email);
-
-    // Asigna el folio al proveedor si está disponible
-    if (_folio != null) {
-      provider.setFolio(
-          _folio!); // Asegúrate de que `CotizacionProvider` tenga un método para setear el folio
-    }
-
-    // Genera el PDF con todos los datos del cliente y la venta
-    _handleGeneratePdf(context);
   }
+
+  provider.setCliente(cliente);
+  provider.setTelefono(telefono);
+  provider.setEmail(email);
+
+  // Asigna el folio al proveedor si está disponible
+  if (_folio != null) {
+    provider.setFolio(_folio!); // Asegúrate de que `CotizacionProvider` tenga un método para setear el folio
+  }
+
+  // Genera el PDF con todos los datos del cliente y la venta
+  _handleGeneratePdf(context);
+}
+
 
   /* void _actualizarDatosCliente(BuildContext context) {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
@@ -1650,6 +1663,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
   // Método para limpiar los campos
   void _limpiarCampos() {
     // Limpiar los controladores de texto
+    busquedaController.clear();
     nombresController.clear();
     telefonoController.clear();
     emailController.clear();
@@ -1670,16 +1684,23 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   void _guardarCotizacion(BuildContext context) async {
-    await _guardarCliente(); // Espera a que se guarde el cliente
-    await _guardararticulo(context); // Espera a que se guarden los artículos
-    if (esClienteNuevo && idDetalleVentaCreado.isNotEmpty) {
-      await _guardarVenta(context);
-    } else if (!esClienteNuevo && idDetalleVentaExistente.isNotEmpty) {
-      await _guardarVenta(context);
-    } else {
-      print('Error: iddetalleventa está vacío.'); // Manejo de error
-    }
+  // Si no hay un cliente seleccionado o esClienteNuevo es verdadero, entonces se crea un nuevo cliente.
+  if (esClienteNuevo) {
+    await _guardarCliente(); // Espera a que se guarde el cliente solo si es nuevo.
   }
+
+  await _guardararticulo(context); // Espera a que se guarden los artículos.
+
+  // Solo intenta guardar la venta si hay un ID de cliente asignado
+  if (esClienteNuevo && idDetalleVentaCreado.isNotEmpty) {
+    await _guardarVenta(context);
+  } else if (!esClienteNuevo && idDetalleVentaExistente.isNotEmpty) {
+    await _guardarVenta(context);
+  } else {
+    print('Error: iddetalleventa está vacío.'); // Manejo de error
+  }
+}
+
 
   Widget _buildButtons() {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);

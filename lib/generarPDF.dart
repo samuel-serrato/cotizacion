@@ -94,9 +94,14 @@ Future<void> generatePdf(CotizacionProvider provider) async {
                                 pw.Text('Cliente:',
                                     style: pw.TextStyle(fontSize: 12)),
                                 pw.SizedBox(width: 5),
-                                pw.Text('${provider.tipoPersona} '),
-                                pw.Text(provider.cliente,
-                                    style: pw.TextStyle(fontSize: 12)),
+                                // Concatenar tipoPersona con cliente asegurando un solo espacio entre ellos
+                                pw.Text(
+                                  (provider.tipoPersona != null &&
+                                          provider.tipoPersona!.isNotEmpty)
+                                      ? '${provider.tipoPersona!.trim()} ${provider.cliente.trim()}'
+                                      : provider.cliente.trim(),
+                                  style: pw.TextStyle(fontSize: 12),
+                                ),
                                 pw.SizedBox(width: 50),
                               ],
                             ),
@@ -417,14 +422,26 @@ Future<void> generatePdf(CotizacionProvider provider) async {
     ),
   );
 
-  // Extraer el nombre del cliente
-  final cliente = provider.cliente ?? 'Desconocido';
+  // Extraer y limpiar el nombre del cliente para quitar espacios adicionales
+  final cliente = (provider.cliente ?? 'Desconocido').trim();
 
-  // Mostrar el explorador de archivos para seleccionar la ubicación de guardado
+// Extraer el tipoCliente solo si provider.tipoPersona no es nulo y no está vacío
+  final tipoCliente =
+      (provider.tipoPersona != null && provider.tipoPersona!.isNotEmpty)
+          ? provider.tipoPersona.trim()
+          : '';
+
+// Si el nombre del cliente no contiene el tipoCliente, prependerlo
+  final nombreCompleto = tipoCliente.isNotEmpty &&
+          !cliente.toLowerCase().startsWith(tipoCliente.toLowerCase())
+      ? '$tipoCliente $cliente'
+      : cliente;
+
+// Mostrar el explorador de archivos para seleccionar la ubicación de guardado
   String? outputPath = await FilePicker.platform.saveFile(
     dialogTitle: 'Guardar archivo como',
-    // Generar el nombre del archivo con el nombre del cliente
-    fileName: 'Cotización para $cliente.pdf',
+    // Usar el nombre completo del cliente con el tipo si es necesario
+    fileName: 'Cotización para $nombreCompleto.pdf',
     allowedExtensions: ['pdf'],
     type: FileType.custom,
   );
