@@ -1500,8 +1500,8 @@ class ControlScreenState extends State<ControlScreen>
                                                       // Botón para editar la venta
                                                       TextButton(
                                                         onPressed: () {
-                                                          mostrarDialogoEdicion(context, detalle);
-
+                                                          mostrarDialogoEdicion(
+                                                              context, detalle);
                                                         },
                                                         child: Icon(
                                                           Icons.edit,
@@ -1555,280 +1555,432 @@ class ControlScreenState extends State<ControlScreen>
     );
   }
 
-  void mostrarDialogoEdicion(BuildContext context, Map<String, dynamic> detalle) {
-  TextEditingController nombreVentaController = TextEditingController(text: detalle['nombre_venta']);
-  TextEditingController subtotalController = TextEditingController();
-  TextEditingController ivaController = TextEditingController();
-  TextEditingController totalController = TextEditingController();
+  void mostrarDialogoEdicion(
+      BuildContext context, Map<String, dynamic> detalle) {
+    TextEditingController nombreVentaController =
+        TextEditingController(text: detalle['nombre_venta']);
+    TextEditingController subtotalController = TextEditingController();
+    TextEditingController ivaController = TextEditingController();
+    TextEditingController totalController = TextEditingController();
 
-  // Cálculo de valores iniciales
-  calcularTotales(detalle, subtotalController, ivaController, totalController);
+    // Cálculo de valores iniciales
+    calcularTotales(
+        detalle, subtotalController, ivaController, totalController);
 
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      String? facturaSeleccionada = detalle['factura'];
-      String? tipoPagoSeleccionado = detalle['tipo_pago'];
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        String? facturaSeleccionada = detalle['factura'];
+        String? tipoPagoSeleccionado = detalle['tipo_pago'];
 
-      return AlertDialog(
-        backgroundColor: Colors.white,
-        title: Text(
-          "Editar Artículos",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Color(0xFF001F3F)),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Modifica los artículos y los valores se actualizarán automáticamente.',
-                style: TextStyle(color: Colors.grey[700], fontSize: 14),
-              ),
-              Divider(height: 20, color: Colors.grey[300]),
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: Text(
+            "Editar Artículos",
+            style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: Color(0xFF001F3F)),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Modifica los artículos y los valores se actualizarán automáticamente.',
+                  style: TextStyle(color: Colors.grey[700], fontSize: 14),
+                ),
+                Divider(height: 20, color: Colors.grey[300]),
 
-              // Campo para nombre_venta
-              _buildTextFieldValidator(
-                controller: nombreVentaController,
-                label: 'Nombre Venta',
-              ),
+                // Campo para nombre_venta
+                _buildTextFieldValidator(
+                  controller: nombreVentaController,
+                  label: 'Nombre Venta',
+                ),
 
-              SizedBox(height: 10),
+                SizedBox(height: 10),
 
-              // Campo para factura
-              _buildDropdownField(
-                label: 'Factura',
-                value: facturaSeleccionada,
-                items: ['Sí', 'No'],
-                onChanged: (String? newValue) {
-                  facturaSeleccionada = newValue!;
-                },
-              ),
-
-              SizedBox(height: 10),
-
-              // Campo para tipo_pago
-              _buildDropdownField(
-                label: 'Tipo de Pago',
-                value: tipoPagoSeleccionado,
-                items: ['Efectivo', 'Transferencia', 'No asignado'],
-                onChanged: (String? newValue) {
-                  tipoPagoSeleccionado = newValue!;
-                },
-              ),
-
-              SizedBox(height: 15),
-
-              // Artículos
-              ...detalle['articulos'].map<Widget>((articulo) {
-                TextEditingController cantidadController = TextEditingController(text: articulo['cantidad'].toString());
-                TextEditingController precioCompraController = TextEditingController(text: articulo['precio_compra'].toString());
-                TextEditingController precioVentaController = TextEditingController(text: articulo['precio_venta'].toString());
-
-                return Card(
-                  color: Colors.grey[100],
-                  elevation: 8,
-                  margin: EdgeInsets.symmetric(vertical: 8.0),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  child: Padding(
-                    padding: EdgeInsets.all(10.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Producto: ${articulo['descripcion']}',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                        SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildTextFieldValidator(
-                                controller: cantidadController,
-                                label: 'Cantidad',
-                                inputType: TextInputType.number,
-                                onChanged: (value) {
-                                  articulo['cantidad'] = int.tryParse(value!) ?? 0;
-                                  calcularTotales(detalle, subtotalController, ivaController, totalController);
-                                },
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: _buildTextFieldValidator(
-                                controller: precioCompraController,
-                                label: 'Precio Compra',
-                                inputType: TextInputType.number,
-                                onChanged: (value) {
-                                  articulo['precio_compra'] = double.tryParse(value!) ?? 0.0;
-                                  calcularTotales(detalle, subtotalController, ivaController, totalController);
-                                },
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: _buildTextFieldValidator(
-                                controller: precioVentaController,
-                                label: 'Precio Venta',
-                                inputType: TextInputType.number,
-                                onChanged: (value) {
-                                  articulo['precio_venta'] = double.tryParse(value!) ?? 0.0;
-                                  calcularTotales(detalle, subtotalController, ivaController, totalController);
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                // Campo para factura y tipo_pago en una fila
+                Row(
+                  mainAxisAlignment: MainAxisAlignment
+                      .spaceBetween, // Alinea los elementos en los extremos
+                  children: [
+                    Expanded(
+                      child: _buildDropdownField(
+                        label: 'Factura',
+                        value: facturaSeleccionada,
+                        items: ['Sí', 'No'],
+                        onChanged: (String? newValue) {
+                          facturaSeleccionada = newValue!;
+                        },
+                      ),
                     ),
-                  ),
-                );
-              }).toList(),
+                    SizedBox(width: 10), // Espaciado entre los dropdowns
+                    Expanded(
+                      child: _buildDropdownField(
+                        label: 'Tipo de Pago',
+                        value: tipoPagoSeleccionado,
+                        items: ['Efectivo', 'Transferencia', 'No asignado'],
+                        onChanged: (String? newValue) {
+                          tipoPagoSeleccionado = newValue!;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
 
-              Divider(height: 20, color: Colors.grey[300]),
-              _buildResumenTotal('Subtotal', subtotalController.text),
-              _buildResumenTotal('IVA', ivaController.text),
-              _buildResumenTotal('Total', totalController.text),
-            ],
+                SizedBox(height: 15),
+
+                ...detalle['articulos'].map<Widget>((articulo) {
+                  // Controladores para los campos de texto
+                  TextEditingController tipoProductoController =
+                      TextEditingController(text: articulo['tipo']);
+                  TextEditingController cantidadController =
+                      TextEditingController(
+                          text: articulo['cantidad'].toString());
+                  TextEditingController descripcionController =
+                      TextEditingController(text: articulo['descripcion']);
+                  TextEditingController precioCompraController =
+                      TextEditingController(
+                          text: articulo['precio_compra'].toString());
+                  TextEditingController porcentajeGananciaController =
+                      TextEditingController(
+                          text: articulo['porcentaje'].toString());
+
+                  // Variables para almacenar los resultados calculados
+                  double precioVentaUnitario = 0.0;
+                  double precioVentaTotal = 0.0;
+                  double gananciaPp = 0.0;
+                  double gananciaTotal = 0.0;
+
+                  // Función que recalcula los valores cuando se cambia algún campo
+                  void recalcularValores() {
+                    // Recalcular valores basados en las entradas del usuario
+                    int cantidad = int.tryParse(cantidadController.text) ?? 0;
+                    double precioCompra =
+                        double.tryParse(precioCompraController.text) ?? 0.0;
+                    double porcentajeGanancia =
+                        double.tryParse(porcentajeGananciaController.text) ??
+                            0.0;
+
+                    // Cálculo del precio de venta unitario
+                    precioVentaUnitario = precioCompra +
+                        (precioCompra * (porcentajeGanancia / 100));
+                    // Cálculo del precio de venta total
+                    precioVentaTotal = precioVentaUnitario * cantidad;
+                    // Cálculo de la ganancia por producto
+                    gananciaPp = precioVentaUnitario - precioCompra;
+                    // Cálculo de la ganancia total (ganancia por producto * cantidad)
+                    gananciaTotal = gananciaPp * cantidad;
+
+                    // Actualiza los valores dentro de `articulo` para reflejar los cambios
+                    articulo['precio_venta'] = precioVentaUnitario;
+                    articulo['ganancia'] = gananciaTotal;
+                  }
+
+                  // Realizar el cálculo inicial con los valores predeterminados
+                  recalcularValores();
+
+                  return Card(
+                    color: Colors.grey[100],
+                    elevation: 8,
+                    margin: EdgeInsets.symmetric(vertical: 8.0),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    child: Padding(
+                      padding: EdgeInsets.all(10.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Producto: ${articulo['descripcion']}',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildTextFieldValidator(
+                                  controller: tipoProductoController,
+                                  label: 'Tipo Producto',
+                                  inputType: TextInputType.text,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      articulo['tipo'] = value;
+                                    });
+                                  },
+                                ),
+                              ),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: _buildTextFieldValidator(
+                                  controller: cantidadController,
+                                  label: 'Cantidad',
+                                  inputType: TextInputType.number,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      articulo['cantidad'] =
+                                          int.tryParse(value!) ?? 0;
+                                      recalcularValores();
+                                    });
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildTextFieldValidator(
+                                  controller: descripcionController,
+                                  label: 'Descripción',
+                                  inputType: TextInputType.text,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      articulo['descripcion'] = value;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildTextFieldValidator(
+                                  controller: precioCompraController,
+                                  label: 'Precio Compra',
+                                  inputType: TextInputType.number,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      articulo['precio_compra'] =
+                                          double.tryParse(value!) ?? 0.0;
+                                      recalcularValores();
+                                    });
+                                  },
+                                ),
+                              ),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: _buildTextFieldValidator(
+                                  controller: porcentajeGananciaController,
+                                  label: '% Ganancia',
+                                  inputType: TextInputType.number,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      articulo['porcentaje'] =
+                                          double.tryParse(value!) ?? 0.0;
+                                      recalcularValores();
+                                    });
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          Divider(),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Precio Venta (Unitario): ${precioVentaUnitario.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  'Precio Venta (Total): ${precioVentaTotal.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Ganancia por Producto: ${gananciaPp.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blue),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  'Ganancia Total: ${gananciaTotal.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.green),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+
+                Divider(height: 20, color: Colors.grey[300]),
+                _buildResumenTotal('Subtotal', subtotalController.text),
+                _buildResumenTotal('IVA', ivaController.text),
+                _buildResumenTotal('Total', totalController.text),
+              ],
+            ),
           ),
+          actions: <Widget>[
+            TextButton(
+              child: Text("Cancelar", style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text("Guardar", style: TextStyle(color: Colors.green)),
+              onPressed: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  detalle['nombre_venta'] = nombreVentaController.text;
+                  detalle['factura'] = facturaSeleccionada;
+                  detalle['tipo_pago'] = tipoPagoSeleccionado;
+                  detalle['subtotal'] = subtotalController.text;
+                  detalle['iva'] = ivaController.text;
+                  detalle['total'] = totalController.text;
+                });
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTextFieldValidator({
+    required TextEditingController controller,
+    required String label,
+    TextInputType inputType = TextInputType.text,
+    String? Function(String?)? onChanged,
+  }) {
+    return TextFormField(
+      controller: controller,
+      style: TextStyle(fontSize: 14),
+      keyboardType: inputType,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(
+          color: Colors.black54,
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
         ),
-        actions: <Widget>[
-          TextButton(
-            child: Text("Cancelar", style: TextStyle(color: Colors.red)),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-          TextButton(
-            child: Text("Guardar", style: TextStyle(color: Colors.green)),
-            onPressed: () {
-              Navigator.of(context).pop();
-              setState(() {
-                detalle['nombre_venta'] = nombreVentaController.text;
-                detalle['factura'] = facturaSeleccionada;
-                detalle['tipo_pago'] = tipoPagoSeleccionado;
-                detalle['subtotal'] = subtotalController.text;
-                detalle['iva'] = ivaController.text;
-                detalle['total'] = totalController.text;
-              });
-            },
-          ),
-        ],
-      );
-    },
-  );
-}
-
-Widget _buildTextFieldValidator({
-  required TextEditingController controller,
-  required String label,
-  TextInputType inputType = TextInputType.text,
-  String? Function(String?)? onChanged,
-}) {
-  return TextFormField(
-    controller: controller,
-    style: TextStyle(fontSize: 14),
-    keyboardType: inputType,
-    decoration: InputDecoration(
-      labelText: label,
-      labelStyle: TextStyle(
-        color: Colors.black54,
-        fontWeight: FontWeight.w500,
-        fontSize: 14,
-      ),
-      floatingLabelBehavior: FloatingLabelBehavior.auto,
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(30.0),
-        borderSide: BorderSide(color: Color(0xFF001F3F)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(30.0),
-        borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
-      ),
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 25),
-    ),
-    onChanged: onChanged,
-  );
-}
-
-Widget _buildDropdownField({
-  required String label,
-  required String? value,
-  required List<String> items,
-  required ValueChanged<String?> onChanged,
-}) {
-  return DropdownButtonFormField<String>(
-    value: value,
-    onChanged: onChanged,
-    decoration: InputDecoration(
-      labelText: label,
-      labelStyle: TextStyle(
-        color: Colors.black54,
-        fontWeight: FontWeight.w500,
-        fontSize: 14,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(30.0),
-        borderSide: BorderSide(color: Color(0xFF001F3F)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(30.0),
-        borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
-      ),
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-    ),
-    icon: Icon(
-      Icons.arrow_drop_down,
-      color: Color(0xFF001F3F),
-    ),
-    dropdownColor: Colors.white,
-    items: items.map((item) {
-      return DropdownMenuItem<String>(
-        value: item,
-        child: Text(
-          item,
-          style: TextStyle(color: Colors.black87, fontSize: 14),
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30.0),
+          borderSide: BorderSide(color: Color(0xFF001F3F)),
         ),
-      );
-    }).toList(),
-  );
-}
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30.0),
+          borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 25),
+      ),
+      onChanged: onChanged,
+    );
+  }
+
+  Widget _buildDropdownField({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(
+          color: Colors.black54,
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30.0),
+          borderSide: BorderSide(color: Color(0xFF001F3F)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30.0),
+          borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+      ),
+      icon: Icon(
+        Icons.arrow_drop_down,
+        color: Color(0xFF001F3F),
+      ),
+      dropdownColor: Colors.white,
+      items: items.map((item) {
+        return DropdownMenuItem<String>(
+          value: item,
+          child: Text(
+            item,
+            style: TextStyle(color: Colors.black87, fontSize: 14),
+          ),
+        );
+      }).toList(),
+    );
+  }
 
 // Widget para mostrar el resumen total
-Widget _buildResumenTotal(String label, String value) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4.0),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-        Text(
-          '\$$value',
-          style: TextStyle(fontSize: 16, color: Colors.blueGrey[600]),
-        ),
-      ],
-    ),
-  );
-}
+  Widget _buildResumenTotal(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          Text(
+            '\$$value',
+            style: TextStyle(fontSize: 16, color: Colors.blueGrey[600]),
+          ),
+        ],
+      ),
+    );
+  }
 
 // Función para calcular el subtotal, IVA y total dinámicamente
-void calcularTotales(Map<String, dynamic> detalle, TextEditingController subtotalController, TextEditingController ivaController, TextEditingController totalController) {
-  double subtotal = detalle['articulos'].fold(0.0, (sum, articulo) => sum + (articulo['cantidad'] * articulo['precio_venta']));
-  double iva = subtotal * 0.16; // Asumiendo un IVA del 16%
-  double total = subtotal + iva;
+  void calcularTotales(
+      Map<String, dynamic> detalle,
+      TextEditingController subtotalController,
+      TextEditingController ivaController,
+      TextEditingController totalController) {
+    double subtotal = detalle['articulos'].fold(
+        0.0,
+        (sum, articulo) =>
+            sum + (articulo['cantidad'] * articulo['precio_venta']));
+    double iva = subtotal * 0.16; // Asumiendo un IVA del 16%
+    double total = subtotal + iva;
 
-  subtotalController.text = subtotal.toStringAsFixed(2);
-  ivaController.text = iva.toStringAsFixed(2);
-  totalController.text = total.toStringAsFixed(2);
-}
-
-
+    subtotalController.text = subtotal.toStringAsFixed(2);
+    ivaController.text = iva.toStringAsFixed(2);
+    totalController.text = total.toStringAsFixed(2);
+  }
 
   Widget _buildPagination(int totalPages) {
     return Container(

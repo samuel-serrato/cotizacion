@@ -111,7 +111,6 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
   bool camposEditables = true; // Controla si los campos están habilitados
 
-
   List<String> articuloIds =
       []; // Variable para almacenar los IDs de los artículos
 
@@ -261,174 +260,183 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   void _showSuggestionsOverlay(BuildContext context) {
-  if (_overlayEntry != null) {
-    _overlayEntry!.remove(); // Eliminar el overlay anterior si existe
+    if (_overlayEntry != null) {
+      _overlayEntry!.remove(); // Eliminar el overlay anterior si existe
+    }
+
+    _overlayEntry = OverlayEntry(
+      builder: (context) => GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () {
+          // Detectar clic fuera del overlay
+          _overlayEntry?.remove();
+          _overlayEntry = null;
+        },
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () {
+                  _overlayEntry?.remove();
+                  _overlayEntry = null; // Limpiar referencia
+                },
+              ),
+            ),
+            Positioned(
+              width: 400, // Ancho del overlay
+              child: CompositedTransformFollower(
+                link: _layerLink,
+                showWhenUnlinked: false,
+                offset:
+                    Offset(0.0, 60.0), // Posicionar justo debajo del TextField
+                child: Material(
+                  color: Colors.transparent, // Fondo transparente para efectos
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius:
+                          BorderRadius.circular(12.0), // Bordes redondeados
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 8.0, // Efecto de sombra
+                          spreadRadius: 1.0,
+                          offset: Offset(0, 2), // Sombra desplazada hacia abajo
+                        ),
+                      ],
+                    ),
+                    height: 250, // Ajusta la altura según sea necesario
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                          12.0), // Aplicar bordes redondeados
+                      child: ListView.builder(
+                        itemCount: filteredList.length,
+                        itemBuilder: (context, index) {
+                          final client = filteredList[index];
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                busquedaController.text =
+                                    client['nombres'] ?? '';
+                                nombresController.text =
+                                    client['nombres'] ?? '';
+                                telefonoController.text =
+                                    client['telefono'] ?? '';
+                                emailController.text = client['email'] ?? '';
+                                _selectedPersonType =
+                                    client['tipo_cliente'] ?? 'No asignado';
+
+                                idDetalleVentaExistente = client['idcliente'];
+                                esClienteNuevo =
+                                    false; // Marca como cliente existente
+                              });
+
+                              _enviarIdCliente(client['idcliente']);
+
+                              _overlayEntry?.remove(); // Cierra el overlay
+                              _overlayEntry = null; // Limpiar referencia
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: index % 2 == 0
+                                    ? Colors.grey[100]
+                                    : Colors.grey[200], // Alternar colores
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: Colors.grey.shade300,
+                                    width:
+                                        1.0, // Línea divisoria entre elementos
+                                  ),
+                                ),
+                              ),
+                              child: ListTile(
+                                title: Text(
+                                  client['nombres'] ?? 'Nombre no disponible',
+                                  style: TextStyle(
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  'Tel: ${client['telefono'] ?? "No disponible"}',
+                                  style: TextStyle(color: Colors.black54),
+                                ),
+                                trailing: Icon(
+                                  Icons.person,
+                                  color: Colors.blueAccent,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    Overlay.of(context)?.insert(_overlayEntry!);
   }
 
-  _overlayEntry = OverlayEntry(
-    builder: (context) => GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: () {
-        // Detectar clic fuera del overlay
-        _overlayEntry?.remove();
-        _overlayEntry = null;
-      },
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: () {
-                _overlayEntry?.remove();
-                _overlayEntry = null; // Limpiar referencia
-              },
-            ),
-          ),
-          Positioned(
-            width: 400, // Ancho del overlay
-            child: CompositedTransformFollower(
-              link: _layerLink,
-              showWhenUnlinked: false,
-              offset: Offset(0.0, 60.0), // Posicionar justo debajo del TextField
-              child: Material(
-                color: Colors.transparent, // Fondo transparente para efectos
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12.0), // Bordes redondeados
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black26,
-                        blurRadius: 8.0, // Efecto de sombra
-                        spreadRadius: 1.0,
-                        offset: Offset(0, 2), // Sombra desplazada hacia abajo
+  Widget _buildClienteInfo() {
+    return StatefulBuilder(
+      builder: (BuildContext context, StateSetter setState) {
+        return Column(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // CLIENTE REGISTRADO SWITCH + TextField Dinámico
+                Container(
+                  width: 90,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('¿Ya es cliente?', style: TextStyle(fontSize: 12)),
+                      Switch(
+                        value: _showClientSearchField,
+                        onChanged: (value) {
+                          setState(() {
+                            _showClientSearchField = value;
+                            camposEditables =
+                                !value; // Controla los campos editables
+
+                            if (!value) {
+                              // Limpiar campos y variables al desactivar el switch de cliente registrado
+                              nombresController.clear();
+                              telefonoController.clear();
+                              emailController.clear();
+                              busquedaController.clear();
+                              _selectedPersonType = null;
+                              idDetalleVentaCreado = '';
+                              idDetalleVentaExistente = '';
+                              esClienteNuevo = true; // Resetea el estado
+                              camposEditables = true; // Habilitar edición
+
+                              filteredList
+                                  .clear(); // Limpiar lista de sugerencias
+                              _overlayEntry
+                                  ?.remove(); // Eliminar overlay si existe
+                              _overlayEntry = null; // Limpiar referencia
+                            }
+                          });
+                        },
                       ),
                     ],
                   ),
-                  height: 250, // Ajusta la altura según sea necesario
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12.0), // Aplicar bordes redondeados
-                    child: ListView.builder(
-                      itemCount: filteredList.length,
-                      itemBuilder: (context, index) {
-                        final client = filteredList[index];
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              busquedaController.text = client['nombres'] ?? '';
-                              nombresController.text = client['nombres'] ?? '';
-                              telefonoController.text =
-                                  client['telefono'] ?? '';
-                              emailController.text = client['email'] ?? '';
-                              _selectedPersonType =
-                                  client['tipo_cliente'] ?? 'No asignado';
-
-                              idDetalleVentaExistente = client['idcliente'];
-                              esClienteNuevo = false; // Marca como cliente existente
-                            });
-
-                            _enviarIdCliente(client['idcliente']);
-
-                            _overlayEntry?.remove(); // Cierra el overlay
-                            _overlayEntry = null; // Limpiar referencia
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: index % 2 == 0
-                                  ? Colors.grey[100]
-                                  : Colors.grey[200], // Alternar colores
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: Colors.grey.shade300,
-                                  width: 1.0, // Línea divisoria entre elementos
-                                ),
-                              ),
-                            ),
-                            child: ListTile(
-                              title: Text(
-                                client['nombres'] ?? 'Nombre no disponible',
-                                style: TextStyle(
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              subtitle: Text(
-                                'Tel: ${client['telefono'] ?? "No disponible"}',
-                                style: TextStyle(color: Colors.black54),
-                              ),
-                              trailing: Icon(
-                                Icons.person,
-                                color: Colors.blueAccent,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                ),
+                if (_showClientSearchField)
+                  Expanded(
+                    flex: 3,
+                    child: _buildClienteSearchField(),
                   ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
-
-  Overlay.of(context)?.insert(_overlayEntry!);
-}
-
-
-  Widget _buildClienteInfo() {
-  return StatefulBuilder(
-    builder: (BuildContext context, StateSetter setState) {
-      return Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // CLIENTE REGISTRADO SWITCH + TextField Dinámico
-              Container(
-                width: 90,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('¿Ya es cliente?', style: TextStyle(fontSize: 12)),
-                    Switch(
-                      value: _showClientSearchField,
-                      onChanged: (value) {
-                        setState(() {
-                          _showClientSearchField = value;
-                          camposEditables = !value; // Controla los campos editables
-
-                          if (!value) {
-                            // Limpiar campos y variables al desactivar el switch de cliente registrado
-                            nombresController.clear();
-                            telefonoController.clear();
-                            emailController.clear();
-                            busquedaController.clear();
-                            _selectedPersonType = null;
-                            idDetalleVentaCreado = '';
-                            idDetalleVentaExistente = '';
-                            esClienteNuevo = true; // Resetea el estado
-                            camposEditables = true; // Habilitar edición
-
-                            filteredList.clear(); // Limpiar lista de sugerencias
-                            _overlayEntry?.remove(); // Eliminar overlay si existe
-                            _overlayEntry = null; // Limpiar referencia
-                          }
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              if (_showClientSearchField)
+                SizedBox(width: 10),
                 Expanded(
-                  flex: 3,
-                  child: _buildClienteSearchField(),
-                ),
-              SizedBox(width: 10),
-              Expanded(
                   flex: _showClientSearchField
                       ? 3
                       : 3, // Ajustar flex dinámicamente
@@ -451,73 +459,72 @@ class _FormularioScreenState extends State<FormularioScreen> {
                   ),
                 ),
                 SizedBox(width: 10),
-              Expanded(
-                flex: _showClientSearchField ? 5 : 6,
-                child: _buildTextFieldValidator(
-                  controller: nombresController,
-                  label: 'Cliente',
-                  inputType: TextInputType.text,
-                  enabled: camposEditables,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor, ingrese el nombre del cliente';
-                    }
-                    return null;
-                  },
+                Expanded(
+                  flex: _showClientSearchField ? 5 : 6,
+                  child: _buildTextFieldValidator(
+                    controller: nombresController,
+                    label: 'Cliente',
+                    inputType: TextInputType.text,
+                    enabled: camposEditables,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor, ingrese el nombre del cliente';
+                      }
+                      return null;
+                    },
+                  ),
                 ),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                flex: _showClientSearchField ? 3 : 4,
-                child: _buildTextFieldValidator(
-                  controller: telefonoController,
-                  label: 'Teléfono',
-                  inputType: TextInputType.number,
-                  enabled: camposEditables,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor, ingrese un número de teléfono';
-                    }
-                    if (value.length != 10) {
-                      return 'El número de teléfono debe tener 10 dígitos';
-                    }
-                    if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                      return 'El número de teléfono solo debe contener dígitos';
-                    }
-                    return null;
-                  },
+                SizedBox(width: 10),
+                Expanded(
+                  flex: _showClientSearchField ? 3 : 4,
+                  child: _buildTextFieldValidator(
+                    controller: telefonoController,
+                    label: 'Teléfono',
+                    inputType: TextInputType.number,
+                    enabled: camposEditables,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor, ingrese un número de teléfono';
+                      }
+                      if (value.length != 10) {
+                        return 'El número de teléfono debe tener 10 dígitos';
+                      }
+                      if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+                        return 'El número de teléfono solo debe contener dígitos';
+                      }
+                      return null;
+                    },
+                  ),
                 ),
-              ),
-              SizedBox(width: 10),
-              Expanded(
-                flex: _showClientSearchField ? 4 : 6,
-                child: _buildTextFieldValidator(
-                  controller: emailController,
-                  label: 'Correo',
-                  inputType: TextInputType.emailAddress,
-                  enabled: camposEditables,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor, ingrese un correo electrónico';
-                    }
-                    const pattern = r'^[^@]+@[^@]+\.[^@]+';
-                    final regex = RegExp(pattern);
-                    if (!regex.hasMatch(value)) {
-                      return 'Ingrese un correo válido';
-                    }
-                    return null;
-                  },
+                SizedBox(width: 10),
+                Expanded(
+                  flex: _showClientSearchField ? 4 : 6,
+                  child: _buildTextFieldValidator(
+                    controller: emailController,
+                    label: 'Correo',
+                    inputType: TextInputType.emailAddress,
+                    enabled: camposEditables,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor, ingrese un correo electrónico';
+                      }
+                      const pattern = r'^[^@]+@[^@]+\.[^@]+';
+                      final regex = RegExp(pattern);
+                      if (!regex.hasMatch(value)) {
+                        return 'Ingrese un correo válido';
+                      }
+                      return null;
+                    },
+                  ),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: 20),
-        ],
-      );
-    },
-  );
-}
-
+              ],
+            ),
+            SizedBox(height: 20),
+          ],
+        );
+      },
+    );
+  }
 
   Widget _buildClienteSearchField() {
     return Column(
@@ -739,72 +746,73 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   Widget _buildDropdownWithCustom({
-  required String label,
-  required String? value,
-  required List<String> items,
-  required ValueChanged<String?> onChanged,
-  required TextEditingController? customController,
-  bool enabled = true, // Nueva propiedad para habilitar/deshabilitar
-}) {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      DropdownButtonFormField<String>(
-        hint: Text('Elige',
-            style: TextStyle(color: Colors.grey.shade500, 
-            fontSize: 14)),
-        value: value,
-        onChanged: enabled ? onChanged : null, // Controla el cambio
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: TextStyle(color: Colors.black54, fontWeight: FontWeight.w500),
-          focusedBorder: OutlineInputBorder(
+    required String label,
+    required String? value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+    required TextEditingController? customController,
+    bool enabled = true, // Nueva propiedad para habilitar/deshabilitar
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          hint: Text('Elige',
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 14)),
+          value: value,
+          onChanged: enabled ? onChanged : null, // Controla el cambio
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle:
+                TextStyle(color: Colors.black54, fontWeight: FontWeight.w500),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30.0),
+                borderSide: BorderSide(
+                  color: Color(0xFF001F3F),
+                )),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(30.0),
+              borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+            ),
+            disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30.0),
               borderSide: BorderSide(
-                color: Color(0xFF001F3F),
-              )),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30.0),
-            borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+                  color: Colors.grey.shade300,
+                  width: 1.5), // Borde deshabilitado
+            ),
+            filled: true,
+            fillColor: enabled
+                ? Colors.white
+                : Colors.grey.shade100, // Color de fondo según estado
+            contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
           ),
-          disabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30.0),
-            borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5), // Borde deshabilitado
-          ),
-          filled: true,
-          fillColor: enabled ? Colors.white : Colors.grey.shade100, // Color de fondo según estado
-          contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-        ),
-        icon: Icon(
-          Icons.arrow_drop_down,
-          color: enabled ? Color(0xFF001F3F) : Colors.grey[600]
-        ),
-        dropdownColor: Colors.white,
-        items: items.map((item) {
-          return DropdownMenuItem(
-            value: item,
-            child: Text(
-              item,
-              style: TextStyle(
+          icon: Icon(Icons.arrow_drop_down,
+              color: enabled ? Color(0xFF001F3F) : Colors.grey[600]),
+          dropdownColor: Colors.white,
+          items: items.map((item) {
+            return DropdownMenuItem(
+              value: item,
+              child: Text(
+                item,
+                style: TextStyle(
                   color: enabled ? Colors.black87 : Colors.grey[600],
                   fontSize: 14,
                   fontWeight: FontWeight.normal,
-                  ),
-            ),
-          );
-        }).toList(),
-      ),
-      if (value == 'OTRO') SizedBox(height: 10),
-      if (value == 'OTRO')
-        SizedBox(
-          width: 200,
-          child: _buildTextField(
-              customController!, 'Otro', TextInputType.number),
+                ),
+              ),
+            );
+          }).toList(),
         ),
-    ],
-  );
-}
-
+        if (value == 'OTRO') SizedBox(height: 10),
+        if (value == 'OTRO')
+          SizedBox(
+            width: 200,
+            child: _buildTextField(
+                customController!, 'Otro', TextInputType.number),
+          ),
+      ],
+    );
+  }
 
   void _mostrarMensajeError(BuildContext context, String mensaje) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1052,69 +1060,77 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
-  
-Widget _buildTextFieldValidator({
-  required TextEditingController controller,
-  required String label,
-  TextInputType inputType = TextInputType.text,
-  String? Function(String?)? validator,
-  bool enabled = true, // Nueva propiedad para habilitar/deshabilitar
-}) {
-  return TextFormField(
-    controller: controller,
-    enabled: enabled, // Controla si el campo está habilitado o no
-    style: TextStyle(
-      color: enabled ? Colors.black87 : Colors.grey[600], // Cambia el color según el estado
-      fontSize: 14,
-    ),
-    keyboardType: inputType,
-    decoration: InputDecoration(
-      labelText: label,
-      labelStyle: TextStyle(
-        color: Colors.black54,
-        fontWeight: FontWeight.w500,
+  Widget _buildTextFieldValidator({
+    required TextEditingController controller,
+    required String label,
+    TextInputType inputType = TextInputType.text,
+    String? Function(String?)? validator,
+    bool enabled = true, // Nueva propiedad para habilitar/deshabilitar
+  }) {
+    return TextFormField(
+      controller: controller,
+      enabled: enabled, // Controla si el campo está habilitado o no
+      style: TextStyle(
+        color: enabled
+            ? Colors.black87
+            : Colors.grey[600], // Cambia el color según el estado
         fontSize: 14,
       ),
-      floatingLabelBehavior: FloatingLabelBehavior.auto, // Efecto flotante suave
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(30.0),
-        borderSide: BorderSide(color: enabled ? Color(0xFF001F3F) : Colors.grey), // Ajusta el color del borde
+      keyboardType: inputType,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(
+          color: Colors.black54,
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
+        ),
+        floatingLabelBehavior:
+            FloatingLabelBehavior.auto, // Efecto flotante suave
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30.0),
+          borderSide: BorderSide(
+              color: enabled
+                  ? Color(0xFF001F3F)
+                  : Colors.grey), // Ajusta el color del borde
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30.0),
+          borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+        ),
+        disabledBorder: OutlineInputBorder(
+          // Estilo del borde cuando el campo está deshabilitado
+          borderRadius: BorderRadius.circular(30.0),
+          borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30.0),
+          borderSide:
+              BorderSide(color: Colors.red, width: 1.5), // Borde rojo al error
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30.0),
+          borderSide: BorderSide(
+              color: Colors.red, width: 1.5), // Borde rojo al error enfocado
+        ),
+        filled: true,
+        fillColor: enabled
+            ? Colors.white
+            : Colors.grey.shade100, // Color de fondo al deshabilitar
+        contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 25),
+        errorStyle: TextStyle(
+          color: Colors.red,
+          fontSize: 10,
+        ),
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(30.0),
-        borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
-      ),
-      disabledBorder: OutlineInputBorder(
-        // Estilo del borde cuando el campo está deshabilitado
-        borderRadius: BorderRadius.circular(30.0),
-        borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(30.0),
-        borderSide: BorderSide(color: Colors.red, width: 1.5), // Borde rojo al error
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(30.0),
-        borderSide: BorderSide(color: Colors.red, width: 1.5), // Borde rojo al error enfocado
-      ),
-      filled: true,
-      fillColor: enabled ? Colors.white : Colors.grey.shade100, // Color de fondo al deshabilitar
-      contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 25),
-      errorStyle: TextStyle(
-        color: Colors.red,
-        fontSize: 10,
-      ),
-    ),
-    validator: validator,
-    inputFormatters: label == 'Cantidad' ||
-            label == 'Precio de Compra' ||
-            label == '% Ganancia' ||
-            label == 'Teléfono'
-        ? [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))]
-        : [],
-  );
-}
-
+      validator: validator,
+      inputFormatters: label == 'Cantidad' ||
+              label == 'Precio de Compra' ||
+              label == '% Ganancia' ||
+              label == 'Teléfono'
+          ? [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))]
+          : [],
+    );
+  }
 
   // Actualiza este método para recalcular la ganancia total
   void _agregararticulo() {
@@ -1191,34 +1207,34 @@ Widget _buildTextFieldValidator({
   }
 
   void _actualizarDatosClientePDF(BuildContext context) {
-  final provider = Provider.of<CotizacionProvider>(context, listen: false);
+    final provider = Provider.of<CotizacionProvider>(context, listen: false);
 
-  // Recolecta los datos del cliente desde los controladores
-  final cliente = nombresController.text;
-  final telefono = telefonoController.text;
-  final email = emailController.text;
-  final tipoPersona = _selectedPersonType == 'OTRO'
-      ? personalizadoController.text
-      : _selectedPersonType ?? '';
+    // Recolecta los datos del cliente desde los controladores
+    final cliente = nombresController.text;
+    final telefono = telefonoController.text;
+    final email = emailController.text;
+    final tipoPersona = _selectedPersonType == 'OTRO'
+        ? personalizadoController.text
+        : _selectedPersonType ?? '';
 
-  // Asigna los datos al proveedor
-  if (tipoPersona != 'No asignado') {
-    provider.setTipoPersona(tipoPersona);
+    // Asigna los datos al proveedor
+    if (tipoPersona != 'No asignado') {
+      provider.setTipoPersona(tipoPersona);
+    }
+
+    provider.setCliente(cliente);
+    provider.setTelefono(telefono);
+    provider.setEmail(email);
+
+    // Asigna el folio al proveedor si está disponible
+    if (_folio != null) {
+      provider.setFolio(
+          _folio!); // Asegúrate de que `CotizacionProvider` tenga un método para setear el folio
+    }
+
+    // Genera el PDF con todos los datos del cliente y la venta
+    _handleGeneratePdf(context);
   }
-
-  provider.setCliente(cliente);
-  provider.setTelefono(telefono);
-  provider.setEmail(email);
-
-  // Asigna el folio al proveedor si está disponible
-  if (_folio != null) {
-    provider.setFolio(_folio!); // Asegúrate de que `CotizacionProvider` tenga un método para setear el folio
-  }
-
-  // Genera el PDF con todos los datos del cliente y la venta
-  _handleGeneratePdf(context);
-}
-
 
   /* void _actualizarDatosCliente(BuildContext context) {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
@@ -1377,61 +1393,56 @@ Widget _buildTextFieldValidator({
                       ),
                     ),
                     //ACCIÓN
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.edit, color: Colors.blue),
-                            onPressed: () => _editararticulo(context, item),
-                            tooltip: 'Editar',
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.delete, color: Colors.red),
-                            onPressed: () {
-                              // Muestra un cuadro de diálogo de confirmación
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return AlertDialog(
-                                    title: Text('Confirmar Eliminación'),
-                                    content: Text(
-                                        '¿Estás seguro de que deseas eliminar este artículo?'),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.of(context)
-                                              .pop(); // Cierra el diálogo
-                                        },
-                                        child: Text('Cancelar',
-                                            style:
-                                                TextStyle(color: Colors.grey)),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          final provider =
-                                              Provider.of<CotizacionProvider>(
-                                                  context,
-                                                  listen: false);
-                                          provider.removeItem(
-                                              item); // Llama a la función de eliminación
-                                          Navigator.of(context)
-                                              .pop(); // Cierra el diálogo
-                                        },
-                                        child: Text('Eliminar',
-                                            style:
-                                                TextStyle(color: Colors.red)),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              );
-                            },
-                            tooltip: 'Eliminar',
-                          ),
-                        ],
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.edit, color: Colors.blue),
+                          onPressed: () => _editararticulo(context, item),
+                          tooltip: 'Editar',
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete, color: Colors.red),
+                          onPressed: () {
+                            // Muestra un cuadro de diálogo de confirmación
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  title: Text('Confirmar Eliminación'),
+                                  content: Text(
+                                      '¿Estás seguro de que deseas eliminar este artículo?'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.of(context)
+                                            .pop(); // Cierra el diálogo
+                                      },
+                                      child: Text('Cancelar',
+                                          style: TextStyle(color: Colors.grey)),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        final provider =
+                                            Provider.of<CotizacionProvider>(
+                                                context,
+                                                listen: false);
+                                        provider.removeItem(
+                                            item); // Llama a la función de eliminación
+                                        Navigator.of(context)
+                                            .pop(); // Cierra el diálogo
+                                      },
+                                      child: Text('Eliminar',
+                                          style: TextStyle(color: Colors.red)),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                          tooltip: 'Eliminar',
+                        ),
+                      ],
                     ),
                   ],
                 );
@@ -1486,7 +1497,7 @@ Widget _buildTextFieldValidator({
             Spacer(),
 
             // Dropdown para el método de pago
-              Expanded(
+            Expanded(
               child: DropdownButtonFormField<String>(
                 value: _selectedMetodoP,
                 onChanged: (String? newValue) {
@@ -1720,23 +1731,22 @@ Widget _buildTextFieldValidator({
   }
 
   void _guardarCotizacion(BuildContext context) async {
-  // Si no hay un cliente seleccionado o esClienteNuevo es verdadero, entonces se crea un nuevo cliente.
-  if (esClienteNuevo) {
-    await _guardarCliente(); // Espera a que se guarde el cliente solo si es nuevo.
+    // Si no hay un cliente seleccionado o esClienteNuevo es verdadero, entonces se crea un nuevo cliente.
+    if (esClienteNuevo) {
+      await _guardarCliente(); // Espera a que se guarde el cliente solo si es nuevo.
+    }
+
+    await _guardararticulo(context); // Espera a que se guarden los artículos.
+
+    // Solo intenta guardar la venta si hay un ID de cliente asignado
+    if (esClienteNuevo && idDetalleVentaCreado.isNotEmpty) {
+      await _guardarVenta(context);
+    } else if (!esClienteNuevo && idDetalleVentaExistente.isNotEmpty) {
+      await _guardarVenta(context);
+    } else {
+      print('Error: iddetalleventa está vacío.'); // Manejo de error
+    }
   }
-
-  await _guardararticulo(context); // Espera a que se guarden los artículos.
-
-  // Solo intenta guardar la venta si hay un ID de cliente asignado
-  if (esClienteNuevo && idDetalleVentaCreado.isNotEmpty) {
-    await _guardarVenta(context);
-  } else if (!esClienteNuevo && idDetalleVentaExistente.isNotEmpty) {
-    await _guardarVenta(context);
-  } else {
-    print('Error: iddetalleventa está vacío.'); // Manejo de error
-  }
-}
-
 
   Widget _buildButtons() {
     final provider = Provider.of<CotizacionProvider>(context, listen: false);
