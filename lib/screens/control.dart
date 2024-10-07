@@ -1054,8 +1054,7 @@ class ControlScreenState extends State<ControlScreen>
                                             ...detalle['articulos']
                                                 .map<Widget>((articuloDetalle) {
                                               return Card(
-                                                color: const Color.fromARGB(
-                                                    255, 243, 243, 243),
+                                                color: Colors.grey[100],
                                                 margin:
                                                     const EdgeInsets.symmetric(
                                                         vertical: 4.0,
@@ -1497,19 +1496,20 @@ class ControlScreenState extends State<ControlScreen>
                                                           size:
                                                               24, // Tamaño del icono
                                                         ),
-                                                        
                                                       ),
                                                       // Botón para editar la venta
-    TextButton(
-      onPressed: () {
-        mostrarDialogoEdicion(context, detalle);
-      },
-      child: Icon(
-        Icons.edit,
-        color: Colors.blue, // Cambia el color si lo deseas
-        size: 24,
-      ),
-    ),
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          mostrarDialogoEdicion(context, detalle);
+
+                                                        },
+                                                        child: Icon(
+                                                          Icons.edit,
+                                                          color: Colors
+                                                              .blue, // Cambia el color si lo deseas
+                                                          size: 24,
+                                                        ),
+                                                      ),
                                                       TextButton(
                                                         onPressed: () {
                                                           // Llamas a la función para mostrar el diálogo, pasando el contexto y los detalles
@@ -1556,58 +1556,160 @@ class ControlScreenState extends State<ControlScreen>
   }
 
   void mostrarDialogoEdicion(BuildContext context, Map<String, dynamic> detalle) {
-  TextEditingController nombreController = TextEditingController(text: detalle['nombre_venta']);
-  TextEditingController facturaController = TextEditingController(text: detalle['factura']);
-  TextEditingController tipoPagoController = TextEditingController(text: detalle['tipo_pago']);
+  TextEditingController nombreVentaController = TextEditingController(text: detalle['nombre_venta']);
+  TextEditingController subtotalController = TextEditingController();
+  TextEditingController ivaController = TextEditingController();
+  TextEditingController totalController = TextEditingController();
+
+  // Cálculo de valores iniciales
+  calcularTotales(detalle, subtotalController, ivaController, totalController);
 
   showDialog(
     context: context,
     builder: (BuildContext context) {
+      String? facturaSeleccionada = detalle['factura'];
+      String? tipoPagoSeleccionado = detalle['tipo_pago'];
+
       return AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        title: Text('Editar Venta'),
+        backgroundColor: Colors.white,
+        title: Text(
+          "Editar Artículos",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Color(0xFF001F3F)),
+        ),
         content: SingleChildScrollView(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              TextField(
-                controller: nombreController,
-                decoration: InputDecoration(labelText: 'Nombre de la Venta'),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Modifica los artículos y los valores se actualizarán automáticamente.',
+                style: TextStyle(color: Colors.grey[700], fontSize: 14),
               ),
+              Divider(height: 20, color: Colors.grey[300]),
+
+              // Campo para nombre_venta
+              _buildTextFieldValidator(
+                controller: nombreVentaController,
+                label: 'Nombre Venta',
+              ),
+
               SizedBox(height: 10),
-              TextField(
-                controller: facturaController,
-                decoration: InputDecoration(labelText: 'Factura (Si/No)'),
+
+              // Campo para factura
+              _buildDropdownField(
+                label: 'Factura',
+                value: facturaSeleccionada,
+                items: ['Sí', 'No'],
+                onChanged: (String? newValue) {
+                  facturaSeleccionada = newValue!;
+                },
               ),
+
               SizedBox(height: 10),
-              TextField(
-                controller: tipoPagoController,
-                decoration: InputDecoration(labelText: 'Tipo de Pago (Efectivo/Crédito)'),
+
+              // Campo para tipo_pago
+              _buildDropdownField(
+                label: 'Tipo de Pago',
+                value: tipoPagoSeleccionado,
+                items: ['Efectivo', 'Transferencia', 'No asignado'],
+                onChanged: (String? newValue) {
+                  tipoPagoSeleccionado = newValue!;
+                },
               ),
+
+              SizedBox(height: 15),
+
+              // Artículos
+              ...detalle['articulos'].map<Widget>((articulo) {
+                TextEditingController cantidadController = TextEditingController(text: articulo['cantidad'].toString());
+                TextEditingController precioCompraController = TextEditingController(text: articulo['precio_compra'].toString());
+                TextEditingController precioVentaController = TextEditingController(text: articulo['precio_venta'].toString());
+
+                return Card(
+                  color: Colors.grey[100],
+                  elevation: 8,
+                  margin: EdgeInsets.symmetric(vertical: 8.0),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  child: Padding(
+                    padding: EdgeInsets.all(10.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Producto: ${articulo['descripcion']}',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                        SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTextFieldValidator(
+                                controller: cantidadController,
+                                label: 'Cantidad',
+                                inputType: TextInputType.number,
+                                onChanged: (value) {
+                                  articulo['cantidad'] = int.tryParse(value!) ?? 0;
+                                  calcularTotales(detalle, subtotalController, ivaController, totalController);
+                                },
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: _buildTextFieldValidator(
+                                controller: precioCompraController,
+                                label: 'Precio Compra',
+                                inputType: TextInputType.number,
+                                onChanged: (value) {
+                                  articulo['precio_compra'] = double.tryParse(value!) ?? 0.0;
+                                  calcularTotales(detalle, subtotalController, ivaController, totalController);
+                                },
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: _buildTextFieldValidator(
+                                controller: precioVentaController,
+                                label: 'Precio Venta',
+                                inputType: TextInputType.number,
+                                onChanged: (value) {
+                                  articulo['precio_venta'] = double.tryParse(value!) ?? 0.0;
+                                  calcularTotales(detalle, subtotalController, ivaController, totalController);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+
+              Divider(height: 20, color: Colors.grey[300]),
+              _buildResumenTotal('Subtotal', subtotalController.text),
+              _buildResumenTotal('IVA', ivaController.text),
+              _buildResumenTotal('Total', totalController.text),
             ],
           ),
         ),
         actions: <Widget>[
           TextButton(
-            child: Text("Cancelar"),
+            child: Text("Cancelar", style: TextStyle(color: Colors.red)),
             onPressed: () {
               Navigator.of(context).pop();
             },
           ),
           TextButton(
-            child: Text("Guardar"),
-            onPressed: () async {
-              // Llamar a la función de edición de venta
-              await editarVenta(detalle['idventa'], {
-                'nombre_venta': nombreController.text,
-                'factura': facturaController.text,
-                'tipo_pago': tipoPagoController.text,
-                'productos': detalle['productos'],
-                'subtotal': detalle['subtotal'],
-                'iva': detalle['iva'],
-                'total': detalle['total']
-              });
+            child: Text("Guardar", style: TextStyle(color: Colors.green)),
+            onPressed: () {
               Navigator.of(context).pop();
+              setState(() {
+                detalle['nombre_venta'] = nombreVentaController.text;
+                detalle['factura'] = facturaSeleccionada;
+                detalle['tipo_pago'] = tipoPagoSeleccionado;
+                detalle['subtotal'] = subtotalController.text;
+                detalle['iva'] = ivaController.text;
+                detalle['total'] = totalController.text;
+              });
             },
           ),
         ],
@@ -1616,24 +1718,114 @@ class ControlScreenState extends State<ControlScreen>
   );
 }
 
-Future<void> editarVenta(String idVenta, Map<String, dynamic> ventaEditada) async {
-  final String url = 'http://192.168.1.14:3000/api/v1/ventas/editar/$idVenta';
+Widget _buildTextFieldValidator({
+  required TextEditingController controller,
+  required String label,
+  TextInputType inputType = TextInputType.text,
+  String? Function(String?)? onChanged,
+}) {
+  return TextFormField(
+    controller: controller,
+    style: TextStyle(fontSize: 14),
+    keyboardType: inputType,
+    decoration: InputDecoration(
+      labelText: label,
+      labelStyle: TextStyle(
+        color: Colors.black54,
+        fontWeight: FontWeight.w500,
+        fontSize: 14,
+      ),
+      floatingLabelBehavior: FloatingLabelBehavior.auto,
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30.0),
+        borderSide: BorderSide(color: Color(0xFF001F3F)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30.0),
+        borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+      ),
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 25),
+    ),
+    onChanged: onChanged,
+  );
+}
 
-  try {
-    final response = await http.put(
-      Uri.parse(url),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode(ventaEditada),
-    );
+Widget _buildDropdownField({
+  required String label,
+  required String? value,
+  required List<String> items,
+  required ValueChanged<String?> onChanged,
+}) {
+  return DropdownButtonFormField<String>(
+    value: value,
+    onChanged: onChanged,
+    decoration: InputDecoration(
+      labelText: label,
+      labelStyle: TextStyle(
+        color: Colors.black54,
+        fontWeight: FontWeight.w500,
+        fontSize: 14,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30.0),
+        borderSide: BorderSide(color: Color(0xFF001F3F)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30.0),
+        borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+      ),
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+    ),
+    icon: Icon(
+      Icons.arrow_drop_down,
+      color: Color(0xFF001F3F),
+    ),
+    dropdownColor: Colors.white,
+    items: items.map((item) {
+      return DropdownMenuItem<String>(
+        value: item,
+        child: Text(
+          item,
+          style: TextStyle(color: Colors.black87, fontSize: 14),
+        ),
+      );
+    }).toList(),
+  );
+}
 
-    if (response.statusCode == 200) {
-      print('Venta editada correctamente');
-    } else {
-      print('Error al editar la venta: ${response.body}');
-    }
-  } catch (e) {
-    print('Error: $e');
-  }
+// Widget para mostrar el resumen total
+Widget _buildResumenTotal(String label, String value) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4.0),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        Text(
+          '\$$value',
+          style: TextStyle(fontSize: 16, color: Colors.blueGrey[600]),
+        ),
+      ],
+    ),
+  );
+}
+
+// Función para calcular el subtotal, IVA y total dinámicamente
+void calcularTotales(Map<String, dynamic> detalle, TextEditingController subtotalController, TextEditingController ivaController, TextEditingController totalController) {
+  double subtotal = detalle['articulos'].fold(0.0, (sum, articulo) => sum + (articulo['cantidad'] * articulo['precio_venta']));
+  double iva = subtotal * 0.16; // Asumiendo un IVA del 16%
+  double total = subtotal + iva;
+
+  subtotalController.text = subtotal.toStringAsFixed(2);
+  ivaController.text = iva.toStringAsFixed(2);
+  totalController.text = total.toStringAsFixed(2);
 }
 
 

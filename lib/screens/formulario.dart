@@ -1486,7 +1486,7 @@ Widget _buildTextFieldValidator({
             Spacer(),
 
             // Dropdown para el método de pago
-            Expanded(
+              Expanded(
               child: DropdownButtonFormField<String>(
                 value: _selectedMetodoP,
                 onChanged: (String? newValue) {
