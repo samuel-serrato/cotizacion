@@ -120,12 +120,12 @@ class ControlScreenState extends State<ControlScreen>
     });
   }
 
-  @override
+/*   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Aquí puedes llamar al método cuando las dependencias cambian
     fetchDatos();
-  }
+  } */
 
   Future<void> fetchDatos() async {
     try {
@@ -1555,313 +1555,600 @@ class ControlScreenState extends State<ControlScreen>
     );
   }
 
-  void mostrarDialogoEdicion(BuildContext context, Map<String, dynamic> detalleOriginal) {
-  // Crear una copia profunda del 'detalle' original.
-  Map<String, dynamic> detalle = deepCopy(detalleOriginal);
+  void mostrarDialogoEdicion(
+      BuildContext context, Map<String, dynamic> detalleOriginal) {
+    // Crear una copia profunda del 'detalle' original.
+    Map<String, dynamic> detalle = deepCopy(detalleOriginal);
 
-  // Crear los controladores fuera del builder para evitar recrearlos constantemente
-  TextEditingController nombreVentaController = TextEditingController(text: detalle['nombre_venta']);
-  TextEditingController subtotalController = TextEditingController();
-  TextEditingController ivaController = TextEditingController();
-  TextEditingController totalController = TextEditingController();
+    // Crear los controladores fuera del builder para evitar recrearlos constantemente
+    TextEditingController nombreVentaController =
+        TextEditingController(text: detalle['nombre_venta']);
+    TextEditingController subtotalController = TextEditingController();
+    TextEditingController ivaController = TextEditingController();
+    TextEditingController totalController = TextEditingController();
 
-  // Inicializar controladores para cada artículo
-  List<TextEditingController> tipoProductoControllers = [];
-  List<TextEditingController> cantidadControllers = [];
-  List<TextEditingController> descripcionControllers = [];
-  List<TextEditingController> precioCompraControllers = [];
-  List<TextEditingController> porcentajeGananciaControllers = [];
+    // Inicializar controladores para cada artículo
+    List<TextEditingController> tipoProductoControllers = [];
+    List<TextEditingController> cantidadControllers = [];
+    List<TextEditingController> descripcionControllers = [];
+    List<TextEditingController> precioCompraControllers = [];
+    List<TextEditingController> porcentajeGananciaControllers = [];
 
-  // Cargar los controladores con los datos iniciales de los artículos
-  for (var articulo in detalle['articulos']) {
-    tipoProductoControllers.add(TextEditingController(text: articulo['tipo']));
-    cantidadControllers.add(TextEditingController(text: articulo['cantidad'].toString()));
-    descripcionControllers.add(TextEditingController(text: articulo['descripcion']));
-    precioCompraControllers.add(TextEditingController(text: articulo['precio_compra'].toString()));
-    porcentajeGananciaControllers.add(TextEditingController(text: articulo['porcentaje'].toString()));
-  }
+    // Cargar los controladores con los datos iniciales de los artículos
+    for (var articulo in detalle['articulos']) {
+      tipoProductoControllers
+          .add(TextEditingController(text: articulo['tipo']));
+      cantidadControllers
+          .add(TextEditingController(text: articulo['cantidad'].toString()));
+      descripcionControllers
+          .add(TextEditingController(text: articulo['descripcion']));
+      precioCompraControllers.add(
+          TextEditingController(text: articulo['precio_compra'].toString()));
+      porcentajeGananciaControllers
+          .add(TextEditingController(text: articulo['porcentaje'].toString()));
+    }
 
-  // Cálculo de valores iniciales
-  calcularTotales(detalle, subtotalController, ivaController, totalController);
+    // Cálculo de valores iniciales
+    calcularTotales(
+        detalle, subtotalController, ivaController, totalController);
 
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      String? facturaSeleccionada = detalle['factura'];
-      String? tipoPagoSeleccionado = detalle['tipo_pago'];
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        String? facturaSeleccionada = detalle['factura'];
+        String? tipoPagoSeleccionado = detalle['tipo_pago'];
+        String cliente = detalle['cliente'];
+        String folio = detalle['folio'];
 
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            backgroundColor: Colors.white,
-            title: Text(
-              "Editar Artículos",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-                color: Color(0xFF001F3F),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              title: Text(
+                "Editar Artículos",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: Color(0xFF001F3F),
+                ),
               ),
-            ),
-            content: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Modifica los artículos y los valores se actualizarán automáticamente.',
-                    style: TextStyle(color: Colors.grey[700], fontSize: 14),
-                  ),
-                  Divider(height: 20, color: Colors.grey[300]),
-
-                  // Campo para nombre_venta
-                  _buildTextFieldValidator(
-                    controller: nombreVentaController,
-                    label: 'Nombre Venta',
-                  ),
-
-                  SizedBox(height: 10),
-
-                  // Campo para factura y tipo_pago en una fila
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              content: Container(
+                width: MediaQuery.of(context).size.width *
+                    0.5, // 80% del ancho de la pantalla
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: _buildDropdownField(
-                          label: 'Factura',
-                          value: facturaSeleccionada,
-                          items: ['Sí', 'No'],
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              facturaSeleccionada = newValue!;
-                            });
-                          },
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            'Modifica los artículos y los valores se actualizarán automáticamente.',
+                            style: TextStyle(
+                                color: Colors.grey[700], fontSize: 14),
+                          ),
+                        ],
                       ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: _buildDropdownField(
-                          label: 'Tipo de Pago',
-                          value: tipoPagoSeleccionado,
-                          items: ['Efectivo', 'Transferencia', 'No asignado'],
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              tipoPagoSeleccionado = newValue!;
-                            });
-                          },
-                        ),
+                      Divider(height: 20, color: Colors.grey[300]),
+                      Row(
+                        children: [
+                          // Campo deshabilitado para el nombre del cliente
+                          Expanded(
+                            child: _buildTextFieldDisabled(
+                              label: 'Cliente',
+                              value: cliente,
+                            ),
+                          ),
+                          SizedBox(width: 10), // Espacio entre los campos
+
+                          // Campo deshabilitado para el folio
+                          Expanded(
+                            child: _buildTextFieldDisabled(
+                              label: 'Folio',
+                              value: folio,
+                            ),
+                          ),
+                        ],
                       ),
+                      SizedBox(height: 10),
+                      // Campo para nombre_venta
+                      _buildTextFieldValidator(
+                        controller: nombreVentaController,
+                        label: 'Nombre Venta',
+                      ),
+
+                      SizedBox(height: 10),
+
+                      // Campo para factura y tipo_pago en una fila
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: _buildDropdownField(
+                              label: 'Factura',
+                              value: facturaSeleccionada,
+                              items: ['Si', 'No'],
+                              onChanged: (String? newValue) {
+                                setState(() {
+                                  facturaSeleccionada = newValue!;
+                                });
+                              },
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: _buildDropdownField(
+                              label: 'Tipo de Pago',
+                              value: tipoPagoSeleccionado,
+                              items: [
+                                'Efectivo',
+                                'Transferencia',
+                                'No asignado'
+                              ],
+                              onChanged: (String? newValue) {
+                                setState(() {
+                                  tipoPagoSeleccionado = newValue!;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: 10),
+                      Divider(height: 20, color: Colors.grey[300]),
+
+                      // Mostrar los artículos con sus controladores asignados
+                      ...detalle['articulos']
+                          .asMap()
+                          .entries
+                          .map<Widget>((entry) {
+                        int index = entry.key;
+                        var articulo = entry.value;
+
+                        // Variables para almacenar los resultados calculados
+                        double precioVentaUnitario = 0.0;
+                        double precioVentaTotal = 0.0;
+                        double gananciaPp = 0.0;
+                        double gananciaTotal = 0.0;
+
+                        // Función que recalcula los valores cuando se cambia algún campo
+                        void recalcularValores() {
+                          int cantidad =
+                              int.tryParse(cantidadControllers[index].text) ??
+                                  0;
+                          double precioCompra = double.tryParse(
+                                  precioCompraControllers[index].text) ??
+                              0.0;
+                          double porcentajeGanancia = double.tryParse(
+                                  porcentajeGananciaControllers[index].text) ??
+                              0.0;
+
+                          // Cálculo del precio de venta unitario
+                          precioVentaUnitario = precioCompra +
+                              (precioCompra * (porcentajeGanancia / 100));
+                          // Cálculo del precio de venta total
+                          precioVentaTotal = precioVentaUnitario * cantidad;
+                          // Cálculo de la ganancia por producto
+                          gananciaPp = precioVentaUnitario - precioCompra;
+                          // Cálculo de la ganancia total (ganancia por producto * cantidad)
+                          gananciaTotal = gananciaPp * cantidad;
+
+                          // Actualiza los valores dentro de articulo para reflejar los cambios
+                          articulo['precio_venta'] = precioVentaUnitario;
+                          articulo['ganancia'] = gananciaTotal;
+
+                          setState(() {});
+                        }
+
+                        // Realizar el cálculo inicial con los valores predeterminados
+                        recalcularValores();
+
+                        return Card(
+                          color: Colors.white,
+                          elevation: 2,
+                          margin: EdgeInsets.symmetric(vertical: 8.0),
+                          shape: RoundedRectangleBorder(
+                              side: BorderSide(width: 0.5, color: Colors.grey),
+                              borderRadius: BorderRadius.circular(10)),
+                          child: Padding(
+                            padding: EdgeInsets.all(10.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Producto: ${articulo['descripcion']}',
+                                  style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                                SizedBox(height: 20),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildTipoProductoDropdown(
+                                        label: 'Tipo Producto',
+                                        value:
+                                            tipoProductoControllers[index].text,
+                                        onChanged: (String? newValue) {
+                                          setState(() {
+                                            tipoProductoControllers[index]
+                                                .text = newValue!;
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                    SizedBox(width: 10),
+                                    Expanded(
+                                      child: _buildTextFieldValidator(
+                                        controller: cantidadControllers[index],
+                                        label: 'Cantidad',
+                                        inputType: TextInputType.number,
+                                        onChanged: (value) {
+                                          // Actualizar el detalle con el nuevo valor de cantidad
+                                          detalle['articulos'][index]
+                                                  ['cantidad'] =
+                                              int.tryParse(value!) ?? 0;
+
+                                          // Recalcular los valores individuales y totales
+                                          recalcularValores();
+                                          calcularTotales(
+                                              detalle,
+                                              subtotalController,
+                                              ivaController,
+                                              totalController);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildTextFieldValidator(
+                                        controller:
+                                            descripcionControllers[index],
+                                        label: 'Descripción',
+                                        inputType: TextInputType.text,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildTextFieldValidator(
+                                        controller:
+                                            precioCompraControllers[index],
+                                        label: 'Precio Compra',
+                                        inputType: TextInputType.number,
+                                        onChanged: (value) {
+                                          recalcularValores();
+                                          // Cálculo de valores iniciales
+                                          calcularTotales(
+                                              detalle,
+                                              subtotalController,
+                                              ivaController,
+                                              totalController);
+                                        },
+                                      ),
+                                    ),
+                                    SizedBox(width: 10),
+                                    Expanded(
+                                      child: _buildTextFieldValidator(
+                                        controller:
+                                            porcentajeGananciaControllers[
+                                                index],
+                                        label: '% Ganancia',
+                                        inputType: TextInputType.number,
+                                        onChanged: (value) {
+                                          recalcularValores();
+                                          // Cálculo de valores iniciales
+                                          calcularTotales(
+                                              detalle,
+                                              subtotalController,
+                                              ivaController,
+                                              totalController);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 8),
+                                Divider(),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'Precio Venta (Unitario): ${precioVentaUnitario.toStringAsFixed(2)}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        'Precio Venta (Total): ${precioVentaTotal.toStringAsFixed(2)}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                          'Ganancia por Producto: ${gananciaPp.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold)),
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                          'Ganancia Total: ${gananciaTotal.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold)),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+
+                      Divider(height: 20, color: Colors.grey[300]),
+                      _buildResumenTotal('Subtotal', subtotalController.text),
+                      _buildResumenTotal('IVA', ivaController.text),
+                      _buildResumenTotal('Total', totalController.text),
                     ],
                   ),
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: Text("Cancelar", style: TextStyle(color: Colors.red)),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                ElevatedButton(
+                  child: Text("Guardar", style: TextStyle(color: Colors.white)),
+                  onPressed: () async {
+                    // Actualizar `detalle` con los valores actuales de los controladores
+                    detalle['nombre_venta'] = nombreVentaController.text;
+                    detalle['factura'] = facturaSeleccionada;
+                    detalle['tipo_pago'] = tipoPagoSeleccionado;
 
-                  SizedBox(height: 15),
-
-                  // Mostrar los artículos con sus controladores asignados
-                  ...detalle['articulos'].asMap().entries.map<Widget>((entry) {
-                    int index = entry.key;
-                    var articulo = entry.value;
-
-                    // Variables para almacenar los resultados calculados
-                    double precioVentaUnitario = 0.0;
-                    double precioVentaTotal = 0.0;
-                    double gananciaPp = 0.0;
-                    double gananciaTotal = 0.0;
-
-                    // Función que recalcula los valores cuando se cambia algún campo
-                    void recalcularValores() {
-                      int cantidad = int.tryParse(cantidadControllers[index].text) ?? 0;
-                      double precioCompra = double.tryParse(precioCompraControllers[index].text) ?? 0.0;
-                      double porcentajeGanancia = double.tryParse(porcentajeGananciaControllers[index].text) ?? 0.0;
-
-                      // Cálculo del precio de venta unitario
-                      precioVentaUnitario = precioCompra + (precioCompra * (porcentajeGanancia / 100));
-                      // Cálculo del precio de venta total
-                      precioVentaTotal = precioVentaUnitario * cantidad;
-                      // Cálculo de la ganancia por producto
-                      gananciaPp = precioVentaUnitario - precioCompra;
-                      // Cálculo de la ganancia total (ganancia por producto * cantidad)
-                      gananciaTotal = gananciaPp * cantidad;
-
-                      // Actualiza los valores dentro de articulo para reflejar los cambios
-                      articulo['precio_venta'] = precioVentaUnitario;
-                      articulo['ganancia'] = gananciaTotal;
-
-                      setState(() {});
+                    // Actualizar cada artículo con los controladores correspondientes
+                    for (int i = 0; i < detalle['articulos'].length; i++) {
+                      detalle['articulos'][i]['tipo'] =
+                          tipoProductoControllers[i].text;
+                      detalle['articulos'][i]['cantidad'] =
+                          int.tryParse(cantidadControllers[i].text) ?? 0;
+                      detalle['articulos'][i]['descripcion'] =
+                          descripcionControllers[i].text;
+                      detalle['articulos'][i]['precio_compra'] =
+                          double.tryParse(precioCompraControllers[i].text) ??
+                              0.0;
+                      detalle['articulos'][i]['porcentaje'] = double.tryParse(
+                              porcentajeGananciaControllers[i].text) ??
+                          0.0;
                     }
 
-                    // Realizar el cálculo inicial con los valores predeterminados
-                    recalcularValores();
+                    // Imprimir el detalle actualizado en la consola
+                    print(jsonEncode(detalle));
 
-                    return Card(
-                      color: Colors.grey[100],
-                      elevation: 8,
-                      margin: EdgeInsets.symmetric(vertical: 8.0),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                      child: Padding(
-                        padding: EdgeInsets.all(10.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Producto: ${articulo['descripcion']}',
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.w600),
-                            ),
-                            SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildTextFieldValidator(
-                                    controller: tipoProductoControllers[index],
-                                    label: 'Tipo Producto',
-                                    inputType: TextInputType.text,
-                                  ),
-                                ),
-                                SizedBox(width: 10),
-                                Expanded(
-                                  child: _buildTextFieldValidator(
-                                    controller: cantidadControllers[index],
-                                    label: 'Cantidad',
-                                    inputType: TextInputType.number,
-                                    onChanged: (value) {
-                                      recalcularValores();
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildTextFieldValidator(
-                                    controller: descripcionControllers[index],
-                                    label: 'Descripción',
-                                    inputType: TextInputType.text,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildTextFieldValidator(
-                                    controller: precioCompraControllers[index],
-                                    label: 'Precio Compra',
-                                    inputType: TextInputType.number,
-                                    onChanged: (value) {
-                                      recalcularValores();
-                                    },
-                                  ),
-                                ),
-                                SizedBox(width: 10),
-                                Expanded(
-                                  child: _buildTextFieldValidator(
-                                    controller: porcentajeGananciaControllers[index],
-                                    label: '% Ganancia',
-                                    inputType: TextInputType.number,
-                                    onChanged: (value) {
-                                      recalcularValores();
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 8),
-                            Divider(),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'Precio Venta (Unitario): ${precioVentaUnitario.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    'Precio Venta (Total): ${precioVentaTotal.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'Ganancia por Producto: ${gananciaPp.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    'Ganancia Total: ${gananciaTotal.toStringAsFixed(2)}',
-                                     style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.green),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                    // Llamar a la nueva función para enviar los datos actualizados
+                    await actualizarVenta(context, folio, detalle);
 
-                  Divider(height: 20, color: Colors.grey[300]),
-                  _buildResumenTotal('Subtotal', subtotalController.text),
-                  _buildResumenTotal('IVA', ivaController.text),
-                  _buildResumenTotal('Total', totalController.text),
-                ],
-              ),
-            ),
-            actions: <Widget>[
-              TextButton(
-                child: Text("Cancelar", style: TextStyle(color: Colors.red)),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-              TextButton(
-                child: Text("Guardar", style: TextStyle(color: Colors.green)),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  // Actualiza los datos originales con los valores del detalle temporal
-                  detalleOriginal.addAll(detalle);
-                },
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
-}
+                    // Actualiza el detalle original
+                    detalleOriginal.addAll(detalle);
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF008f8f),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
 // Función para realizar una copia profunda de un Map en Dart
-Map<String, dynamic> deepCopy(Map<String, dynamic> original) {
-  return original.map((key, value) {
-    if (value is Map<String, dynamic>) {
-      return MapEntry(key, deepCopy(value));
-    } else if (value is List) {
-      return MapEntry(key, List.from(value.map((item) => item is Map<String, dynamic> ? deepCopy(item) : item)));
-    } else {
-      return MapEntry(key, value);
+  Map<String, dynamic> deepCopy(Map<String, dynamic> original) {
+    return original.map((key, value) {
+      if (value is Map<String, dynamic>) {
+        return MapEntry(key, deepCopy(value));
+      } else if (value is List) {
+        return MapEntry(
+            key,
+            List.from(value.map((item) =>
+                item is Map<String, dynamic> ? deepCopy(item) : item)));
+      } else {
+        return MapEntry(key, value);
+      }
+    });
+  }
+
+  Future<void> actualizarVenta(
+      BuildContext context, String folio, Map<String, dynamic> detalle) async {
+    final url =
+        Uri.parse('http://192.168.0.106:3000/api/v1/ventas/editar/$folio');
+
+    // Construcción manual del Map del body con todos los campos desglosados
+    Map<String, dynamic> body = {
+      "nombre_venta": detalle["nombre_venta"] ?? "Venta sin nombre",
+      "factura": detalle["factura"] ?? "No", // Valor por defecto si está vacío
+      "tipo_pago": detalle["tipo_pago"] ?? "Efectivo",
+      "articulos": detalle["articulos"].map((articulo) {
+        return {
+          "tipo":
+              articulo["tipo"] ?? "Producto", // Ejemplo de valor por defecto
+          "cantidad": articulo["cantidad"] ?? 1,
+          "ganancia": articulo["ganancia"] ?? 0,
+          "idarticulo": articulo["idarticulo"] ?? "ID no especificado",
+          "porcentaje": articulo["porcentaje"] ?? "0",
+          "descripcion":
+              articulo["descripcion"] ?? "Descripción no especificada",
+          "precio_venta": articulo["precio_venta"] ?? 0.0,
+          "precio_compra": articulo["precio_compra"] ?? 0.0,
+        };
+      }).toList(), // Se transforma cada artículo al formato adecuado
+      "subtotal": detalle["subtotal"] ?? 0.0,
+      "iva": detalle["iva"] ?? 0.0,
+      "total": detalle["total"] ?? 0.0,
+    };
+
+    print("\n=== Cuerpo estructurado que se enviará ===");
+    print(jsonEncode(
+        body)); // Aquí puedes ver cómo queda estructurado el body antes de enviarlo
+
+    try {
+      final response = await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(body), // Enviar el body estructurado como JSON
+      );
+
+      // Manejar la respuesta como ya lo habíamos hecho antes
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Venta actualizada exitosamente."),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Mostrar en consola la respuesta del servidor
+        print("Estado de la respuesta: ${response.statusCode}");
+        print("Cuerpo de la respuesta: ${response.body}");
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                Text("Error al actualizar la venta: ${response.reasonPhrase}"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error de conexión: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
-  });
-}
+  }
 
+  Widget _buildTipoProductoDropdown({
+    required String label,
+    required String? value,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return SizedBox(
+      height: 40.0,
+      child: DropdownButtonFormField<String>(
+        value: value,
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(
+            color: Colors.black54,
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30.0),
+            borderSide: BorderSide(color: Color(0xFF001F3F)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30.0),
+            borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: EdgeInsets.symmetric(vertical: 5, horizontal: 20),
+        ),
+        icon: Icon(
+          Icons.arrow_drop_down,
+          color: Color(0xFF001F3F),
+        ),
+        dropdownColor: Colors.white,
+        items: [
+          'Producto',
+          'Software',
+          'Servicio',
+        ].map((item) {
+          return DropdownMenuItem<String>(
+            value: item,
+            child: Text(
+              item,
+              style: TextStyle(color: Colors.black87, fontSize: 12),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
 
+  Widget _buildTextFieldDisabled({
+    required String label,
+    required String value,
+  }) {
+    return SizedBox(
+      height: 40.0,
+      child: TextFormField(
+        enabled: false,
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.grey[600], // Cambia aquí el color del texto
+        ),
+        initialValue: value,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(
+            color: Colors.black54,
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+          ),
+          floatingLabelBehavior: FloatingLabelBehavior.auto,
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30.0),
+            borderSide: BorderSide(
+                color: Color(0xFF001F3F)), // Color del borde en estado enfocado
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30.0),
+            borderSide: BorderSide(
+                color: Color(0xFF001F3F),
+                width: 1.5), // Color del borde habilitado
+          ),
+          disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30.0),
+            borderSide: BorderSide(
+                color: Colors.grey.shade300, width: 1.5), // Borde deshabilitado
+          ),
+          filled: true,
+          fillColor: Colors.grey.shade100,
+          contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 25),
+        ),
+      ),
+    );
+  }
 
   Widget _buildTextFieldValidator({
     required TextEditingController controller,
@@ -1869,31 +2156,34 @@ Map<String, dynamic> deepCopy(Map<String, dynamic> original) {
     TextInputType inputType = TextInputType.text,
     String? Function(String?)? onChanged,
   }) {
-    return TextFormField(
-      controller: controller,
-      style: TextStyle(fontSize: 14),
-      keyboardType: inputType,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(
-          color: Colors.black54,
-          fontWeight: FontWeight.w500,
-          fontSize: 14,
+    return SizedBox(
+      height: 40.0,
+      child: TextFormField(
+        controller: controller,
+        style: TextStyle(fontSize: 12),
+        keyboardType: inputType,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(
+            color: Colors.black54,
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+          ),
+          floatingLabelBehavior: FloatingLabelBehavior.auto,
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30.0),
+            borderSide: BorderSide(color: Color(0xFF001F3F)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30.0),
+            borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 25),
         ),
-        floatingLabelBehavior: FloatingLabelBehavior.auto,
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.0),
-          borderSide: BorderSide(color: Color(0xFF001F3F)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.0),
-          borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 25),
+        onChanged: onChanged,
       ),
-      onChanged: onChanged,
     );
   }
 
@@ -1903,42 +2193,45 @@ Map<String, dynamic> deepCopy(Map<String, dynamic> original) {
     required List<String> items,
     required ValueChanged<String?> onChanged,
   }) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      onChanged: onChanged,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(
-          color: Colors.black54,
-          fontWeight: FontWeight.w500,
-          fontSize: 14,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.0),
-          borderSide: BorderSide(color: Color(0xFF001F3F)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30.0),
-          borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-      ),
-      icon: Icon(
-        Icons.arrow_drop_down,
-        color: Color(0xFF001F3F),
-      ),
-      dropdownColor: Colors.white,
-      items: items.map((item) {
-        return DropdownMenuItem<String>(
-          value: item,
-          child: Text(
-            item,
-            style: TextStyle(color: Colors.black87, fontSize: 14),
+    return SizedBox(
+      height: 40.0,
+      child: DropdownButtonFormField<String>(
+        value: value,
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(
+            color: Colors.black54,
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
           ),
-        );
-      }).toList(),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30.0),
+            borderSide: BorderSide(color: Color(0xFF001F3F)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30.0),
+            borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: EdgeInsets.symmetric(vertical: 5, horizontal: 20),
+        ),
+        icon: Icon(
+          Icons.arrow_drop_down,
+          color: Color(0xFF001F3F),
+        ),
+        dropdownColor: Colors.white,
+        items: items.map((item) {
+          return DropdownMenuItem<String>(
+            value: item,
+            child: Text(
+              item,
+              style: TextStyle(color: Colors.black87, fontSize: 12),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -1951,11 +2244,11 @@ Map<String, dynamic> deepCopy(Map<String, dynamic> original) {
         children: [
           Text(
             label,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           Text(
             '\$$value',
-            style: TextStyle(fontSize: 16, color: Colors.blueGrey[600]),
+            style: TextStyle(fontSize: 14, color: Colors.blueGrey[600]),
           ),
         ],
       ),
