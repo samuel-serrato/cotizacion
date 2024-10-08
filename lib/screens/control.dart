@@ -1555,315 +1555,313 @@ class ControlScreenState extends State<ControlScreen>
     );
   }
 
-  void mostrarDialogoEdicion(
-      BuildContext context, Map<String, dynamic> detalle) {
-    TextEditingController nombreVentaController =
-        TextEditingController(text: detalle['nombre_venta']);
-    TextEditingController subtotalController = TextEditingController();
-    TextEditingController ivaController = TextEditingController();
-    TextEditingController totalController = TextEditingController();
+  void mostrarDialogoEdicion(BuildContext context, Map<String, dynamic> detalleOriginal) {
+  // Crear una copia profunda del 'detalle' original.
+  Map<String, dynamic> detalle = deepCopy(detalleOriginal);
 
-    // Cálculo de valores iniciales
-    calcularTotales(
-        detalle, subtotalController, ivaController, totalController);
+  // Crear los controladores fuera del builder para evitar recrearlos constantemente
+  TextEditingController nombreVentaController = TextEditingController(text: detalle['nombre_venta']);
+  TextEditingController subtotalController = TextEditingController();
+  TextEditingController ivaController = TextEditingController();
+  TextEditingController totalController = TextEditingController();
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        String? facturaSeleccionada = detalle['factura'];
-        String? tipoPagoSeleccionado = detalle['tipo_pago'];
+  // Inicializar controladores para cada artículo
+  List<TextEditingController> tipoProductoControllers = [];
+  List<TextEditingController> cantidadControllers = [];
+  List<TextEditingController> descripcionControllers = [];
+  List<TextEditingController> precioCompraControllers = [];
+  List<TextEditingController> porcentajeGananciaControllers = [];
 
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: Text(
-            "Editar Artículos",
-            style: TextStyle(
+  // Cargar los controladores con los datos iniciales de los artículos
+  for (var articulo in detalle['articulos']) {
+    tipoProductoControllers.add(TextEditingController(text: articulo['tipo']));
+    cantidadControllers.add(TextEditingController(text: articulo['cantidad'].toString()));
+    descripcionControllers.add(TextEditingController(text: articulo['descripcion']));
+    precioCompraControllers.add(TextEditingController(text: articulo['precio_compra'].toString()));
+    porcentajeGananciaControllers.add(TextEditingController(text: articulo['porcentaje'].toString()));
+  }
+
+  // Cálculo de valores iniciales
+  calcularTotales(detalle, subtotalController, ivaController, totalController);
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      String? facturaSeleccionada = detalle['factura'];
+      String? tipoPagoSeleccionado = detalle['tipo_pago'];
+
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            title: Text(
+              "Editar Artículos",
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
-                color: Color(0xFF001F3F)),
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Modifica los artículos y los valores se actualizarán automáticamente.',
-                  style: TextStyle(color: Colors.grey[700], fontSize: 14),
-                ),
-                Divider(height: 20, color: Colors.grey[300]),
-
-                // Campo para nombre_venta
-                _buildTextFieldValidator(
-                  controller: nombreVentaController,
-                  label: 'Nombre Venta',
-                ),
-
-                SizedBox(height: 10),
-
-                // Campo para factura y tipo_pago en una fila
-                Row(
-                  mainAxisAlignment: MainAxisAlignment
-                      .spaceBetween, // Alinea los elementos en los extremos
-                  children: [
-                    Expanded(
-                      child: _buildDropdownField(
-                        label: 'Factura',
-                        value: facturaSeleccionada,
-                        items: ['Sí', 'No'],
-                        onChanged: (String? newValue) {
-                          facturaSeleccionada = newValue!;
-                        },
-                      ),
-                    ),
-                    SizedBox(width: 10), // Espaciado entre los dropdowns
-                    Expanded(
-                      child: _buildDropdownField(
-                        label: 'Tipo de Pago',
-                        value: tipoPagoSeleccionado,
-                        items: ['Efectivo', 'Transferencia', 'No asignado'],
-                        onChanged: (String? newValue) {
-                          tipoPagoSeleccionado = newValue!;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: 15),
-
-                ...detalle['articulos'].map<Widget>((articulo) {
-                  // Controladores para los campos de texto
-                  TextEditingController tipoProductoController =
-                      TextEditingController(text: articulo['tipo']);
-                  TextEditingController cantidadController =
-                      TextEditingController(
-                          text: articulo['cantidad'].toString());
-                  TextEditingController descripcionController =
-                      TextEditingController(text: articulo['descripcion']);
-                  TextEditingController precioCompraController =
-                      TextEditingController(
-                          text: articulo['precio_compra'].toString());
-                  TextEditingController porcentajeGananciaController =
-                      TextEditingController(
-                          text: articulo['porcentaje'].toString());
-
-                  // Variables para almacenar los resultados calculados
-                  double precioVentaUnitario = 0.0;
-                  double precioVentaTotal = 0.0;
-                  double gananciaPp = 0.0;
-                  double gananciaTotal = 0.0;
-
-                  // Función que recalcula los valores cuando se cambia algún campo
-                  void recalcularValores() {
-                    // Recalcular valores basados en las entradas del usuario
-                    int cantidad = int.tryParse(cantidadController.text) ?? 0;
-                    double precioCompra =
-                        double.tryParse(precioCompraController.text) ?? 0.0;
-                    double porcentajeGanancia =
-                        double.tryParse(porcentajeGananciaController.text) ??
-                            0.0;
-
-                    // Cálculo del precio de venta unitario
-                    precioVentaUnitario = precioCompra +
-                        (precioCompra * (porcentajeGanancia / 100));
-                    // Cálculo del precio de venta total
-                    precioVentaTotal = precioVentaUnitario * cantidad;
-                    // Cálculo de la ganancia por producto
-                    gananciaPp = precioVentaUnitario - precioCompra;
-                    // Cálculo de la ganancia total (ganancia por producto * cantidad)
-                    gananciaTotal = gananciaPp * cantidad;
-
-                    // Actualiza los valores dentro de `articulo` para reflejar los cambios
-                    articulo['precio_venta'] = precioVentaUnitario;
-                    articulo['ganancia'] = gananciaTotal;
-                  }
-
-                  // Realizar el cálculo inicial con los valores predeterminados
-                  recalcularValores();
-
-                  return Card(
-                    color: Colors.grey[100],
-                    elevation: 8,
-                    margin: EdgeInsets.symmetric(vertical: 8.0),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    child: Padding(
-                      padding: EdgeInsets.all(10.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Producto: ${articulo['descripcion']}',
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w600),
-                          ),
-                          SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildTextFieldValidator(
-                                  controller: tipoProductoController,
-                                  label: 'Tipo Producto',
-                                  inputType: TextInputType.text,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      articulo['tipo'] = value;
-                                    });
-                                  },
-                                ),
-                              ),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: _buildTextFieldValidator(
-                                  controller: cantidadController,
-                                  label: 'Cantidad',
-                                  inputType: TextInputType.number,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      articulo['cantidad'] =
-                                          int.tryParse(value!) ?? 0;
-                                      recalcularValores();
-                                    });
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildTextFieldValidator(
-                                  controller: descripcionController,
-                                  label: 'Descripción',
-                                  inputType: TextInputType.text,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      articulo['descripcion'] = value;
-                                    });
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildTextFieldValidator(
-                                  controller: precioCompraController,
-                                  label: 'Precio Compra',
-                                  inputType: TextInputType.number,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      articulo['precio_compra'] =
-                                          double.tryParse(value!) ?? 0.0;
-                                      recalcularValores();
-                                    });
-                                  },
-                                ),
-                              ),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: _buildTextFieldValidator(
-                                  controller: porcentajeGananciaController,
-                                  label: '% Ganancia',
-                                  inputType: TextInputType.number,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      articulo['porcentaje'] =
-                                          double.tryParse(value!) ?? 0.0;
-                                      recalcularValores();
-                                    });
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 8),
-                          Divider(),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Precio Venta (Unitario): ${precioVentaUnitario.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  'Precio Venta (Total): ${precioVentaTotal.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Ganancia por Producto: ${gananciaPp.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue),
-                                ),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  'Ganancia Total: ${gananciaTotal.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.green),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-
-                Divider(height: 20, color: Colors.grey[300]),
-                _buildResumenTotal('Subtotal', subtotalController.text),
-                _buildResumenTotal('IVA', ivaController.text),
-                _buildResumenTotal('Total', totalController.text),
-              ],
+                color: Color(0xFF001F3F),
+              ),
             ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text("Cancelar", style: TextStyle(color: Colors.red)),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Modifica los artículos y los valores se actualizarán automáticamente.',
+                    style: TextStyle(color: Colors.grey[700], fontSize: 14),
+                  ),
+                  Divider(height: 20, color: Colors.grey[300]),
+
+                  // Campo para nombre_venta
+                  _buildTextFieldValidator(
+                    controller: nombreVentaController,
+                    label: 'Nombre Venta',
+                  ),
+
+                  SizedBox(height: 10),
+
+                  // Campo para factura y tipo_pago en una fila
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: _buildDropdownField(
+                          label: 'Factura',
+                          value: facturaSeleccionada,
+                          items: ['Sí', 'No'],
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              facturaSeleccionada = newValue!;
+                            });
+                          },
+                        ),
+                      ),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: _buildDropdownField(
+                          label: 'Tipo de Pago',
+                          value: tipoPagoSeleccionado,
+                          items: ['Efectivo', 'Transferencia', 'No asignado'],
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              tipoPagoSeleccionado = newValue!;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 15),
+
+                  // Mostrar los artículos con sus controladores asignados
+                  ...detalle['articulos'].asMap().entries.map<Widget>((entry) {
+                    int index = entry.key;
+                    var articulo = entry.value;
+
+                    // Variables para almacenar los resultados calculados
+                    double precioVentaUnitario = 0.0;
+                    double precioVentaTotal = 0.0;
+                    double gananciaPp = 0.0;
+                    double gananciaTotal = 0.0;
+
+                    // Función que recalcula los valores cuando se cambia algún campo
+                    void recalcularValores() {
+                      int cantidad = int.tryParse(cantidadControllers[index].text) ?? 0;
+                      double precioCompra = double.tryParse(precioCompraControllers[index].text) ?? 0.0;
+                      double porcentajeGanancia = double.tryParse(porcentajeGananciaControllers[index].text) ?? 0.0;
+
+                      // Cálculo del precio de venta unitario
+                      precioVentaUnitario = precioCompra + (precioCompra * (porcentajeGanancia / 100));
+                      // Cálculo del precio de venta total
+                      precioVentaTotal = precioVentaUnitario * cantidad;
+                      // Cálculo de la ganancia por producto
+                      gananciaPp = precioVentaUnitario - precioCompra;
+                      // Cálculo de la ganancia total (ganancia por producto * cantidad)
+                      gananciaTotal = gananciaPp * cantidad;
+
+                      // Actualiza los valores dentro de articulo para reflejar los cambios
+                      articulo['precio_venta'] = precioVentaUnitario;
+                      articulo['ganancia'] = gananciaTotal;
+
+                      setState(() {});
+                    }
+
+                    // Realizar el cálculo inicial con los valores predeterminados
+                    recalcularValores();
+
+                    return Card(
+                      color: Colors.grey[100],
+                      elevation: 8,
+                      margin: EdgeInsets.symmetric(vertical: 8.0),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      child: Padding(
+                        padding: EdgeInsets.all(10.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Producto: ${articulo['descripcion']}',
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.w600),
+                            ),
+                            SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildTextFieldValidator(
+                                    controller: tipoProductoControllers[index],
+                                    label: 'Tipo Producto',
+                                    inputType: TextInputType.text,
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: _buildTextFieldValidator(
+                                    controller: cantidadControllers[index],
+                                    label: 'Cantidad',
+                                    inputType: TextInputType.number,
+                                    onChanged: (value) {
+                                      recalcularValores();
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildTextFieldValidator(
+                                    controller: descripcionControllers[index],
+                                    label: 'Descripción',
+                                    inputType: TextInputType.text,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildTextFieldValidator(
+                                    controller: precioCompraControllers[index],
+                                    label: 'Precio Compra',
+                                    inputType: TextInputType.number,
+                                    onChanged: (value) {
+                                      recalcularValores();
+                                    },
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: _buildTextFieldValidator(
+                                    controller: porcentajeGananciaControllers[index],
+                                    label: '% Ganancia',
+                                    inputType: TextInputType.number,
+                                    onChanged: (value) {
+                                      recalcularValores();
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 8),
+                            Divider(),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Precio Venta (Unitario): ${precioVentaUnitario.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    'Precio Venta (Total): ${precioVentaTotal.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'Ganancia por Producto: ${gananciaPp.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    'Ganancia Total: ${gananciaTotal.toStringAsFixed(2)}',
+                                     style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.green),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+
+                  Divider(height: 20, color: Colors.grey[300]),
+                  _buildResumenTotal('Subtotal', subtotalController.text),
+                  _buildResumenTotal('IVA', ivaController.text),
+                  _buildResumenTotal('Total', totalController.text),
+                ],
+              ),
             ),
-            TextButton(
-              child: Text("Guardar", style: TextStyle(color: Colors.green)),
-              onPressed: () {
-                Navigator.of(context).pop();
-                setState(() {
-                  detalle['nombre_venta'] = nombreVentaController.text;
-                  detalle['factura'] = facturaSeleccionada;
-                  detalle['tipo_pago'] = tipoPagoSeleccionado;
-                  detalle['subtotal'] = subtotalController.text;
-                  detalle['iva'] = ivaController.text;
-                  detalle['total'] = totalController.text;
-                });
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+            actions: <Widget>[
+              TextButton(
+                child: Text("Cancelar", style: TextStyle(color: Colors.red)),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+              TextButton(
+                child: Text("Guardar", style: TextStyle(color: Colors.green)),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  // Actualiza los datos originales con los valores del detalle temporal
+                  detalleOriginal.addAll(detalle);
+                },
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+// Función para realizar una copia profunda de un Map en Dart
+Map<String, dynamic> deepCopy(Map<String, dynamic> original) {
+  return original.map((key, value) {
+    if (value is Map<String, dynamic>) {
+      return MapEntry(key, deepCopy(value));
+    } else if (value is List) {
+      return MapEntry(key, List.from(value.map((item) => item is Map<String, dynamic> ? deepCopy(item) : item)));
+    } else {
+      return MapEntry(key, value);
+    }
+  });
+}
+
+
 
   Widget _buildTextFieldValidator({
     required TextEditingController controller,
