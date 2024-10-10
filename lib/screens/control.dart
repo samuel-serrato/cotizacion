@@ -130,10 +130,10 @@ class ControlScreenState extends State<ControlScreen>
   Future<void> fetchDatos() async {
     try {
       final detallesResponse = await http.get(
-        Uri.parse('http://$baseUrl:3000/api/v1/detalles/'),
+        Uri.parse('http://$baseUrl/api/v1/detalles/'),
       );
       final clientesResponse = await http.get(
-        Uri.parse('http://$baseUrl:3000/api/v1/clientes/'),
+        Uri.parse('http://$baseUrl/api/v1/clientes/'),
       );
 
       if (detallesResponse.statusCode == 200) {
@@ -262,7 +262,7 @@ class ControlScreenState extends State<ControlScreen>
   Future<bool> actualizarEstado(String folio, String estado) async {
     try {
       final response = await http.post(
-        Uri.parse('http://$baseUrl:3000/api/v1/estados/agregar'),
+        Uri.parse('http://$baseUrl/api/v1/estados/agregar'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
@@ -1941,6 +1941,13 @@ class ControlScreenState extends State<ControlScreen>
                           0.0;
                     }
 
+                    // Actualizar los valores de subtotal, iva y total en el detalle
+                    detalle['subtotal'] =
+                        double.tryParse(subtotalController.text) ?? 0.0;
+                    detalle['iva'] = double.tryParse(ivaController.text) ?? 0.0;
+                    detalle['total'] =
+                        double.tryParse(totalController.text) ?? 0.0;
+
                     // Imprimir el detalle actualizado en la consola
                     print(jsonEncode(detalle));
 
@@ -1984,8 +1991,8 @@ class ControlScreenState extends State<ControlScreen>
 
   Future<void> actualizarVenta(
       BuildContext context, String folio, Map<String, dynamic> detalle) async {
-    final url =
-        Uri.parse('http://192.168.0.106:3000/api/v1/ventas/editar/$folio');
+    final url = Uri.parse('http://$baseUrl/api/v1/ventas/editar/$folio');
+    
 
     // Construcción manual del Map del body con todos los campos desglosados
     Map<String, dynamic> body = {
@@ -2043,6 +2050,8 @@ class ControlScreenState extends State<ControlScreen>
             backgroundColor: Colors.red,
           ),
         );
+        print("Estado de la respuesta: ${response.statusCode}");
+        print("Cuerpo de la respuesta: ${response.body}");
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

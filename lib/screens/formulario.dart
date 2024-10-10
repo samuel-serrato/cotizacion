@@ -58,7 +58,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   Future<void> fetchClients(String query) async {
-    final String url = 'http://$baseUrl:3000/api/v1/clientes/$query';
+    final String url = 'http://$baseUrl/api/v1/clientes/$query';
 
     try {
       final response = await http.get(Uri.parse(url));
@@ -236,7 +236,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   Future<void> _enviarIdCliente(String idCliente) async {
-    final String url = "http://$baseUrl:3000/api/v1/detalles/agregar";
+    final String url = "http://$baseUrl/api/v1/detalles/agregar";
 
     try {
       final response = await http.post(
@@ -847,7 +847,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     };
 
     final response = await http.post(
-      Uri.parse('http://$baseUrl:3000/api/v1/clientes/agregar'),
+      Uri.parse('http://$baseUrl/api/v1/clientes/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -888,7 +888,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://$baseUrl:3000/api/v1/articulos/agregar'),
+      Uri.parse('http://$baseUrl/api/v1/articulos/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body), // Enviar como array directamente
     );
@@ -958,7 +958,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
           ? idDetalleVentaCreado
           : idDetalleVentaExistente, // Determina el ID a usar
       "nombre_venta": _descController.text,
-      "productos": productos,
+      "articulos": productos,
       "factura": _requiereFactura ? "Si" : "No",
       "tipo_pago": (_selectedMetodoP == null || _selectedMetodoP!.isEmpty)
           ? "No asignado"
@@ -973,7 +973,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://$baseUrl:3000/api/v1/ventas/agregar'),
+      Uri.parse('http://$baseUrl/api/v1/ventas/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );

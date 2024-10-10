@@ -205,7 +205,7 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
 
   Future<List<ClienteData>> fetchClienteData() async {
     final response = await http.get(Uri.parse(
-        'http://$baseUrl:3000/api/v1/estadisticas/totalclientesxmes'));
+        'http://$baseUrl/api/v1/estadisticas/totalclientesxmes'));
     if (response.statusCode == 200) {
       List jsonResponse = json.decode(response.body);
       return jsonResponse.map((data) => ClienteData.fromJson(data)).toList();

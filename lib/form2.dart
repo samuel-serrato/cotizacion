@@ -58,7 +58,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   Future<void> fetchClients(String query) async {
-    final String url = 'http://$baseUrl:3000/api/v1/clientes/$query';
+    final String url = 'http://$baseUrl/api/v1/clientes/$query';
 
     try {
       final response = await http.get(Uri.parse(url));
@@ -766,7 +766,7 @@ String? idDetalleVenta; // ID del detalle de venta, ya sea para nuevo cliente o 
     };
 
     final response = await http.post(
-      Uri.parse('http://$baseUrl:3000/api/v1/clientes/agregar'),
+      Uri.parse('http://$baseUrl/api/v1/clientes/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -807,7 +807,7 @@ String? idDetalleVenta; // ID del detalle de venta, ya sea para nuevo cliente o 
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://$baseUrl:3000/api/v1/articulos/agregar'),
+      Uri.parse('http://$baseUrl/api/v1/articulos/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body), // Enviar como array directamente
     );
@@ -902,7 +902,7 @@ String? idDetalleVenta; // ID del detalle de venta, ya sea para nuevo cliente o 
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://$baseUrl:3000/api/v1/ventas/agregar'),
+      Uri.parse('http://$baseUrl/api/v1/ventas/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
