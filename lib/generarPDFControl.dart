@@ -242,8 +242,9 @@ Future<void> generarPDF(Map<String, dynamic> detalle) async {
                                 ),
                               ),
                               child: pw.Text(
-                                NumberToWords.convertDouble(
-                                    double.tryParse(detalle['total']) ?? 0.00),
+                                NumberToWords.convertDouble(double.tryParse(
+                                        detalle['total'].toString()) ??
+                                    0.00),
                                 style: pw.TextStyle(
                                     fontSize: 9, letterSpacing: -0.5),
                               ),
@@ -295,9 +296,9 @@ Future<void> generarPDF(Map<String, dynamic> detalle) async {
                                   padding: pw.EdgeInsets.only(
                                       right: 10, left: 10, top: 6),
                                   child: pw.Text(
-                                    formatCurrency(
-                                        double.tryParse(detalle['total']) ??
-                                            0.00),
+                                    formatCurrency(double.tryParse(
+                                            detalle['total'].toString()) ??
+                                        0.00),
                                     style: pw.TextStyle(fontSize: 10),
                                   ),
                                 ),

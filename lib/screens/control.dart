@@ -272,7 +272,7 @@ class ControlScreenState extends State<ControlScreen>
         }),
       );
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 201) {
         // Mostrar SnackBar de éxito
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -438,7 +438,10 @@ class ControlScreenState extends State<ControlScreen>
                         flex: 2,
                         child: DropdownButtonFormField<String>(
                           hint: Text('Método de Pago'),
-                          value: selectedMetodoPago,
+                          value: selectedMetodoPago != null &&
+                                  tiposPago.contains(selectedMetodoPago)
+                              ? selectedMetodoPago
+                              : null,
                           isExpanded: true,
                           decoration: InputDecoration(
                             labelText: 'Método de Pago',
@@ -489,7 +492,10 @@ class ControlScreenState extends State<ControlScreen>
                         flex: 2,
                         child: DropdownButtonFormField<String>(
                           hint: Text('Factura'),
-                          value: selectedFactura,
+                          value: selectedFactura != null &&
+                                  tiposPago.contains(selectedFactura)
+                              ? selectedFactura
+                              : null,
                           isExpanded: true,
                           decoration: InputDecoration(
                             labelText: 'Factura',
@@ -1767,8 +1773,12 @@ class ControlScreenState extends State<ControlScreen>
                                     Expanded(
                                       child: _buildTipoProductoDropdown(
                                         label: 'Tipo Producto',
-                                        value:
-                                            tipoProductoControllers[index].text,
+                                        value: tipoProductoControllers[index]
+                                                .text
+                                                .isEmpty
+                                            ? null
+                                            : tipoProductoControllers[index]
+                                                .text, // Verificar si el controlador está vacío
                                         onChanged: (String? newValue) {
                                           setState(() {
                                             tipoProductoControllers[index]
@@ -1901,7 +1911,34 @@ class ControlScreenState extends State<ControlScreen>
                           ),
                         );
                       }).toList(),
+                      // Botón para agregar un nuevo artículo vacío
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            // Agregar un nuevo artículo vacío
+                            detalle['articulos'].add({
+                              'tipo': null, // Cambiado a null
+                              'cantidad': 0,
+                              'descripcion': '',
+                              'precio_compra': 0.0,
+                              'porcentaje': 0.0,
+                              'precio_venta': 0.0,
+                              'ganancia': 0.0,
+                            });
 
+                            // Inicializar los controladores para el nuevo artículo
+                            tipoProductoControllers.add(
+                                TextEditingController()); // Inicializar como vacío
+                            cantidadControllers.add(TextEditingController());
+                            descripcionControllers.add(TextEditingController());
+                            precioCompraControllers
+                                .add(TextEditingController());
+                            porcentajeGananciaControllers
+                                .add(TextEditingController());
+                          });
+                        },
+                        child: Text('Agregar Artículo'),
+                      ),
                       Divider(height: 20, color: Colors.grey[300]),
                       _buildResumenTotal('Subtotal', subtotalController.text),
                       _buildResumenTotal('IVA', ivaController.text),
@@ -1992,7 +2029,6 @@ class ControlScreenState extends State<ControlScreen>
   Future<void> actualizarVenta(
       BuildContext context, String folio, Map<String, dynamic> detalle) async {
     final url = Uri.parse('http://$baseUrl/api/v1/ventas/editar/$folio');
-    
 
     // Construcción manual del Map del body con todos los campos desglosados
     Map<String, dynamic> body = {
@@ -2467,7 +2503,7 @@ class ControlScreenState extends State<ControlScreen>
                 );
 
                 final fechaEstado = estadoEncontrado != null
-                    ? estadoEncontrado['fechaestado']
+                    ? estadoEncontrado['fechaEstado']
                     : 'No disponible'; // Si no se encontró, indica que no ha llegado
 
                 // Color de la fecha basado en si es 'No disponible' o no

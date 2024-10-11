@@ -824,19 +824,18 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
-  String formatNombres(String? selectedPersonType, String nombres) {
-    // Si `selectedPersonType` es nulo o está vacío, solo retorna `nombres`.
-    if (selectedPersonType == null || selectedPersonType.isEmpty) {
+  String formatNombres(String selectedPersonType, String nombres) {
+    if (selectedPersonType == 'No asignado') {
       return nombres;
     }
-    // Si `selectedPersonType` tiene contenido, concatenarlo con `nombres`.
     return '$selectedPersonType $nombres';
   }
 
   Future<void> _guardarCliente() async {
     //String nombres = '$_selectedPersonType ${nombresController.text}';
     /* String nombres = nombresController.text; */
-    String nombres = formatNombres(_selectedPersonType, nombresController.text);
+    String nombres =
+        formatNombres(_selectedPersonType!, nombresController.text);
     String telefono = telefonoController.text;
     String email = emailController.text;
 

@@ -17,7 +17,7 @@ class ClienteData {
   factory ClienteData.fromJson(Map<String, dynamic> json) {
     return ClienteData(
       cliente: json['clientes'],
-      totalMes: double.parse(json['total_mes']),
+      totalMes: double.parse(json['total_mes_iva']),
       mesAno: json['mes-año'],
     );
   }
@@ -204,8 +204,8 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
   }
 
   Future<List<ClienteData>> fetchClienteData() async {
-    final response = await http.get(Uri.parse(
-        'http://$baseUrl/api/v1/estadisticas/totalclientesxmes'));
+    final response = await http.get(
+        Uri.parse('http://$baseUrl/api/v1/estadisticas/totalclientesxmes'));
     if (response.statusCode == 200) {
       List jsonResponse = json.decode(response.body);
       return jsonResponse.map((data) => ClienteData.fromJson(data)).toList();
@@ -276,7 +276,7 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(child: Text('Aún no hay datos para mostrar'));
           } else {
             return Column(
               children: [
