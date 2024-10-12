@@ -331,8 +331,6 @@ class _FormularioScreenState extends State<FormularioScreen> {
                                     false; // Marca como cliente existente
                               });
 
-                              _enviarIdCliente(client['idcliente']);
-
                               _overlayEntry?.remove(); // Cierra el overlay
                               _overlayEntry = null; // Limpiar referencia
                             },
@@ -834,8 +832,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
   Future<void> _guardarCliente() async {
     //String nombres = '$_selectedPersonType ${nombresController.text}';
     /* String nombres = nombresController.text; */
-    String nombres =
-        formatNombres(_selectedPersonType!, nombresController.text);
+    String nombres = formatNombres(
+        _selectedPersonType ?? 'No asignado', nombresController.text);
+
     String telefono = telefonoController.text;
     String email = emailController.text;
 
@@ -1733,6 +1732,14 @@ class _FormularioScreenState extends State<FormularioScreen> {
     // Si no hay un cliente seleccionado o esClienteNuevo es verdadero, entonces se crea un nuevo cliente.
     if (esClienteNuevo) {
       await _guardarCliente(); // Espera a que se guarde el cliente solo si es nuevo.
+    } else {
+      // Asegurarse de que el cliente existente se haya enviado correctamente
+      if (idDetalleVentaExistente.isNotEmpty) {
+        await _enviarIdCliente(idDetalleVentaExistente);
+      } else {
+        print('Error: No se ha asignado un idDetalleVentaExistente');
+        return; // Salir de la función si no hay ID del cliente
+      }
     }
 
     await _guardararticulo(context); // Espera a que se guarden los artículos.

@@ -1219,7 +1219,8 @@ class ControlScreenState extends State<ControlScreen>
                                                                       .center,
                                                             ),
                                                             Text(
-                                                              '\$${articuloDetalle['ganancia']?.toStringAsFixed(2) ?? '0.00'}',
+                                                              // Validamos que cantidad no sea 0 para evitar divisiones por 0
+                                                              '\$${(articuloDetalle['ganancia'] != null && articuloDetalle['cantidad'] != null && articuloDetalle['cantidad'] != 0) ? (articuloDetalle['ganancia'] / articuloDetalle['cantidad']).toStringAsFixed(2) : '0.00'}',
                                                               style: TextStyle(
                                                                   fontSize: 14),
                                                               textAlign:
@@ -1247,7 +1248,7 @@ class ControlScreenState extends State<ControlScreen>
                                                                       .center,
                                                             ),
                                                             Text(
-                                                              '\$${((double.tryParse(articuloDetalle['cantidad']?.toString() ?? '0') ?? 0) * (double.tryParse(articuloDetalle['ganancia']?.toString() ?? '0') ?? 0)).toStringAsFixed(2)}',
+                                                              '\$${((double.tryParse(articuloDetalle['ganancia']?.toString() ?? '0') ?? 0)).toStringAsFixed(2)}',
                                                               style: TextStyle(
                                                                   fontSize: 14),
                                                               textAlign:
