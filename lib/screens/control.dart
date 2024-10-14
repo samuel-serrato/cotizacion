@@ -1916,9 +1916,9 @@ class ControlScreenState extends State<ControlScreen>
                       ElevatedButton(
                         onPressed: () {
                           setState(() {
-                            // Agregar un nuevo artículo vacío
+                            // Agregar un nuevo artículo vacío a la lista de detalle
                             detalle['articulos'].add({
-                              'tipo': null, // Cambiado a null
+                              'tipo': null, // Tipo inicializado como null
                               'cantidad': 0,
                               'descripcion': '',
                               'precio_compra': 0.0,
@@ -1928,8 +1928,8 @@ class ControlScreenState extends State<ControlScreen>
                             });
 
                             // Inicializar los controladores para el nuevo artículo
-                            tipoProductoControllers.add(
-                                TextEditingController()); // Inicializar como vacío
+                            tipoProductoControllers
+                                .add(TextEditingController());
                             cantidadControllers.add(TextEditingController());
                             descripcionControllers.add(TextEditingController());
                             precioCompraControllers
@@ -1940,6 +1940,7 @@ class ControlScreenState extends State<ControlScreen>
                         },
                         child: Text('Agregar Artículo'),
                       ),
+
                       Divider(height: 20, color: Colors.grey[300]),
                       _buildResumenTotal('Subtotal', subtotalController.text),
                       _buildResumenTotal('IVA', ivaController.text),
@@ -1955,54 +1956,72 @@ class ControlScreenState extends State<ControlScreen>
                     Navigator.of(context).pop();
                   },
                 ),
-                ElevatedButton(
-                  child: Text("Guardar", style: TextStyle(color: Colors.white)),
-                  onPressed: () async {
-                    // Actualizar `detalle` con los valores actuales de los controladores
-                    detalle['nombre_venta'] = nombreVentaController.text;
-                    detalle['factura'] = facturaSeleccionada;
-                    detalle['tipo_pago'] = tipoPagoSeleccionado;
+                // En la función de guardar
+ElevatedButton(
+  child: Text("Guardar", style: TextStyle(color: Colors.white)),
+  onPressed: () async {
+    // Actualizar `detalle` con los valores actuales de los controladores
+    detalle['nombre_venta'] = nombreVentaController.text;
+    detalle['factura'] = facturaSeleccionada;
+    detalle['tipo_pago'] = tipoPagoSeleccionado;
 
-                    // Actualizar cada artículo con los controladores correspondientes
-                    for (int i = 0; i < detalle['articulos'].length; i++) {
-                      detalle['articulos'][i]['tipo'] =
-                          tipoProductoControllers[i].text;
-                      detalle['articulos'][i]['cantidad'] =
-                          int.tryParse(cantidadControllers[i].text) ?? 0;
-                      detalle['articulos'][i]['descripcion'] =
-                          descripcionControllers[i].text;
-                      detalle['articulos'][i]['precio_compra'] =
-                          double.tryParse(precioCompraControllers[i].text) ??
-                              0.0;
-                      detalle['articulos'][i]['porcentaje'] = double.tryParse(
-                              porcentajeGananciaControllers[i].text) ??
-                          0.0;
-                    }
+    // Lista para almacenar IDs de nuevos artículos
+    List<String> nuevosArticuloIds = [];
 
-                    // Actualizar los valores de subtotal, iva y total en el detalle
-                    detalle['subtotal'] =
-                        double.tryParse(subtotalController.text) ?? 0.0;
-                    detalle['iva'] = double.tryParse(ivaController.text) ?? 0.0;
-                    detalle['total'] =
-                        double.tryParse(totalController.text) ?? 0.0;
+    // Actualizar cada artículo con los controladores correspondientes
+for (int i = 0; i < detalle['articulos'].length; i++) {
+  detalle['articulos'][i]['tipo'] =
+      tipoProductoControllers[i].text;
+  detalle['articulos'][i]['cantidad'] =
+      int.tryParse(cantidadControllers[i].text) ?? 0;
+  detalle['articulos'][i]['descripcion'] =
+      descripcionControllers[i].text;
+  detalle['articulos'][i]['precio_compra'] =
+      double.tryParse(precioCompraControllers[i].text) ?? 0.0;
+  detalle['articulos'][i]['porcentaje'] =
+      double.tryParse(porcentajeGananciaControllers[i].text) ?? 0.0;
 
-                    // Imprimir el detalle actualizado en la consola
-                    print(jsonEncode(detalle));
+  // Verificar si el artículo tiene idarticulo; si no, será un nuevo artículo
+  if (detalle['articulos'][i]['idarticulo'] == null) {
+    // Guardar el artículo y obtener su ID
+    List<String> nuevoArticuloIds = await _guardararticulo(context, [detalle['articulos'][i]]);
+    if (nuevoArticuloIds.isNotEmpty) {
+      detalle['articulos'][i]['idarticulo'] = nuevoArticuloIds.first; // Asignar el primer ID
+      nuevosArticuloIds.add(nuevoArticuloIds.first);
+    }
+  }
+}
 
-                    // Llamar a la nueva función para enviar los datos actualizados
-                    await actualizarVenta(context, folio, detalle);
 
-                    // Actualiza el detalle original
-                    detalleOriginal.addAll(detalle);
-                    Navigator.of(context).pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF008f8f),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                  ),
-                ),
+    // Calcular subtotal, iva, total si es necesario
+    double subtotal = 0;
+    for (var articulo in detalle['articulos']) {
+      subtotal += articulo['precio_venta'] * articulo['cantidad'];
+    }
+    double iva = subtotal * 0.16;
+    double total = subtotal + iva;
+
+    detalle['subtotal'] = subtotal;
+    detalle['iva'] = iva;
+    detalle['total'] = total;
+
+    // Llamar a la función actualizarVenta
+    await actualizarVenta(context, folio, detalle);
+
+    // Actualizar el detalle original
+    detalleOriginal.addAll(detalle);
+
+    // Cerrar el diálogo
+    Navigator.of(context).pop();
+  },
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Color(0xFF008f8f),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(24),
+    ),
+  ),
+),
+
               ],
             );
           },
@@ -2027,78 +2046,135 @@ class ControlScreenState extends State<ControlScreen>
     });
   }
 
-  Future<void> actualizarVenta(
-      BuildContext context, String folio, Map<String, dynamic> detalle) async {
-    final url = Uri.parse('http://$baseUrl/api/v1/ventas/editar/$folio');
-
-    // Construcción manual del Map del body con todos los campos desglosados
-    Map<String, dynamic> body = {
-      "nombre_venta": detalle["nombre_venta"] ?? "Venta sin nombre",
-      "factura": detalle["factura"] ?? "No", // Valor por defecto si está vacío
-      "tipo_pago": detalle["tipo_pago"] ?? "Efectivo",
-      "articulos": detalle["articulos"].map((articulo) {
-        return {
-          "tipo":
-              articulo["tipo"] ?? "Producto", // Ejemplo de valor por defecto
-          "cantidad": articulo["cantidad"] ?? 1,
-          "ganancia": articulo["ganancia"] ?? 0,
-          "idarticulo": articulo["idarticulo"] ?? "ID no especificado",
-          "porcentaje": articulo["porcentaje"] ?? "0",
-          "descripcion":
-              articulo["descripcion"] ?? "Descripción no especificada",
-          "precio_venta": articulo["precio_venta"] ?? 0.0,
-          "precio_compra": articulo["precio_compra"] ?? 0.0,
-        };
-      }).toList(), // Se transforma cada artículo al formato adecuado
-      "subtotal": detalle["subtotal"] ?? 0.0,
-      "iva": detalle["iva"] ?? 0.0,
-      "total": detalle["total"] ?? 0.0,
-    };
-
-    print("\n=== Cuerpo estructurado que se enviará ===");
-    print(jsonEncode(
-        body)); // Aquí puedes ver cómo queda estructurado el body antes de enviarlo
-
-    try {
-      final response = await http.put(
-        url,
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(body), // Enviar el body estructurado como JSON
-      );
-
-      // Manejar la respuesta como ya lo habíamos hecho antes
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Venta actualizada exitosamente."),
-            backgroundColor: Colors.green,
-          ),
-        );
-        // Mostrar en consola la respuesta del servidor
-        print("Estado de la respuesta: ${response.statusCode}");
-        print("Cuerpo de la respuesta: ${response.body}");
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text("Error al actualizar la venta: ${response.reasonPhrase}"),
-            backgroundColor: Colors.red,
-          ),
-        );
-        print("Estado de la respuesta: ${response.statusCode}");
-        print("Cuerpo de la respuesta: ${response.body}");
+  Future<List<String>> _guardararticulo(
+      BuildContext context, List<dynamic> articulos) async {
+    List<String> articuloIds = [];
+    // Verifica si los artículos tienen un tipo válido
+    for (var item in articulos) {
+      if (item['tipo'] == null || item['tipo'].isEmpty) {
+        print(
+            'Error: El tipo del artículo "${item['descripcion']}" está vacío.');
+        return [];
       }
-    } catch (e) {
+    }
+
+    // Construye el cuerpo del POST
+    final body = articulos.map((item) {
+      return {
+        'descripcion': item['descripcion'],
+        'tipo': item['tipo'],
+        'precio_compra': item['precio_compra'].toString(),
+      };
+    }).toList();
+
+    // Asegúrate de que el cuerpo es un objeto JSON válido
+    print('Cuerpo del POST para artículos: ${json.encode(body)}');
+
+    // Hacer el POST request
+    final response = await http.post(
+      Uri.parse('http://$baseUrl/api/v1/articulos/agregar'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(body),
+    );
+
+    if (response.statusCode == 201) {
+      final responseData = json.decode(response.body);
+      articuloIds = List<String>.from(responseData['id']);
+      print('Artículos guardados con éxito: $articuloIds');
+      return articuloIds; // Devuelve los IDs de los artículos guardados
+    } else {
+      print('Error al guardar los artículos: ${response.body}');
+      return [];
+    }
+  }
+  
+
+  Future<void> actualizarVenta(
+    BuildContext context, String folio, Map<String, dynamic> detalle) async {
+  
+  final url = Uri.parse('http://$baseUrl/api/v1/ventas/editar/$folio');
+
+  // Iteramos sobre los artículos y verificamos si tienen un ID (es decir, si ya existen)
+  List<Map<String, dynamic>> articulosParaEnviar = detalle["articulos"].map<Map<String, dynamic>>((articulo) {
+    // Si tiene un idarticulo, significa que ya existe y solo lo actualizamos
+    if (articulo.containsKey("idarticulo") && articulo["idarticulo"] != null) {
+      return {
+        "idarticulo": articulo["idarticulo"],
+        "tipo": articulo["tipo"] ?? "Producto",
+        "cantidad": articulo["cantidad"] ?? 1,
+        "ganancia": articulo["ganancia"] ?? 0.0,
+        "porcentaje": articulo["porcentaje"] ?? 0.0,
+        "descripcion": articulo["descripcion"] ?? "Descripción no especificada",
+        "precio_venta": articulo["precio_venta"] ?? 0.0,
+        "precio_compra": articulo["precio_compra"] ?? 0.0,
+      };
+    } else {
+      // Si no tiene idarticulo, es un artículo nuevo y lo agregamos
+      return {
+        "tipo": articulo["tipo"] ?? "Producto",
+        "cantidad": articulo["cantidad"] ?? 1,
+        "ganancia": articulo["ganancia"] ?? 0.0,
+        "porcentaje": articulo["porcentaje"] ?? 0.0,
+        "descripcion": articulo["descripcion"] ?? "Descripción no especificada",
+        "precio_venta": articulo["precio_venta"] ?? 0.0,
+        "precio_compra": articulo["precio_compra"] ?? 0.0,
+      };
+    }
+  }).toList();
+
+  // Construimos el body con los datos de la venta y los artículos
+  Map<String, dynamic> body = {
+    "nombre_venta": detalle["nombre_venta"] ?? "Venta sin nombre",
+    "factura": detalle["factura"] ?? "No", // Valor por defecto
+    "tipo_pago": detalle["tipo_pago"] ?? "Efectivo",
+    "articulos": articulosParaEnviar,
+    "subtotal": detalle["subtotal"] ?? 0.0,
+    "iva": detalle["iva"] ?? 0.0,
+    "total": detalle["total"] ?? 0.0,
+  };
+
+  print("\n=== Cuerpo estructurado que se enviará ===");
+  print(jsonEncode(body)); // Aquí puedes ver cómo queda estructurado el body antes de enviarlo
+
+  try {
+    final response = await http.put(
+      url,
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(body), // Enviar el body estructurado como JSON
+    );
+
+    if (response.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Error de conexión: $e"),
+          content: Text("Venta actualizada exitosamente."),
+          backgroundColor: Colors.green,
+        ),
+      );
+      print("Estado de la respuesta: ${response.statusCode}");
+      print("Cuerpo de la respuesta: ${response.body}");
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error al actualizar la venta: ${response.reasonPhrase}"),
           backgroundColor: Colors.red,
         ),
       );
+      print("Estado de la respuesta: ${response.statusCode}");
+      print("Cuerpo de la respuesta: ${response.body}");
     }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("Error de conexión: $e"),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
+
+
 
   Widget _buildTipoProductoDropdown({
     required String label,

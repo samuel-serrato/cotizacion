@@ -9,15 +9,47 @@ import 'package:fl_chart/fl_chart.dart';
 class ClienteData {
   final String cliente;
   final double totalMes;
+  final double gananciaTotal;
+  final double ivaTotal;
   final String mesAno;
 
-  ClienteData(
-      {required this.cliente, required this.totalMes, required this.mesAno});
+  ClienteData({
+    required this.cliente,
+    required this.totalMes,
+    required this.gananciaTotal,
+    required this.ivaTotal,
+    required this.mesAno,
+  });
 
   factory ClienteData.fromJson(Map<String, dynamic> json) {
     return ClienteData(
       cliente: json['clientes'],
       totalMes: double.parse(json['total_mes_iva']),
+      gananciaTotal: double.parse(json['ganancia_Total']),
+      ivaTotal: double.parse(json['iva_total']),
+      mesAno: json['mes-año'],
+    );
+  }
+}
+
+class TotalMesData {
+  final double gananciaTotal;
+  final double ivaTotal;
+  final double ventaTotal;
+  final String mesAno;
+
+  TotalMesData({
+    required this.gananciaTotal,
+    required this.ivaTotal,
+    required this.ventaTotal,
+    required this.mesAno,
+  });
+
+  factory TotalMesData.fromJson(Map<String, dynamic> json) {
+    return TotalMesData(
+      gananciaTotal: double.parse(json['ganancia_total']),
+      ivaTotal: double.parse(json['iva_total']),
+      ventaTotal: double.parse(json['venta_total']),
       mesAno: json['mes-año'],
     );
   }
@@ -27,14 +59,22 @@ double roundUpToNearestMultiple(double value, double multiple) {
   return (value / multiple).ceil() * multiple;
 }
 
-class ClienteChart extends StatelessWidget {
+// Clase CustomChart
+class CustomChart extends StatelessWidget {
   final List<ClienteData> data;
   final int month;
   final int year;
+  final String title; // Título del gráfico
+  final String dataKey; // Clave para seleccionar el dato a mostrar
 
-  const ClienteChart(
-      {Key? key, required this.data, required this.month, required this.year})
-      : super(key: key);
+  const CustomChart({
+    Key? key,
+    required this.data,
+    required this.month,
+    required this.year,
+    required this.title,
+    required this.dataKey, // Agregar el nuevo parámetro
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -46,8 +86,25 @@ class ClienteChart extends StatelessWidget {
 
     Map<String, double> totalsByClient = {};
     for (var clienteData in monthlyData) {
+      double totalValue;
+      switch (dataKey) {
+        case 'ganancia_Total':
+          totalValue =
+              clienteData.gananciaTotal; // Aquí puedes cambiar la lógica
+          break;
+        case 'iva_total':
+          totalValue = clienteData.ivaTotal;
+          break;
+        case 'total_mes_iva':
+          totalValue = clienteData.totalMes; // Suponiendo que es el mismo valor
+          break;
+        default:
+          totalValue = 0; // Valor por defecto si no coincide
+          break;
+      }
+
       totalsByClient[clienteData.cliente] =
-          (totalsByClient[clienteData.cliente] ?? 0) + clienteData.totalMes;
+          (totalsByClient[clienteData.cliente] ?? 0) + totalValue;
     }
 
     if (totalsByClient.isEmpty) {
@@ -85,75 +142,93 @@ class ClienteChart extends StatelessWidget {
         child: Container(
           color: Colors.white, // Color de fondo de la gráfica
           padding: const EdgeInsets.all(16.0),
-          child: BarChart(
-            BarChartData(
-              minY: minY,
-              maxY: maxY,
-              titlesData: FlTitlesData(
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      if (value.toInt() >= totalsByClient.length)
-                        return Container();
-                      return SideTitleWidget(
-                        axisSide: meta.axisSide,
-                        child: Text(
-                          totalsByClient.keys.elementAt(value.toInt()),
-                          style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blueGrey),
+          child: Column(
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              Expanded(
+                child: BarChart(
+                  BarChartData(
+                    minY: minY,
+                    maxY: maxY,
+                    titlesData: FlTitlesData(
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) {
+                            if (value.toInt() >= totalsByClient.length)
+                              return Container();
+                            return SideTitleWidget(
+                              axisSide: meta.axisSide,
+                              child: Text(
+                                totalsByClient.keys.elementAt(value.toInt()),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blueGrey,
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          interval: 10000,
+                          reservedSize: 60,
+                          getTitlesWidget: (value, meta) {
+                            return SideTitleWidget(
+                              axisSide: meta.axisSide,
+                              child: Text(
+                                '${value.toInt()}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.blueGrey,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      rightTitles:
+                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles:
+                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    ),
+                    gridData: FlGridData(
+                      show: true,
+                      horizontalInterval: 10000,
+                      getDrawingHorizontalLine: (value) {
+                        return FlLine(
+                          color: Colors.grey.withOpacity(0.2),
+                          strokeWidth: 1,
+                          dashArray: [5, 5],
+                        );
+                      },
+                      drawVerticalLine: false,
+                    ),
+                    borderData: FlBorderData(
+                      show: true,
+                      border: Border(
+                        left: BorderSide(color: Colors.grey.shade300, width: 1),
+                        bottom:
+                            BorderSide(color: Colors.grey.shade300, width: 1),
+                      ),
+                    ),
+                    barGroups: barGroups,
+                    barTouchData: barTouchData,
                   ),
                 ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    interval: 10000,
-                    reservedSize: 60,
-                    getTitlesWidget: (value, meta) {
-                      return SideTitleWidget(
-                        axisSide: meta.axisSide,
-                        child: Text(
-                          '${value.toInt()}',
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.blueGrey,
-                              fontWeight: FontWeight.bold),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                rightTitles:
-                    AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles:
-                    AxisTitles(sideTitles: SideTitles(showTitles: false)),
               ),
-              gridData: FlGridData(
-                show: true,
-                horizontalInterval: 10000,
-                getDrawingHorizontalLine: (value) {
-                  return FlLine(
-                      color: Colors.grey.withOpacity(0.2),
-                      strokeWidth: 1,
-                      dashArray: [5, 5]);
-                },
-                drawVerticalLine: false,
-              ),
-              borderData: FlBorderData(
-                show: true,
-                border: Border(
-                  left: BorderSide(color: Colors.grey.shade300, width: 1),
-                  bottom: BorderSide(color: Colors.grey.shade300, width: 1),
-                ),
-              ),
-              barGroups: barGroups,
-              barTouchData: barTouchData,
-            ),
+            ],
           ),
         ),
       ),
@@ -205,10 +280,23 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
 
   Future<List<ClienteData>> fetchClienteData() async {
     final response = await http.get(
-        Uri.parse('http://$baseUrl/api/v1/estadisticas/totalclientesxmes'));
+      Uri.parse('http://$baseUrl/api/v1/estadisticas/totalclientesxmes'),
+    );
     if (response.statusCode == 200) {
       List jsonResponse = json.decode(response.body);
       return jsonResponse.map((data) => ClienteData.fromJson(data)).toList();
+    } else {
+      throw Exception('Failed to load data');
+    }
+  }
+
+  Future<List<TotalMesData>> fetchTotalMesData() async {
+    final response = await http.get(
+      Uri.parse('http://192.168.1.14:3000/api/v1/estadisticas/totalxmes'),
+    );
+    if (response.statusCode == 200) {
+      List jsonResponse = json.decode(response.body);
+      return jsonResponse.map((data) => TotalMesData.fromJson(data)).toList();
     } else {
       throw Exception('Failed to load data');
     }
@@ -283,7 +371,9 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
                 // Fila de selección de meses y año
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      vertical: 8.0, horizontal: 16.0),
+                    vertical: 8.0,
+                    horizontal: 16.0,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -315,15 +405,18 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
                                 boxShadow: selectedMonth == index
                                     ? [
                                         BoxShadow(
-                                            color: Colors.blueAccent
-                                                .withOpacity(0.3),
-                                            blurRadius: 6,
-                                            offset: Offset(0, 3))
+                                          color: Colors.blueAccent
+                                              .withOpacity(0.3),
+                                          blurRadius: 6,
+                                          offset: Offset(0, 3),
+                                        )
                                       ]
                                     : null,
                               ),
                               padding: const EdgeInsets.symmetric(
-                                  vertical: 12.0, horizontal: 10.0),
+                                vertical: 12.0,
+                                horizontal: 10.0,
+                              ),
                               margin: const EdgeInsets.only(
                                   right: 8.0), // Espacio entre meses
                               child: Text(
@@ -347,7 +440,9 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
                           Text(
                             'Año: $selectedYear',
                             style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           IconButton(
                             icon: Icon(Icons.calendar_today),
@@ -360,17 +455,254 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
                   ),
                 ),
 
-                // Gráfico de Clientes
+                // Gráficos de Clientes
+                // Gráficos de Clientes
                 Expanded(
-                  child: ClienteChart(
-                      data: snapshot.data!,
-                      month: selectedMonth,
-                      year: selectedYear),
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: CustomChart(
+                                data: snapshot.data!,
+                                month: selectedMonth,
+                                year: selectedYear,
+                                title: 'Total de Ventas',
+                                dataKey: 'total_mes_iva', // Agregar dataKey
+                              ),
+                            ),
+                            Expanded(
+                              child: CustomChart(
+                                data: snapshot.data!,
+                                month: selectedMonth,
+                                year: selectedYear,
+                                title: 'Ganancia Total',
+                                dataKey: 'ganancia_Total', // Agregar dataKey
+                              ),
+                            ),
+                            SizedBox(width: 8), // Espacio entre gráficos
+                            Expanded(
+                              child: CustomChart(
+                                data: snapshot.data!,
+                                month: selectedMonth,
+                                year: selectedYear,
+                                title: 'IVA Total',
+                                dataKey: 'iva_total', // Agregar dataKey
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: 8), // Espacio entre filas de gráficos
+                      Expanded(
+                        child: Row(
+                          children: [
+                            SizedBox(width: 8), // Espacio entre gráficos
+                            // Gráfico 4
+                            Expanded(
+                              child: FutureBuilder<List<TotalMesData>>(
+                                future: fetchTotalMesData(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return const Center(
+                                        child: CircularProgressIndicator());
+                                  } else if (snapshot.hasError) {
+                                    return Center(
+                                        child: Text(
+                                            'Error al cargar datos de totalxmes'));
+                                  } else {
+                                    return TotalMesChart(
+                                      data: snapshot
+                                          .data!, // Pasamos los datos del endpoint
+                                      month: selectedMonth,
+                                      year: selectedYear,
+                                      title:
+                                          'Totales por mes',
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             );
           }
         },
+      ),
+    );
+  }
+}
+
+class TotalMesChart extends StatelessWidget {
+  final List<TotalMesData> data;
+  final int month;
+  final int year;
+  final String title;
+
+  const TotalMesChart({
+    Key? key,
+    required this.data,
+    required this.month,
+    required this.year,
+    required this.title,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    List<TotalMesData> monthlyData = data.where((d) {
+      final monthYear = d.mesAno.split('-');
+      return int.parse(monthYear[0]) - 1 == month &&
+          int.parse(monthYear[1]) == year;
+    }).toList();
+
+    if (monthlyData.isEmpty) {
+      return Center(child: Text('No hay datos para este mes y año.'));
+    }
+
+    List<BarChartGroupData> barGroups = [];
+    int index = 0;
+
+    for (var totalMesData in monthlyData) {
+      barGroups.add(
+        BarChartGroupData(
+          x: index++,
+          barRods: [
+            BarChartRodData(
+              toY: totalMesData.gananciaTotal,
+              color: Colors.green.withOpacity(0.7),
+              width: 16,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            BarChartRodData(
+              toY: totalMesData.ivaTotal,
+              color: Colors.red.withOpacity(0.7),
+              width: 16,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            BarChartRodData(
+              toY: totalMesData.ventaTotal,
+              color: Colors.blue.withOpacity(0.7),
+              width: 16,
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ],
+          showingTooltipIndicators: [0, 1, 2],
+        ),
+      );
+    }
+
+    double maxY = roundUpToNearestMultiple(
+        monthlyData
+            .map((d) => [d.gananciaTotal, d.ivaTotal, d.ventaTotal]
+                .reduce((a, b) => a > b ? a : b))
+            .reduce((a, b) => a > b ? a : b),
+        5000);
+    double minY = 0;
+
+    return SizedBox(
+      height: 300, // Cambia la altura aquí si es necesario
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Container(
+          color: Colors.white, // Color de fondo de la gráfica
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              Expanded(
+                child: BarChart(
+                  BarChartData(
+                    minY: minY,
+                    maxY: maxY,
+                    titlesData: FlTitlesData(
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) {
+                            if (value.toInt() >= monthlyData.length)
+                              return Container();
+                            return SideTitleWidget(
+                              axisSide: meta.axisSide,
+                              child: Text(
+                                monthlyData[value.toInt()].mesAno,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blueGrey,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          interval: 10000,
+                          reservedSize: 60,
+                          getTitlesWidget: (value, meta) {
+                            return SideTitleWidget(
+                              axisSide: meta.axisSide,
+                              child: Text(
+                                '${value.toInt()}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.blueGrey,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      rightTitles:
+                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles:
+                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    ),
+                    gridData: FlGridData(
+                      show: true,
+                      horizontalInterval: 10000,
+                      getDrawingHorizontalLine: (value) {
+                        return FlLine(
+                          color: Colors.grey.withOpacity(0.2),
+                          strokeWidth: 1,
+                          dashArray: [5, 5],
+                        );
+                      },
+                      drawVerticalLine: false,
+                    ),
+                    borderData: FlBorderData(
+                      show: true,
+                      border: Border(
+                        left: BorderSide(color: Colors.grey.shade300, width: 1),
+                        bottom:
+                            BorderSide(color: Colors.grey.shade300, width: 1),
+                      ),
+                    ),
+                    barGroups: barGroups,
+                    barTouchData: barTouchData,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
