@@ -126,7 +126,7 @@ class CustomChart extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
           ),
         ],
-        showingTooltipIndicators: [0],
+        showingTooltipIndicators: [1],
       ));
     });
 
@@ -159,24 +159,24 @@ class CustomChart extends StatelessWidget {
                     maxY: maxY,
                     titlesData: FlTitlesData(
                       bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (value, meta) {
-                            if (value.toInt() >= totalsByClient.length)
-                              return Container();
-                            return SideTitleWidget(
-                              axisSide: meta.axisSide,
-                              child: Text(
-                                totalsByClient.keys.elementAt(value.toInt()),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blueGrey,
-                                ),
+                        axisNameWidget: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 8.0, left: 30),
+                            child: Text(
+                              'clientes',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.blueGrey,
+                                fontWeight: FontWeight.bold,
                               ),
-                            );
-                          },
+                            ),
+                          ),
                         ),
+                        axisNameSize:
+                            30, // Ajusta este valor según sea necesario para el espacio
+                        sideTitles: SideTitles(
+                            showTitles:
+                                false), // Oculta los títulos de cada barra
                       ),
                       leftTitles: AxisTitles(
                         sideTitles: SideTitles(
@@ -224,7 +224,8 @@ class CustomChart extends StatelessWidget {
                       ),
                     ),
                     barGroups: barGroups,
-                    barTouchData: barTouchData,
+                    barTouchData:
+                        barTouchData(totalsByClient), // Pasa el mapa aquí
                   ),
                 ),
               ),
@@ -236,25 +237,33 @@ class CustomChart extends StatelessWidget {
   }
 }
 
-BarTouchData get barTouchData => BarTouchData(
-      enabled: true,
-      touchTooltipData: BarTouchTooltipData(
-        getTooltipItem: (
-          BarChartGroupData group,
-          int groupIndex,
-          BarChartRodData rod,
-          int rodIndex,
-        ) {
-          return BarTooltipItem(
-            '${rod.toY.round()}',
-            TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          );
-        },
-      ),
-    );
+BarTouchData barTouchData(Map<String, double> totalsByClient) {
+  return BarTouchData(
+    enabled: true,
+    touchTooltipData: BarTouchTooltipData(
+      //tooltipBgColor: Colors.blueGrey,
+      getTooltipItem: (
+        BarChartGroupData group,
+        int groupIndex,
+        BarChartRodData rod,
+        int rodIndex,
+      ) {
+        final cliente = totalsByClient.keys
+            .elementAt(group.x); // Obtener el nombre del cliente
+        final total = rod.toY; // Obtener el valor correspondiente
+
+        return BarTooltipItem(
+          '$cliente\n${total.toStringAsFixed(2)}', // Muestra el nombre y el total
+          TextStyle(
+            fontSize: 12,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        );
+      },
+    ),
+  );
+}
 
 // Pantalla principal
 class EstadisticasScreen extends StatefulWidget {
@@ -292,7 +301,7 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
 
   Future<List<TotalMesData>> fetchTotalMesData() async {
     final response = await http.get(
-      Uri.parse('http://192.168.1.14:3000/api/v1/estadisticas/totalxmes'),
+      Uri.parse('http://$baseUrl/api/v1/estadisticas/totalxmes'),
     );
     if (response.statusCode == 200) {
       List jsonResponse = json.decode(response.body);
@@ -498,7 +507,6 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
                       Expanded(
                         child: Row(
                           children: [
-                            SizedBox(width: 8), // Espacio entre gráficos
                             // Gráfico 4
                             Expanded(
                               child: FutureBuilder<List<TotalMesData>>(
@@ -518,8 +526,7 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
                                           .data!, // Pasamos los datos del endpoint
                                       month: selectedMonth,
                                       year: selectedYear,
-                                      title:
-                                          'Totales por mes',
+                                      title: 'Totales por mes',
                                     );
                                   }
                                 },
@@ -540,9 +547,9 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
   }
 }
 
-class TotalMesChart extends StatelessWidget {
+class TotalMesChart extends StatefulWidget {
   final List<TotalMesData> data;
-  final int month;
+  final int month; // Este parámetro puede no ser necesario para este gráfico
   final int year;
   final String title;
 
@@ -555,56 +562,108 @@ class TotalMesChart extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    List<TotalMesData> monthlyData = data.where((d) {
+  _TotalMesChartState createState() => _TotalMesChartState();
+}
+
+class _TotalMesChartState extends State<TotalMesChart> {
+  double maxY = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _calculateMaxY();
+  }
+
+  void _calculateMaxY() {
+    // Filtrar los datos para el año específico
+    List<TotalMesData> yearlyData = widget.data.where((d) {
       final monthYear = d.mesAno.split('-');
-      return int.parse(monthYear[0]) - 1 == month &&
-          int.parse(monthYear[1]) == year;
+      return int.parse(monthYear[1]) == widget.year;
     }).toList();
 
-    if (monthlyData.isEmpty) {
-      return Center(child: Text('No hay datos para este mes y año.'));
+    // Crear listas de valores para los 12 meses
+    List<double> gananciaValues = List.filled(12, 0.0);
+    List<double> ivaValues = List.filled(12, 0.0);
+    List<double> ventaValues = List.filled(12, 0.0);
+
+    // Llenar las listas con los datos correspondientes
+    for (var d in yearlyData) {
+      int monthIndex = int.parse(d.mesAno.split('-')[0]) -
+          1; // Obtener el índice del mes (0-11)
+      gananciaValues[monthIndex] += d.gananciaTotal;
+      ivaValues[monthIndex] += d.ivaTotal;
+      ventaValues[monthIndex] += d.ventaTotal;
     }
 
-    List<BarChartGroupData> barGroups = [];
-    int index = 0;
+    double maxGanancia = gananciaValues.reduce((a, b) => a > b ? a : b);
+    double maxIva = ivaValues.reduce((a, b) => a > b ? a : b);
+    double maxVenta = ventaValues.reduce((a, b) => a > b ? a : b);
 
-    for (var totalMesData in monthlyData) {
-      barGroups.add(
-        BarChartGroupData(
-          x: index++,
-          barRods: [
-            BarChartRodData(
-              toY: totalMesData.gananciaTotal,
-              color: Colors.green.withOpacity(0.7),
-              width: 16,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            BarChartRodData(
-              toY: totalMesData.ivaTotal,
-              color: Colors.red.withOpacity(0.7),
-              width: 16,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            BarChartRodData(
-              toY: totalMesData.ventaTotal,
-              color: Colors.blue.withOpacity(0.7),
-              width: 16,
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ],
-          showingTooltipIndicators: [0, 1, 2],
-        ),
-      );
+    // Obtener el máximo general y ajustar para el eje Y
+    maxY = (maxGanancia > maxIva && maxGanancia > maxVenta)
+        ? maxGanancia
+        : (maxIva > maxGanancia && maxIva > maxVenta)
+            ? maxIva
+            : maxVenta;
+
+    // Aumentar el máximo para que tenga un margen
+    maxY *= 1.2; // Aumentar el 10% del valor máximo
+  }
+
+  void _increaseMaxY() {
+    setState(() {
+      maxY *= 2; // Duplicar el máximo
+    });
+  }
+
+  void _decreaseMaxY() {
+    setState(() {
+      maxY /= 2; // Reducir a la mitad el máximo
+      if (maxY < 0) maxY = 1; // Asegúrate de que maxY no sea negativo
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Filtrar los datos para el año específico
+    List<TotalMesData> yearlyData = widget.data.where((d) {
+      final monthYear = d.mesAno.split('-');
+      return int.parse(monthYear[1]) == widget.year;
+    }).toList();
+
+    if (yearlyData.isEmpty) {
+      return Center(child: Text('No hay datos para este año.'));
     }
 
-    double maxY = roundUpToNearestMultiple(
-        monthlyData
-            .map((d) => [d.gananciaTotal, d.ivaTotal, d.ventaTotal]
-                .reduce((a, b) => a > b ? a : b))
-            .reduce((a, b) => a > b ? a : b),
-        5000);
-    double minY = 0;
+    // Crear listas de valores para los 12 meses
+    List<double> gananciaValues = List.filled(12, 0.0);
+    List<double> ivaValues = List.filled(12, 0.0);
+    List<double> ventaValues = List.filled(12, 0.0);
+
+    // Llenar las listas con los datos correspondientes
+    for (var d in yearlyData) {
+      int monthIndex = int.parse(d.mesAno.split('-')[0]) -
+          1; // Obtener el índice del mes (0-11)
+      gananciaValues[monthIndex] += d.gananciaTotal;
+      ivaValues[monthIndex] += d.ivaTotal;
+      ventaValues[monthIndex] += d.ventaTotal;
+    }
+
+    // Meses del año para etiquetas
+    List<String> monthLabels = [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic'
+    ];
 
     return SizedBox(
       height: 300, // Cambia la altura aquí si es necesario
@@ -617,93 +676,187 @@ class TotalMesChart extends StatelessWidget {
           child: Column(
             children: [
               Text(
-                title,
+                widget.title,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
               ),
+              SizedBox(height: 10),
               Expanded(
-                child: BarChart(
-                  BarChartData(
-                    minY: minY,
-                    maxY: maxY,
+                child: LineChart(
+                  LineChartData(
+                    gridData: FlGridData(show: true),
                     titlesData: FlTitlesData(
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (value, meta) {
-                            if (value.toInt() >= monthlyData.length)
-                              return Container();
-                            return SideTitleWidget(
-                              axisSide: meta.axisSide,
-                              child: Text(
-                                monthlyData[value.toInt()].mesAno,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blueGrey,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
                       leftTitles: AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
-                          interval: 10000,
-                          reservedSize: 60,
+                          reservedSize:
+                              60, // Aumentar el espacio reservado para las etiquetas
                           getTitlesWidget: (value, meta) {
-                            return SideTitleWidget(
-                              axisSide: meta.axisSide,
-                              child: Text(
-                                '${value.toInt()}',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.blueGrey,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            );
+                            // Ajustar la frecuencia de las etiquetas
+                            return value % 1000 ==
+                                    0 // Mostrar etiquetas en intervalos de 1000
+                                ? Text(
+                                    value.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.blueGrey,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                : const SizedBox.shrink();
                           },
                         ),
                       ),
-                      rightTitles:
-                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      topTitles:
-                          AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    ),
-                    gridData: FlGridData(
-                      show: true,
-                      horizontalInterval: 10000,
-                      getDrawingHorizontalLine: (value) {
-                        return FlLine(
-                          color: Colors.grey.withOpacity(0.2),
-                          strokeWidth: 1,
-                          dashArray: [5, 5],
-                        );
-                      },
-                      drawVerticalLine: false,
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 38,
+                          getTitlesWidget: (value, meta) {
+                            // Mostrar solo las etiquetas de enero, abril, julio y octubre
+                            if (value == 0 ||
+                                value == 1 ||
+                                value == 2 ||
+                                value == 3 ||
+                                value == 4 ||
+                                value == 5 ||
+                                value == 6 ||
+                                value == 7 ||
+                                value == 8 ||
+                                value == 9 ||
+                                value == 10 ||
+                                value == 11) {
+                              return Text(
+                                monthLabels[value.toInt()],
+                                style: const TextStyle(
+                                  color: Colors.blueGrey,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              );
+                            } else {
+                              return const SizedBox
+                                  .shrink(); // Evita que se muestre un título si no es enero, abril, julio o octubre
+                            }
+                          },
+                        ),
+                      ),
+                      topTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      rightTitles: AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
                     ),
                     borderData: FlBorderData(
                       show: true,
-                      border: Border(
-                        left: BorderSide(color: Colors.grey.shade300, width: 1),
-                        bottom:
-                            BorderSide(color: Colors.grey.shade300, width: 1),
+                      border: Border.all(
+                          color: Colors.blueGrey,
+                          width: 0.5), // Cambiar color y ancho
+                    ),
+                    minX: 0,
+                    maxX: 11, // Para mostrar los 12 meses
+                    minY: 0,
+                    maxY: maxY, // Usar el máximo ajustado
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: List.generate(gananciaValues.length, (index) {
+                          return FlSpot(index.toDouble(),
+                              gananciaValues[index].clamp(0.0, maxY));
+                        }),
+                        isCurved: true,
+                        color: Colors.green,
+                        dotData: FlDotData(show: true),
+                        belowBarData: BarAreaData(show: false),
+                      ),
+                      LineChartBarData(
+                        spots: List.generate(ivaValues.length, (index) {
+                          return FlSpot(index.toDouble(),
+                              ivaValues[index].clamp(0.0, maxY));
+                        }),
+                        isCurved: true,
+                        color: Colors.red,
+                        dotData: FlDotData(show: true),
+                        belowBarData: BarAreaData(show: false),
+                      ),
+                      LineChartBarData(
+                        spots: List.generate(ventaValues.length, (index) {
+                          return FlSpot(index.toDouble(),
+                              ventaValues[index].clamp(0.0, maxY));
+                        }),
+                        isCurved: true,
+                        color: Colors.blue,
+                        dotData: FlDotData(show: true),
+                        belowBarData: BarAreaData(show: false),
+                      ),
+                    ],
+                    lineTouchData: LineTouchData(
+                      touchTooltipData: LineTouchTooltipData(
+                          // tooltipBgColor: Colors.black54,
+                          ),
+                    ),
+                  ),
+                ),
+              ),
+              // Botones para ajustar el rango
+
+              // Leyenda
+              // Leyenda y botones para ajustar el rango
+              // Botones para ajustar el rango y Leyenda
+              Container(
+                //color: Colors.red,
+                height: 30, // Ajusta la altura aquí
+                child: Row(
+                  children: [
+                    IconButton(
+                      iconSize: 18,
+                      icon: Icon(Icons.add),
+                      onPressed: _increaseMaxY,
+                    ),
+                    IconButton(
+                      iconSize: 18,
+                      icon: Icon(Icons.remove),
+                      onPressed: _decreaseMaxY,
+                    ),
+                    Expanded(
+                      // Expande este espacio para centrar las leyendas
+                      child: Row(
+                        mainAxisAlignment:
+                            MainAxisAlignment.center, // Centrar las leyendas
+                        children: [
+                          _buildLegend(Colors.green, 'Ganancia'),
+                          SizedBox(width: 20), // Espacio entre leyendas
+                          _buildLegend(Colors.red, 'IVA'),
+                          SizedBox(width: 20), // Espacio entre leyendas
+                          _buildLegend(Colors.blue, 'Ventas'),
+                          SizedBox(width: 70),
+                        ],
                       ),
                     ),
-                    barGroups: barGroups,
-                    barTouchData: barTouchData,
-                  ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildLegend(Color color, String label) {
+    return Row(
+      children: [
+        Container(
+          width: 15,
+          height: 15,
+          color: color,
+        ),
+        SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(color: Colors.blueGrey, fontWeight: FontWeight.bold),
+        ),
+      ],
     );
   }
 }
