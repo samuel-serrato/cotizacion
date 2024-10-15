@@ -75,6 +75,8 @@ class ControlScreenState extends State<ControlScreen>
     setState(() {
       filteredDetalles = detalles.where((detalle) {
         final cliente = detalle['cliente']?.toLowerCase() ?? '';
+        final nombreVenta = detalle['nombre_venta']?.toLowerCase() ?? '';
+        final folio = detalle['folio']?.toLowerCase() ?? '';
         final estadoList = detalle['estado_actual'] as List<dynamic>?;
         final estado = estadoList != null && estadoList.isNotEmpty
             ? estadoList.first['estado']
@@ -93,7 +95,11 @@ class ControlScreenState extends State<ControlScreen>
         print('Selected Date: $selectedDate');
 
         // Coincidencias
-        final matchesQuery = cliente.contains(query);
+        //Buscar en cliente, nombre de venta y folio
+        final matchesQuery = cliente.contains(query) ||
+            nombreVenta.contains(query) ||
+            folio.contains(query);
+        // Buscar en el estado actual
         final matchesEstado =
             selectedEstado == 'Todos' || estado == selectedEstado;
         final matchesMetodoPago =
@@ -359,7 +365,7 @@ class ControlScreenState extends State<ControlScreen>
                             style: TextStyle(fontSize: 14),
                             controller: _searchController,
                             decoration: InputDecoration(
-                              labelText: 'Buscar cliente',
+                              labelText: 'Buscar',
                               labelStyle: TextStyle(
                                 color: Colors.black54,
                                 fontWeight: FontWeight.w500,
@@ -379,6 +385,15 @@ class ControlScreenState extends State<ControlScreen>
                               fillColor: Colors.white,
                               contentPadding: EdgeInsets.symmetric(
                                   vertical: 15, horizontal: 20),
+                              prefixIcon: Icon(
+                                size: 20,
+                                Icons.search, // Icono de lupa
+                                color: Colors.grey,
+                              ),
+                              prefixIconConstraints: BoxConstraints(
+                                minWidth:
+                                    50, 
+                              ),
                             ),
                           ),
                         ),
