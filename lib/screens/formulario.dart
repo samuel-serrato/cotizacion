@@ -49,6 +49,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
   Map<String, dynamic>?
       selectedClient; // Variable para almacenar el cliente seleccionado
 
+  bool _isLoading = false; // Variable para gestionar el estado de carga
+
   @override
   void dispose() {
     _overlayEntry?.remove();
@@ -58,7 +60,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   Future<void> fetchClients(String query) async {
-    final String url = 'http://$baseUrl/api/v1/clientes/$query';
+    final String url = 'https://$baseUrl/api/v1/clientes/$query';
 
     try {
       final response = await http.get(Uri.parse(url));
@@ -180,48 +182,64 @@ class _FormularioScreenState extends State<FormularioScreen> {
         toggleDarkMode: _toggleDarkMode,
         title: 'Formulario', // Título específico para esta pantalla
       ),
-      body: Container(
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(30, 10, 30,
-                    100), // Ajusta el padding inferior para dejar espacio al botón
-                child: Form(
-                  key: _formKey, // Asigna la clave al formulario
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionTitle('DESCRIPCIÓN DE COTIZACIÓN'),
-                      _buildDesc(),
-                      SizedBox(height: 20),
-                      _buildSectionTitle('CLIENTE'),
-                      SizedBox(height: 10),
-                      _buildClienteInfo(),
-                      SizedBox(height: 30),
-                      _buildSectionTitle('PRODUCTO'),
-                      SizedBox(height: 10),
-                      _buildarticuloInfo(),
-                      SizedBox(height: 30),
-                      _buildGananciaYPrecioVenta(), // Nuevo widget para mostrar ganancia y precio de venta
-                      _buildSectionTitle('RESUMEN'),
-                      _buildSummary(provider),
-                      SizedBox(height: 20),
-                      _buildProductTable(
-                          provider), // Tabla de articulos con ganancia total
-                    ],
-                  ),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(30, 10, 30,
+                  100), // Ajusta el padding inferior para dejar espacio al botón
+              child: Form(
+                key: _formKey, // Asigna la clave al formulario
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('DESCRIPCIÓN DE COTIZACIÓN'),
+                    _buildDesc(),
+                    SizedBox(height: 20),
+                    _buildSectionTitle('CLIENTE'),
+                    SizedBox(height: 10),
+                    _buildClienteInfo(),
+                    SizedBox(height: 30),
+                    _buildSectionTitle('PRODUCTO'),
+                    SizedBox(height: 10),
+                    _buildarticuloInfo(),
+                    SizedBox(height: 30),
+                    _buildGananciaYPrecioVenta(), // Nuevo widget para mostrar ganancia y precio de venta
+                    _buildSectionTitle('RESUMEN'),
+                    _buildSummary(provider),
+                    SizedBox(height: 20),
+                    _buildProductTable(
+                        provider), // Tabla de artículos con ganancia total
+                  ],
                 ),
               ),
             ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _buildButtons(),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _buildButtons(),
+          ),
+            if (_isLoading)
+                Positioned.fill(
+                  child: Container(
+                    color:
+                        Colors.black.withOpacity(0.3), // Oscurece todo el fondo
+                  ),
+                ),
+          // CircularProgressIndicator que se muestra en toda la pantalla
+          if (_isLoading)
+            Center(
+              child: Container(
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20)),
+                padding: EdgeInsets.all(30),
+                child: CircularProgressIndicator(),
+              ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -236,7 +254,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   Future<void> _enviarIdCliente(String idCliente) async {
-    final String url = "http://$baseUrl/api/v1/detalles/agregar";
+    final String url = "https://$baseUrl/api/v1/detalles/agregar";
 
     try {
       final response = await http.post(
@@ -845,7 +863,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     };
 
     final response = await http.post(
-      Uri.parse('http://$baseUrl/api/v1/clientes/agregar'),
+      Uri.parse('https://$baseUrl/api/v1/clientes/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -886,7 +904,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://$baseUrl/api/v1/articulos/agregar'),
+      Uri.parse('https://$baseUrl/api/v1/articulos/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body), // Enviar como array directamente
     );
@@ -971,7 +989,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
     // Hacer el POST request
     final response = await http.post(
-      Uri.parse('http://$baseUrl/api/v1/ventas/agregar'),
+      Uri.parse('https://$baseUrl/api/v1/ventas/agregar'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
     );
@@ -1729,28 +1747,38 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   void _guardarCotizacion(BuildContext context) async {
-    // Si no hay un cliente seleccionado o esClienteNuevo es verdadero, entonces se crea un nuevo cliente.
-    if (esClienteNuevo) {
-      await _guardarCliente(); // Espera a que se guarde el cliente solo si es nuevo.
-    } else {
-      // Asegurarse de que el cliente existente se haya enviado correctamente
-      if (idDetalleVentaExistente.isNotEmpty) {
-        await _enviarIdCliente(idDetalleVentaExistente);
+    setState(() {
+      _isLoading = true; // Inicia la carga
+    });
+
+    try {
+      if (esClienteNuevo) {
+        await _guardarCliente(); // Espera a que se guarde el cliente solo si es nuevo.
       } else {
-        print('Error: No se ha asignado un idDetalleVentaExistente');
-        return; // Salir de la función si no hay ID del cliente
+        if (idDetalleVentaExistente.isNotEmpty) {
+          await _enviarIdCliente(idDetalleVentaExistente);
+        } else {
+          print('Error: No se ha asignado un idDetalleVentaExistente');
+          return;
+        }
       }
-    }
 
-    await _guardararticulo(context); // Espera a que se guarden los artículos.
+      await _guardararticulo(context); // Espera a que se guarden los artículos.
 
-    // Solo intenta guardar la venta si hay un ID de cliente asignado
-    if (esClienteNuevo && idDetalleVentaCreado.isNotEmpty) {
-      await _guardarVenta(context);
-    } else if (!esClienteNuevo && idDetalleVentaExistente.isNotEmpty) {
-      await _guardarVenta(context);
-    } else {
-      print('Error: iddetalleventa está vacío.'); // Manejo de error
+      if (esClienteNuevo && idDetalleVentaCreado.isNotEmpty) {
+        await _guardarVenta(context);
+      } else if (!esClienteNuevo && idDetalleVentaExistente.isNotEmpty) {
+        await _guardarVenta(context);
+      } else {
+        print('Error: iddetalleventa está vacío.'); // Manejo de error
+      }
+    } catch (e) {
+      print('Error al guardar la cotización: $e');
+      // Aquí puedes mostrar un mensaje de error si lo deseas
+    } finally {
+      setState(() {
+        _isLoading = false; // Finaliza la carga
+      });
     }
   }
 

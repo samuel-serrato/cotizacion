@@ -161,7 +161,7 @@ class CustomChart extends StatelessWidget {
                       bottomTitles: AxisTitles(
                         axisNameWidget: Center(
                           child: Padding(
-                            padding: const EdgeInsets.only(top: 8.0, left: 30),
+                            padding: const EdgeInsets.only(top: 8.0, left: 50),
                             child: Text(
                               'clientes',
                               style: TextStyle(
@@ -490,7 +490,6 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
                                 dataKey: 'ganancia_Total', // Agregar dataKey
                               ),
                             ),
-                            SizedBox(width: 8), // Espacio entre gráficos
                             Expanded(
                               child: CustomChart(
                                 data: snapshot.data!,
@@ -791,10 +790,38 @@ class _TotalMesChartState extends State<TotalMesChart> {
                       ),
                     ],
                     lineTouchData: LineTouchData(
-                      touchTooltipData: LineTouchTooltipData(
-                          // tooltipBgColor: Colors.black54,
-                          ),
-                    ),
+  touchTooltipData: LineTouchTooltipData(
+    getTooltipColor: (touchedSpot) => const Color.fromARGB(255, 64, 91, 105),
+    tooltipPadding: const EdgeInsets.all(8),
+    tooltipRoundedRadius: 8,
+    getTooltipItems: (touchedSpots) {
+      return touchedSpots.map((touchedSpot) {
+        String label;
+        switch (touchedSpot.barIndex) {
+          case 0:
+            label = 'Ganancia';
+            break;
+          case 1:
+            label = 'IVA';
+            break;
+          case 2:
+            label = 'Ventas';
+            break;
+          default:
+            label = '';
+        }
+        return LineTooltipItem(
+          '$label: ${touchedSpot.y}',
+          const TextStyle(
+            color: Colors.white, // Cambia el color del texto a blanco aquí
+            fontWeight: FontWeight.bold,
+          ),
+        );
+      }).toList();
+    },
+  ),
+),
+
                   ),
                 ),
               ),
