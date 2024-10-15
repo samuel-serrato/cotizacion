@@ -121,8 +121,12 @@ Future<void> generatePdf(CotizacionProvider provider) async {
                                 pw.Text('Correo:',
                                     style: pw.TextStyle(fontSize: 12)),
                                 pw.SizedBox(width: 5),
-                                pw.Text(provider.email,
-                                    style: pw.TextStyle(fontSize: 12)),
+                                pw.Text(
+                                  provider.email.isNotEmpty
+                                      ? provider.email
+                                      : 'No asignado',
+                                  style: pw.TextStyle(fontSize: 12),
+                                ),
                               ],
                             ),
                           ],

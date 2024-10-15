@@ -373,7 +373,13 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Aún no hay datos para mostrar'));
+            return Center(
+              child: Text(
+                'No hay datos para mostrar', // Mensaje cuando no hay datos
+                style: TextStyle(
+                    fontSize: 18, color: Colors.black54), // Estilo del texto
+              ),
+            );
           } else {
             return Column(
               children: [
@@ -790,38 +796,39 @@ class _TotalMesChartState extends State<TotalMesChart> {
                       ),
                     ],
                     lineTouchData: LineTouchData(
-  touchTooltipData: LineTouchTooltipData(
-    getTooltipColor: (touchedSpot) => const Color.fromARGB(255, 64, 91, 105),
-    tooltipPadding: const EdgeInsets.all(8),
-    tooltipRoundedRadius: 8,
-    getTooltipItems: (touchedSpots) {
-      return touchedSpots.map((touchedSpot) {
-        String label;
-        switch (touchedSpot.barIndex) {
-          case 0:
-            label = 'Ganancia';
-            break;
-          case 1:
-            label = 'IVA';
-            break;
-          case 2:
-            label = 'Ventas';
-            break;
-          default:
-            label = '';
-        }
-        return LineTooltipItem(
-          '$label: ${touchedSpot.y}',
-          const TextStyle(
-            color: Colors.white, // Cambia el color del texto a blanco aquí
-            fontWeight: FontWeight.bold,
-          ),
-        );
-      }).toList();
-    },
-  ),
-),
-
+                      touchTooltipData: LineTouchTooltipData(
+                        getTooltipColor: (touchedSpot) =>
+                            const Color.fromARGB(255, 64, 91, 105),
+                        tooltipPadding: const EdgeInsets.all(8),
+                        tooltipRoundedRadius: 8,
+                        getTooltipItems: (touchedSpots) {
+                          return touchedSpots.map((touchedSpot) {
+                            String label;
+                            switch (touchedSpot.barIndex) {
+                              case 0:
+                                label = 'Ganancia';
+                                break;
+                              case 1:
+                                label = 'IVA';
+                                break;
+                              case 2:
+                                label = 'Ventas';
+                                break;
+                              default:
+                                label = '';
+                            }
+                            return LineTooltipItem(
+                              '$label: ${touchedSpot.y}',
+                              const TextStyle(
+                                color: Colors
+                                    .white, // Cambia el color del texto a blanco aquí
+                                fontWeight: FontWeight.bold,
+                              ),
+                            );
+                          }).toList();
+                        },
+                      ),
+                    ),
                   ),
                 ),
               ),

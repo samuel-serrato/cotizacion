@@ -132,7 +132,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     'PROF.',
     'ABG.',
     'ABGDA.',
-    'No asignado',
+    'N/A',
     'OTRO'
   ];
 
@@ -171,12 +171,22 @@ class _FormularioScreenState extends State<FormularioScreen> {
     });
   }
 
+  // Definir variables de color para el modo claro y oscuro
+  Color colorTextFieldClaro = Color(0xFFFFFFFF); // Blanco para el modo claro
+  Color colorTextFieldOscuro =
+      Color(0xFF171b26); // Color oscuro para el modo oscuro
+
+// Definir otras variables de color que puedas necesitar
+  Color colorFondoClaro = Color(0xFFf7f8fa);
+  Color colorFondoOscuro = Color(0xFF021526);
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<CotizacionProvider>(context);
+    final isDarkMode = provider.isDarkMode; // Obtén el estado del modo oscuro
 
     return Scaffold(
-      backgroundColor: Color(0xFFf7f8fa),
+      backgroundColor: isDarkMode ? colorFondoOscuro : colorFondoClaro,
       appBar: CustomAppBar(
         isDarkMode: _isDarkMode,
         toggleDarkMode: _toggleDarkMode,
@@ -193,23 +203,24 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSectionTitle('DESCRIPCIÓN DE COTIZACIÓN'),
-                    _buildDesc(),
+                    _buildSectionTitle('DESCRIPCIÓN DE COTIZACIÓN', isDarkMode),
+                    _buildDesc(isDarkMode),
                     SizedBox(height: 20),
-                    _buildSectionTitle('CLIENTE'),
+                    _buildSectionTitle('CLIENTE', isDarkMode),
                     SizedBox(height: 10),
-                    _buildClienteInfo(),
+                    _buildClienteInfo(isDarkMode),
                     SizedBox(height: 30),
-                    _buildSectionTitle('PRODUCTO'),
+                    _buildSectionTitle('PRODUCTO', isDarkMode),
                     SizedBox(height: 10),
-                    _buildarticuloInfo(),
+                    _buildarticuloInfo(isDarkMode),
                     SizedBox(height: 30),
-                    _buildGananciaYPrecioVenta(), // Nuevo widget para mostrar ganancia y precio de venta
-                    _buildSectionTitle('RESUMEN'),
-                    _buildSummary(provider),
+                    _buildGananciaYPrecioVenta(),
+                    _buildSectionTitle('RESUMEN', isDarkMode),
+                    _buildSummary(
+                      provider,
+                    ),
                     SizedBox(height: 20),
-                    _buildProductTable(
-                        provider), // Tabla de artículos con ganancia total
+                    _buildProductTable(provider, isDarkMode),
                   ],
                 ),
               ),
@@ -221,13 +232,12 @@ class _FormularioScreenState extends State<FormularioScreen> {
             bottom: 0,
             child: _buildButtons(),
           ),
-            if (_isLoading)
-                Positioned.fill(
-                  child: Container(
-                    color:
-                        Colors.black.withOpacity(0.3), // Oscurece todo el fondo
-                  ),
-                ),
+          if (_isLoading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.3), // Oscurece todo el fondo
+              ),
+            ),
           // CircularProgressIndicator que se muestra en toda la pantalla
           if (_isLoading)
             Center(
@@ -244,12 +254,14 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
+  Widget _buildSectionTitle(String title, bool isDarkMode) {
     return Text(title,
         style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: Color(0xFF001F3F),
+          color: isDarkMode
+              ? Colors.white
+              : Color(0xFF001F3F), // Color según el modo
         ));
   }
 
@@ -342,7 +354,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                                     client['telefono'] ?? '';
                                 emailController.text = client['email'] ?? '';
                                 _selectedPersonType =
-                                    client['tipo_cliente'] ?? 'No asignado';
+                                    client['tipo_cliente'] ?? 'N/A';
 
                                 idDetalleVentaExistente = client['idcliente'];
                                 esClienteNuevo =
@@ -399,7 +411,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     Overlay.of(context)?.insert(_overlayEntry!);
   }
 
-  Widget _buildClienteInfo() {
+  Widget _buildClienteInfo(bool isDarkMode) {
     return StatefulBuilder(
       builder: (BuildContext context, StateSetter setState) {
         return Column(
@@ -449,7 +461,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 if (_showClientSearchField)
                   Expanded(
                     flex: 3,
-                    child: _buildClienteSearchField(),
+                    child: _buildClienteSearchField(isDarkMode),
                   ),
                 SizedBox(width: 10),
                 Expanded(
@@ -457,6 +469,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                       ? 3
                       : 3, // Ajustar flex dinámicamente
                   child: _buildDropdownWithCustom(
+                    isDarkMode: isDarkMode,
                     label: 'Tipo de Persona',
                     value: _selectedPersonType,
                     items: _personTypes,
@@ -466,7 +479,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                           _selectedPersonType = value;
                         } else {
                           _selectedPersonType =
-                              'No asignado'; // Establecer un valor predeterminado si no coincide
+                              'N/A'; // Establecer un valor predeterminado si no coincide
                         }
                       });
                     },
@@ -478,6 +491,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 Expanded(
                   flex: _showClientSearchField ? 5 : 6,
                   child: _buildTextFieldValidator(
+                    isDarkMode: isDarkMode,
                     controller: nombresController,
                     label: 'Cliente',
                     inputType: TextInputType.text,
@@ -494,6 +508,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 Expanded(
                   flex: _showClientSearchField ? 3 : 4,
                   child: _buildTextFieldValidator(
+                    isDarkMode: isDarkMode,
                     controller: telefonoController,
                     label: 'Teléfono',
                     inputType: TextInputType.number,
@@ -516,20 +531,22 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 Expanded(
                   flex: _showClientSearchField ? 4 : 6,
                   child: _buildTextFieldValidator(
+                    isDarkMode: isDarkMode,
                     controller: emailController,
                     label: 'Correo',
                     inputType: TextInputType.emailAddress,
                     enabled: camposEditables,
                     validator: (value) {
+                      // Permite que el campo esté vacío
                       if (value == null || value.isEmpty) {
-                        return 'Por favor, ingrese un correo electrónico';
+                        return null; // No hay error si no se ingresa nada
                       }
                       const pattern = r'^[^@]+@[^@]+\.[^@]+';
                       final regex = RegExp(pattern);
                       if (!regex.hasMatch(value)) {
                         return 'Ingrese un correo válido';
                       }
-                      return null;
+                      return null; // Retorna null si el correo es válido
                     },
                   ),
                 ),
@@ -542,7 +559,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
-  Widget _buildClienteSearchField() {
+  Widget _buildClienteSearchField(bool isDarkMode) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -581,7 +598,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
                     width: 1.5), // Borde rojo al error enfocado
               ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: isDarkMode
+                  ? colorTextFieldOscuro
+                  : Colors.white, // Color claro o oscuro
               contentPadding:
                   EdgeInsets.symmetric(vertical: 15, horizontal: 25),
               errorStyle: TextStyle(
@@ -620,7 +639,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     return double.tryParse(_selectedQuantity ?? '0') ?? 0;
   }
 
-  Widget _buildarticuloInfo() {
+  Widget _buildarticuloInfo(bool isDarkMode) {
     return Row(
       children: [
         Expanded(
@@ -645,7 +664,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
               ),
               filled: true,
-              fillColor: Colors.white, // Fondo blanco
+              fillColor: isDarkMode
+                  ? Color(0xFF1E1E1E)
+                  : Colors.white, // Color claro o oscuro
               contentPadding:
                   EdgeInsets.symmetric(vertical: 15, horizontal: 20),
             ),
@@ -672,6 +693,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
         Expanded(
           flex: 2,
           child: _buildDropdownWithCustom(
+            isDarkMode: isDarkMode,
             label: 'Cantidad',
             value: _selectedQuantity,
             items: _quantities,
@@ -688,13 +710,15 @@ class _FormularioScreenState extends State<FormularioScreen> {
         SizedBox(width: 10),
         Expanded(
           flex: 5,
-          child: _buildTextField(descripcionController, 'Descripción'),
+          child:
+              _buildTextField(descripcionController, isDarkMode, 'Descripción'),
         ),
         SizedBox(width: 10),
         Expanded(
           flex: 2,
           child: _buildTextField(
               precioController,
+              isDarkMode,
               'Precio de Compra',
               TextInputType.number,
               _calcularGanancia), // Modificado para calcular ganancia
@@ -704,6 +728,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
           flex: 2,
           child: _buildTextField(
               porcentajeGananciaController,
+              isDarkMode,
               '% Ganancia',
               TextInputType.number,
               _calcularGanancia), // Nuevo campo para porcentaje de ganancia
@@ -762,6 +787,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   Widget _buildDropdownWithCustom({
+    required bool isDarkMode,
     required String label,
     required String? value,
     required List<String> items,
@@ -798,8 +824,10 @@ class _FormularioScreenState extends State<FormularioScreen> {
             ),
             filled: true,
             fillColor: enabled
-                ? Colors.white
-                : Colors.grey.shade100, // Color de fondo según estado
+                ? (isDarkMode
+                    ? Color(0xFF1E1E1E)
+                    : Colors.white) // Color claro o oscuro
+                : Color(0xFF171B26), // Color al deshabilitar
             contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
           ),
           icon: Icon(Icons.arrow_drop_down,
@@ -824,7 +852,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
           SizedBox(
             width: 200,
             child: _buildTextField(
-                customController!, 'Otro', TextInputType.number),
+                customController!, isDarkMode, 'Otro', TextInputType.number),
           ),
       ],
     );
@@ -841,7 +869,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   String formatNombres(String selectedPersonType, String nombres) {
-    if (selectedPersonType == 'No asignado') {
+    if (selectedPersonType == 'N/A') {
       return nombres;
     }
     return '$selectedPersonType $nombres';
@@ -850,8 +878,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
   Future<void> _guardarCliente() async {
     //String nombres = '$_selectedPersonType ${nombresController.text}';
     /* String nombres = nombresController.text; */
-    String nombres = formatNombres(
-        _selectedPersonType ?? 'No asignado', nombresController.text);
+    String nombres =
+        formatNombres(_selectedPersonType ?? 'N/A', nombresController.text);
 
     String telefono = telefonoController.text;
     String email = emailController.text;
@@ -1035,7 +1063,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
     }
   }
 
-  Widget _buildTextField(TextEditingController controller, String label,
+  Widget _buildTextField(
+      TextEditingController controller, bool isDarkMode, String label,
       [TextInputType keyboardType = TextInputType.text,
       VoidCallback? onChanged]) {
     return TextField(
@@ -1058,7 +1087,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
           borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
         ),
         filled: true,
-        fillColor: Colors.white, // Fondo blanco para un look limpio
+        fillColor: isDarkMode
+            ? colorTextFieldOscuro
+            : Colors.white, // Color claro o oscuro
         contentPadding: EdgeInsets.symmetric(
             vertical: 15, horizontal: 25), // Más espacio interno
         hintText: "Ingresa $label", // Texto de ayuda
@@ -1077,6 +1108,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   Widget _buildTextFieldValidator({
+    required bool isDarkMode,
     required TextEditingController controller,
     required String label,
     TextInputType inputType = TextInputType.text,
@@ -1128,7 +1160,6 @@ class _FormularioScreenState extends State<FormularioScreen> {
           borderSide: BorderSide(
               color: Colors.red, width: 1.5), // Borde rojo al error enfocado
         ),
-        filled: true,
         fillColor: enabled
             ? Colors.white
             : Colors.grey.shade100, // Color de fondo al deshabilitar
@@ -1234,7 +1265,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
         : _selectedPersonType ?? '';
 
     // Asigna los datos al proveedor
-    if (tipoPersona != 'No asignado') {
+    if (tipoPersona != 'N/A') {
       provider.setTipoPersona(tipoPersona);
     }
 
@@ -1293,7 +1324,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
-  Widget _buildProductTable(CotizacionProvider provider) {
+  Widget _buildProductTable(CotizacionProvider provider, bool isDarkMode) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1312,17 +1343,17 @@ class _FormularioScreenState extends State<FormularioScreen> {
           child: Table(
             border: TableBorder.all(color: Colors.grey.shade400),
             columnWidths: {
-              0: FlexColumnWidth(1),
-              1: FlexColumnWidth(1),
-              2: FlexColumnWidth(3),
-              3: FlexColumnWidth(1),
-              4: FlexColumnWidth(1),
-              5: FlexColumnWidth(1),
-              6: FlexColumnWidth(1),
-              7: FlexColumnWidth(1),
-              8: FlexColumnWidth(1),
-              9: FlexColumnWidth(1),
-              10: FlexColumnWidth(1),
+              0: FlexColumnWidth(4),
+              1: FlexColumnWidth(4),
+              2: FlexColumnWidth(8),
+              3: FlexColumnWidth(4),
+              4: FlexColumnWidth(4),
+              5: FlexColumnWidth(4),
+              6: FlexColumnWidth(4),
+              7: FlexColumnWidth(4),
+              8: FlexColumnWidth(4),
+              9: FlexColumnWidth(4),
+              10: FlexColumnWidth(4),
             },
             children: [
               TableRow(
@@ -1413,12 +1444,21 @@ class _FormularioScreenState extends State<FormularioScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         IconButton(
-                          icon: Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () => _editararticulo(context, item),
+                          icon: Icon(
+                            Icons.edit,
+                            color: Colors.blue,
+                            size: 18,
+                          ),
+                          onPressed: () =>
+                              _editararticulo(context, isDarkMode, item),
                           tooltip: 'Editar',
                         ),
                         IconButton(
-                          icon: Icon(Icons.delete, color: Colors.red),
+                          icon: Icon(
+                            Icons.delete,
+                            color: Colors.red,
+                            size: 18,
+                          ),
                           onPressed: () {
                             // Muestra un cuadro de diálogo de confirmación
                             showDialog(
@@ -1484,7 +1524,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
-  Widget _buildDesc() {
+  Widget _buildDesc(bool isDarkMode) {
     final List<String> _metodos = ['Transferencia', 'Efectivo'];
 
     return Column(
@@ -1498,6 +1538,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 child: _buildTextFieldValidator(
+                  isDarkMode: isDarkMode,
                   controller: _descController,
                   label: 'Nombre o Descripcion',
                   inputType: TextInputType.text,
@@ -1538,7 +1579,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
                         BorderSide(color: Colors.grey.shade300, width: 1.5),
                   ),
                   filled: true,
-                  fillColor: Colors.white, // Fondo blanco
+                  fillColor: isDarkMode
+                      ? colorTextFieldOscuro
+                      : Colors.white, // Color claro o oscuro
                   contentPadding:
                       EdgeInsets.symmetric(vertical: 15, horizontal: 20),
                 ),
@@ -1597,7 +1640,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
-  void _editararticulo(BuildContext context, CotizacionItem item) {
+  void _editararticulo(
+      BuildContext context, bool isDarkMode, CotizacionItem item) {
     String? tipoEdit = item.tipo;
 
     showDialog(
@@ -1651,15 +1695,16 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 }).toList(),
               ),
               SizedBox(height: 10),
-              _buildTextField(descripcionEditController, 'Descripción'),
-              SizedBox(height: 10),
               _buildTextField(
-                  precioEditController, 'Precio', TextInputType.number),
+                  descripcionEditController, isDarkMode, 'Descripción'),
               SizedBox(height: 10),
-              _buildTextField(
-                  cantidadEditController, 'Cantidad', TextInputType.number),
+              _buildTextField(precioEditController, isDarkMode, 'Precio',
+                  TextInputType.number),
               SizedBox(height: 10),
-              _buildTextField(porcentajeGananciaEditController,
+              _buildTextField(cantidadEditController, isDarkMode, 'Cantidad',
+                  TextInputType.number),
+              SizedBox(height: 10),
+              _buildTextField(porcentajeGananciaEditController, isDarkMode,
                   'Porcentaje de Ganancia', TextInputType.number),
             ],
           ),

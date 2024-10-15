@@ -1,4 +1,6 @@
+import 'package:cotizacion/screens/calculos.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool isDarkMode;
@@ -13,6 +15,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<CotizacionProvider>(context);
+
     return PreferredSize(
       preferredSize: Size.fromHeight(100),
       child: Column(
@@ -21,7 +25,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             padding: const EdgeInsets.only(
                 left: 16.0, right: 16.0, top: 20, bottom: 20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: provider.isDarkMode ? Colors.black : Colors.white,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -31,7 +35,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                     Text(
                       title, // Usar el título recibido en el widget
                       style: TextStyle(
-                        color: Colors.grey[900],
+                        color: provider.isDarkMode
+                            ? Colors.white
+                            : Colors.grey[900],
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
@@ -44,20 +50,20 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: GestureDetector(
                         onTap: () {
-                          toggleDarkMode(!isDarkMode);
+                          provider.toggleDarkMode(); // Alterna el modo oscuro
                         },
                         child: Container(
                           width: 50,
                           height: 30,
                           decoration: BoxDecoration(
-                            color: isDarkMode
+                            color: provider.isDarkMode
                                 ? Colors.grey[800]
                                 : Colors.grey[200],
                             borderRadius: BorderRadius.circular(15),
                             border: Border.all(color: Colors.white, width: 1),
                             boxShadow: [
                               BoxShadow(
-                                color: isDarkMode
+                                color: provider.isDarkMode
                                     ? Colors.black45
                                     : Colors.grey[400]!,
                                 blurRadius: 4,
@@ -66,13 +72,13 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                             ],
                           ),
                           child: Stack(
-                            alignment: isDarkMode
+                            alignment: provider.isDarkMode
                                 ? Alignment.centerRight
                                 : Alignment.centerLeft,
                             children: [
                               AnimatedPositioned(
                                 duration: Duration(milliseconds: 200),
-                                left: isDarkMode ? 0 : 20,
+                                left: provider.isDarkMode ? 0 : 20,
                                 child: Container(
                                   width: 30,
                                   height: 30,
@@ -83,7 +89,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                                         color: Colors.white, width: 1),
                                   ),
                                   child: Icon(
-                                    isDarkMode
+                                    provider.isDarkMode
                                         ? Icons.wb_sunny
                                         : Icons.nights_stay,
                                     color: Colors.black,
@@ -138,7 +144,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                           child: Icon(
                             Icons
                                 .person, // Puedes cambiar este icono por el que prefieras
-                            color: Colors.grey[800], // Cambia el color del icono
+                            color:
+                                Colors.grey[800], // Cambia el color del icono
                             size:
                                 20, // Ajusta el tamaño del icono según el `radius` del CircleAvatar
                           ),

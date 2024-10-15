@@ -11,27 +11,26 @@ void main() {
   runApp(
     ChangeNotifierProvider(
       create: (context) => CotizacionProvider(),
-      child: MaterialApp(
-        theme: ThemeData(
-          useMaterial3: true, // Habilita Material 3
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color.fromARGB(255, 0, 255, 225),
-          ),
-        ),
-        debugShowCheckedModeBanner: false,
-        initialRoute: '/',
-        routes: {
-          '/': (context) => NavigationScreen(),
-          //'/cotizacion': (context) => CotizacionScreen(mostrarIVA: true,),
+      child: Consumer<CotizacionProvider>(
+        builder: (context, provider, child) {
+          return MaterialApp(
+            theme: provider.themeData, // Usar el tema del proveedor
+            debugShowCheckedModeBanner: false,
+            initialRoute: '/',
+            routes: {
+              '/': (context) => NavigationScreen(),
+              //'/cotizacion': (context) => CotizacionScreen(mostrarIVA: true,),
+            },
+            localizationsDelegates: [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: [
+              const Locale('es', 'ES'), // Español
+            ],
+          );
         },
-        localizationsDelegates: [
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: [
-          const Locale('es', 'ES'), // Español
-        ],
       ),
     ),
   );

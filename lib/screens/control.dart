@@ -46,6 +46,8 @@ class ControlScreenState extends State<ControlScreen>
 
   bool _isDarkMode = false; // Estado del modo oscuro
 
+  bool _isLoadingInicio = true; // Variable para controlar el estado de carga
+
   bool _isLoading = false; // Variable para controlar el estado de carga
 
   bool _isEditing = false; // Variable para controlar el estado de edición
@@ -57,7 +59,7 @@ class ControlScreenState extends State<ControlScreen>
   @override
   void initState() {
     super.initState();
-    fetchDatos();
+    _loadData(); // Carga los datos al iniciar la pantalla
     _searchController.addListener(_filterDetails);
     _focusNode = FocusNode(skipTraversal: true, canRequestFocus: false);
   }
@@ -66,6 +68,10 @@ class ControlScreenState extends State<ControlScreen>
     setState(() {
       _isDarkMode = value;
     });
+  }
+
+  Future<void> _loadData() async {
+    await fetchDatos(); // Llama a tu método de carga de datos
   }
 
   void _filterDetails() {
@@ -146,7 +152,8 @@ class ControlScreenState extends State<ControlScreen>
         Uri.parse('https://$baseUrl/api/v1/clientes/'),
       );
 
-      if (detallesResponse.statusCode == 200) {
+      if (detallesResponse.statusCode == 200 &&
+          clientesResponse.statusCode == 200) {
         setState(() {
           detalles = json.decode(detallesResponse.body);
           clientes = json.decode(clientesResponse.body);
@@ -162,10 +169,20 @@ class ControlScreenState extends State<ControlScreen>
           });
         });
       } else {
+        // Manejo de error si no se obtienen los datos correctamente
+        setState(() {
+          detalles = [];
+          clientes = [];
+        });
         throw Exception('Error al obtener los datos');
       }
     } catch (e) {
       print('Error: $e');
+    } finally {
+      setState(() {
+        _isLoadingInicio =
+            false; // Asegúrate de cambiar el estado a false al final
+      });
     }
   }
 
@@ -347,748 +364,804 @@ class ControlScreenState extends State<ControlScreen>
           toggleDarkMode: _toggleDarkMode,
           title: 'Control de Ventas', // Título específico para esta pantalla
         ),
-        body: clientes.isEmpty || detalles.isEmpty
+        body: _isLoadingInicio
             ? Center(
                 child:
                     CircularProgressIndicator(), // Muestra el indicador de carga
               )
-            : Column(
-                children: [
-                  Row(
+            : clientes.isEmpty || detalles.isEmpty
+                ? Center(
+                    child: Text(
+                      'No hay datos para mostrar', // Mensaje cuando no hay datos
+                      style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.black54), // Estilo del texto
+                    ),
+                  )
+                : Column(
                     children: [
-                      Expanded(
-                        flex: 5,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 16, horizontal: 8),
-                          child: TextField(
-                            style: TextStyle(fontSize: 14),
-                            controller: _searchController,
-                            decoration: InputDecoration(
-                              labelText: 'Buscar',
-                              labelStyle: TextStyle(
-                                color: Colors.black54,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(30.0),
-                                borderSide:
-                                    BorderSide(color: Color(0xFF001F3F)),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(30.0),
-                                borderSide: BorderSide(
-                                    color: Colors.grey.shade300, width: 1.5),
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                              contentPadding: EdgeInsets.symmetric(
-                                  vertical: 15, horizontal: 20),
-                              prefixIcon: Icon(
-                                size: 20,
-                                Icons.search, // Icono de lupa
-                                color: Colors.grey,
-                              ),
-                              prefixIconConstraints: BoxConstraints(
-                                minWidth:
-                                    50, 
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        flex: 3,
-                        child: DropdownButtonFormField<String>(
-                          hint: Text('Estado'),
-                          value: selectedEstado,
-                          isExpanded: true,
-                          decoration: InputDecoration(
-                            labelText: 'Estado',
-                            labelStyle: TextStyle(
-                              color: Colors.black54,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(30.0),
-                              borderSide: BorderSide(color: Color(0xFF001F3F)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(30.0),
-                              borderSide: BorderSide(
-                                  color: Colors.grey.shade300, width: 1.5),
-                            ),
-                            filled: true,
-                            fillColor: Colors.white,
-                            contentPadding: EdgeInsets.symmetric(
-                                vertical: 15, horizontal: 20),
-                          ),
-                          icon: Icon(
-                            Icons.arrow_drop_down,
-                            color: Color(0xFF001F3F),
-                          ),
-                          dropdownColor: Colors.white,
-                          items: estadosFiltro.map((estado) {
-                            return DropdownMenuItem<String>(
-                              value: estado,
-                              child: Text(
-                                estado,
-                                style: TextStyle(
-                                    color: Colors.black87, fontSize: 12),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              selectedEstado = value;
-                              _filterDetails(); // Filtra al cambiar
-                            });
-                          },
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        flex: 2,
-                        child: DropdownButtonFormField<String>(
-                          hint: Text('Método de Pago'),
-                          value: selectedMetodoPago != null &&
-                                  tiposPago.contains(selectedMetodoPago)
-                              ? selectedMetodoPago
-                              : null,
-                          isExpanded: true,
-                          decoration: InputDecoration(
-                            labelText: 'Método de Pago',
-                            labelStyle: TextStyle(
-                              color: Colors.black54,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(30.0),
-                              borderSide: BorderSide(color: Color(0xFF001F3F)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(30.0),
-                              borderSide: BorderSide(
-                                  color: Colors.grey.shade300, width: 1.5),
-                            ),
-                            filled: true,
-                            fillColor: Colors.white,
-                            contentPadding: EdgeInsets.symmetric(
-                                vertical: 15, horizontal: 20),
-                          ),
-                          icon: Icon(
-                            Icons.arrow_drop_down,
-                            color: Color(0xFF001F3F),
-                          ),
-                          dropdownColor: Colors.white,
-                          items: tiposPago.map((tipo) {
-                            return DropdownMenuItem<String>(
-                              value: tipo,
-                              child: Text(
-                                tipo,
-                                style: TextStyle(
-                                    color: Colors.black87, fontSize: 12),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              selectedMetodoPago = value;
-                              _filterDetails(); // Filtra al cambiar
-                            });
-                          },
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        flex: 2,
-                        child: DropdownButtonFormField<String>(
-                          hint: Text('Factura'),
-                          value: selectedFactura != null &&
-                                  tiposPago.contains(selectedFactura)
-                              ? selectedFactura
-                              : null,
-                          isExpanded: true,
-                          decoration: InputDecoration(
-                            labelText: 'Factura',
-                            labelStyle: TextStyle(
-                              color: Colors.black54,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(30.0),
-                              borderSide: BorderSide(color: Color(0xFF001F3F)),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(30.0),
-                              borderSide: BorderSide(
-                                  color: Colors.grey.shade300, width: 1.5),
-                            ),
-                            filled: true,
-                            fillColor: Colors.white,
-                            contentPadding: EdgeInsets.symmetric(
-                                vertical: 15, horizontal: 20),
-                          ),
-                          icon: Icon(
-                            Icons.arrow_drop_down,
-                            color: Color(0xFF001F3F),
-                          ),
-                          dropdownColor: Colors.white,
-                          items: facturas.map((factura) {
-                            return DropdownMenuItem<String>(
-                              value: factura,
-                              child: Text(
-                                factura,
-                                style: TextStyle(
-                                    color: Colors.black87, fontSize: 12),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              selectedFactura = value!;
-                              _filterDetails(); // Filtra al cambiar
-                            });
-                          },
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        flex: 2,
-                        child: SizedBox(
-                          height: 50, // Altura fija para el botón
-                          child: TextButton(
-                            onPressed: () async {
-                              DateTime? pickedDate = await showDatePicker(
-                                context: context,
-                                initialDate: selectedDate ?? DateTime.now(),
-                                firstDate: DateTime(2000),
-                                lastDate: DateTime(2101),
-                              );
-
-                              if (pickedDate != null &&
-                                  pickedDate != selectedDate) {
-                                setState(() {
-                                  selectedDate = pickedDate;
-                                  _filterDetails(); // Filtra al seleccionar la fecha
-                                });
-                              }
-                            },
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.symmetric(
-                                  vertical: 0, horizontal: 10),
-                              backgroundColor:
-                                  Colors.white, // Color de fondo blanco
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                    30.0), // Bordes redondeados
-                                side: BorderSide(
-                                    color: Colors.grey.shade300,
-                                    width: 1.5), // Marco gris
-                              ),
-                            ),
-                            child: Text(
-                              selectedDate == null
-                                  ? 'Selecciona Fecha'
-                                  : formatDateCorta(selectedDate!),
-                              style: TextStyle(
-                                color: Colors.black87,
-                                fontSize: 12,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Container(
-                        width: 60, // Establecer un ancho fijo
-                        height: 50, // Altura fija para el botón
-                        child: Tooltip(
-                          message: 'Restablecer fecha', // Mensaje del tooltip
-                          child: TextButton(
-                            onPressed: () {
-                              setState(() {
-                                selectedDate =
-                                    null; // Restablecer la fecha seleccionada
-                                _filterDetails(); // Filtra de nuevo para mostrar todos los detalles
-                              });
-                            },
-                            child: Stack(
-                              alignment: Alignment
-                                  .center, // Centrar los íconos en el Stack
-                              children: [
-                                Icon(
-                                  Icons.calendar_today, // Ícono de calendario
-                                  color: Colors.grey[
-                                      800], // Color gris oscuro para el ícono de fondo
-                                  size:
-                                      28, // Tamaño aumentado para mayor visibilidad
-                                ),
-                                Positioned(
-                                  left:
-                                      5, // Ajustar la posición hacia la izquierda
-                                  top: 8,
-                                  child: Icon(
-                                    Icons.refresh, // Ícono de recarga
-                                    color: Colors.grey[
-                                        800], // Color gris oscuro para el ícono de recarga
-                                    size:
-                                        18, // Tamaño aumentado para mayor visibilidad
+                      Row(
+                        children: [
+                          Expanded(
+                            flex: 5,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 16, horizontal: 8),
+                              child: TextField(
+                                style: TextStyle(fontSize: 14),
+                                controller: _searchController,
+                                decoration: InputDecoration(
+                                  labelText: 'Buscar',
+                                  labelStyle: TextStyle(
+                                    color: Colors.black54,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 14,
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(30.0),
+                                    borderSide:
+                                        BorderSide(color: Color(0xFF001F3F)),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(30.0),
+                                    borderSide: BorderSide(
+                                        color: Colors.grey.shade300,
+                                        width: 1.5),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  contentPadding: EdgeInsets.symmetric(
+                                      vertical: 15, horizontal: 20),
+                                  prefixIcon: Icon(
+                                    size: 20,
+                                    Icons.search, // Icono de lupa
+                                    color: Colors.grey,
+                                  ),
+                                  prefixIconConstraints: BoxConstraints(
+                                    minWidth: 50,
                                   ),
                                 ),
-                              ],
-                            ),
-                            style: TextButton.styleFrom(
-                              backgroundColor:
-                                  Colors.white, // Color de fondo blanco
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                    30.0), // Bordes redondeados
-                                side: BorderSide(
-                                    color: Colors.grey.shade300), // Marco gris
                               ),
-                              padding: EdgeInsets.symmetric(
-                                  vertical: 0), // Espaciado vertical
                             ),
                           ),
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Container(
-                        width: 60,
-                        height: 50,
-                        child: Tooltip(
-                          message: 'Recargar',
-                          child: TextButton(
-                            onPressed:
-                                _isLoading // Solo permite presionar si no está cargando
-                                    ? null // Deshabilitado si se está cargando
-                                    : () {
-                                        setState(() {
-                                          _isLoading = true; // Inicia la carga
-                                        });
-
-                                        fetchDatos().then((_) {
-                                          setState(() {
-                                            _filterDetails(); // Filtra de nuevo para mostrar todos los detalles
-                                            _isLoading =
-                                                false; // Termina la carga
-                                          });
-                                        });
-                                      },
-                            child: Icon(
-                              Icons.refresh,
-                              color: Colors.grey[800],
-                              size: 24,
-                            ),
-                            style: TextButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30.0),
-                                side: BorderSide(color: Colors.grey.shade300),
+                          Expanded(
+                            flex: 3,
+                            child: DropdownButtonFormField<String>(
+                              hint: Text('Estado'),
+                              value: selectedEstado,
+                              isExpanded: true,
+                              decoration: InputDecoration(
+                                labelText: 'Estado',
+                                labelStyle: TextStyle(
+                                  color: Colors.black54,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(30.0),
+                                  borderSide:
+                                      BorderSide(color: Color(0xFF001F3F)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(30.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.grey.shade300, width: 1.5),
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: EdgeInsets.symmetric(
+                                    vertical: 15, horizontal: 20),
                               ),
-                              padding: EdgeInsets.symmetric(vertical: 0),
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                    ],
-                  ),
-                  Expanded(
-                    child: _isLoading
-                        ? Center(
-                            child:
-                                CircularProgressIndicator()) // Indicador de carga en el centro
-                        : ListView.builder(
-                            itemCount: currentItems.length,
-                            itemBuilder: (context, index) {
-                              final detalle = currentItems[index];
-                              final folio = detalle['folio'] ?? 'desconocido';
-                              final isExpanded = _expandedState[folio] ?? false;
-
-                              // Crear o actualizar el AnimationController para el folio
-                              if (!_controllers.containsKey(folio)) {
-                                _controllers[folio] = AnimationController(
-                                  vsync: this,
-                                  duration: Duration(milliseconds: 300),
+                              icon: Icon(
+                                Icons.arrow_drop_down,
+                                color: Color(0xFF001F3F),
+                              ),
+                              dropdownColor: Colors.white,
+                              items: estadosFiltro.map((estado) {
+                                return DropdownMenuItem<String>(
+                                  value: estado,
+                                  child: Text(
+                                    estado,
+                                    style: TextStyle(
+                                        color: Colors.black87, fontSize: 12),
+                                  ),
                                 );
-                              }
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedEstado = value;
+                                  _filterDetails(); // Filtra al cambiar
+                                });
+                              },
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            flex: 2,
+                            child: DropdownButtonFormField<String>(
+                              hint: Text('Método de Pago'),
+                              value: selectedMetodoPago != null &&
+                                      tiposPago.contains(selectedMetodoPago)
+                                  ? selectedMetodoPago
+                                  : null,
+                              isExpanded: true,
+                              decoration: InputDecoration(
+                                labelText: 'Método de Pago',
+                                labelStyle: TextStyle(
+                                  color: Colors.black54,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(30.0),
+                                  borderSide:
+                                      BorderSide(color: Color(0xFF001F3F)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(30.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.grey.shade300, width: 1.5),
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: EdgeInsets.symmetric(
+                                    vertical: 15, horizontal: 20),
+                              ),
+                              icon: Icon(
+                                Icons.arrow_drop_down,
+                                color: Color(0xFF001F3F),
+                              ),
+                              dropdownColor: Colors.white,
+                              items: tiposPago.map((tipo) {
+                                return DropdownMenuItem<String>(
+                                  value: tipo,
+                                  child: Text(
+                                    tipo,
+                                    style: TextStyle(
+                                        color: Colors.black87, fontSize: 12),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedMetodoPago = value;
+                                  _filterDetails(); // Filtra al cambiar
+                                });
+                              },
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            flex: 2,
+                            child: DropdownButtonFormField<String>(
+                              hint: Text('Factura'),
+                              value: selectedFactura != null &&
+                                      tiposPago.contains(selectedFactura)
+                                  ? selectedFactura
+                                  : null,
+                              isExpanded: true,
+                              decoration: InputDecoration(
+                                labelText: 'Factura',
+                                labelStyle: TextStyle(
+                                  color: Colors.black54,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 14,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(30.0),
+                                  borderSide:
+                                      BorderSide(color: Color(0xFF001F3F)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(30.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.grey.shade300, width: 1.5),
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: EdgeInsets.symmetric(
+                                    vertical: 15, horizontal: 20),
+                              ),
+                              icon: Icon(
+                                Icons.arrow_drop_down,
+                                color: Color(0xFF001F3F),
+                              ),
+                              dropdownColor: Colors.white,
+                              items: facturas.map((factura) {
+                                return DropdownMenuItem<String>(
+                                  value: factura,
+                                  child: Text(
+                                    factura,
+                                    style: TextStyle(
+                                        color: Colors.black87, fontSize: 12),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedFactura = value!;
+                                  _filterDetails(); // Filtra al cambiar
+                                });
+                              },
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            flex: 2,
+                            child: SizedBox(
+                              height: 50, // Altura fija para el botón
+                              child: TextButton(
+                                onPressed: () async {
+                                  DateTime? pickedDate = await showDatePicker(
+                                    context: context,
+                                    initialDate: selectedDate ?? DateTime.now(),
+                                    firstDate: DateTime(2000),
+                                    lastDate: DateTime(2101),
+                                  );
 
-                              // Calcular la ganancia total
-                              double gananciaTotal = 0.0;
-                              for (var articulo in detalle['articulos']) {
-                                gananciaTotal += (articulo['ganancia'] ?? 0.0) *
-                                    (articulo['cantidad'] ?? 1.0);
-                              }
-
-                              final controller = _controllers[folio]!;
-                              final animation =
-                                  Tween<double>(begin: 0.0, end: 1.0)
-                                      .animate(CurvedAnimation(
-                                parent: controller,
-                                curve: Curves.easeInOut,
-                              ));
-
-                              // Iniciar o detener la animación según el estado expandido
-                              if (isExpanded) {
-                                if (controller.status ==
-                                    AnimationStatus.dismissed) {
-                                  controller.forward();
-                                }
-                              } else {
-                                if (controller.status ==
-                                    AnimationStatus.completed) {
-                                  controller.reverse();
-                                }
-                              }
-
-                              // Calcular el total del precio de compra
-                              double totalCompra = 0.0;
-                              for (var articuloDetalle
-                                  in detalle['articulos']) {
-                                totalCompra +=
-                                    (articuloDetalle['precio_compra'] ?? 0.0) *
-                                        (articuloDetalle['cantidad'] ?? 1.0);
-                              }
-
-                              // Obtener el estado actual
-                              final estado = obtenerEstadoActual(detalle);
-
-                              // Función para buscar el cliente basado en el idcliente
-                              Map<String, dynamic>? buscarClientePorId(
-                                  String idcliente) {
-                                for (var cliente in clientes) {
-                                  if (cliente['idcliente'] == idcliente) {
-                                    return cliente; // Retorna el cliente si encuentra coincidencia
+                                  if (pickedDate != null &&
+                                      pickedDate != selectedDate) {
+                                    setState(() {
+                                      selectedDate = pickedDate;
+                                      _filterDetails(); // Filtra al seleccionar la fecha
+                                    });
                                   }
-                                }
-                                return null; // Retorna null si no encuentra el cliente
-                              }
-
-                              // Obtener el idcliente del detalle
-                              final String idCliente =
-                                  detalle['idcliente'] ?? 'desconocido';
-                              final cliente = buscarClientePorId(idCliente);
-
-                              // Si no existe una entrada en el Map para este índice, se inicializa como true (formato corto).
-                              if (!esCortaMap.containsKey(index)) {
-                                esCortaMap[index] = true;
-                              }
-
-                              return Card(
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20)),
-                                color: Colors.white,
-                                margin: const EdgeInsets.symmetric(
-                                    vertical: 4, horizontal: 16.0),
-                                elevation: 4,
-                                child: Column(
+                                },
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: 0, horizontal: 10),
+                                  backgroundColor:
+                                      Colors.white, // Color de fondo blanco
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                        30.0), // Bordes redondeados
+                                    side: BorderSide(
+                                        color: Colors.grey.shade300,
+                                        width: 1.5), // Marco gris
+                                  ),
+                                ),
+                                child: Text(
+                                  selectedDate == null
+                                      ? 'Selecciona Fecha'
+                                      : formatDateCorta(selectedDate!),
+                                  style: TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 12,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Container(
+                            width: 60, // Establecer un ancho fijo
+                            height: 50, // Altura fija para el botón
+                            child: Tooltip(
+                              message:
+                                  'Restablecer fecha', // Mensaje del tooltip
+                              child: TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    selectedDate =
+                                        null; // Restablecer la fecha seleccionada
+                                    _filterDetails(); // Filtra de nuevo para mostrar todos los detalles
+                                  });
+                                },
+                                child: Stack(
+                                  alignment: Alignment
+                                      .center, // Centrar los íconos en el Stack
                                   children: [
-                                    ListTile(
-                                      contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 8),
-                                      title: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
+                                    Icon(
+                                      Icons
+                                          .calendar_today, // Ícono de calendario
+                                      color: Colors.grey[
+                                          800], // Color gris oscuro para el ícono de fondo
+                                      size:
+                                          28, // Tamaño aumentado para mayor visibilidad
+                                    ),
+                                    Positioned(
+                                      left:
+                                          5, // Ajustar la posición hacia la izquierda
+                                      top: 8,
+                                      child: Icon(
+                                        Icons.refresh, // Ícono de recarga
+                                        color: Colors.grey[
+                                            800], // Color gris oscuro para el ícono de recarga
+                                        size:
+                                            18, // Tamaño aumentado para mayor visibilidad
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                style: TextButton.styleFrom(
+                                  backgroundColor:
+                                      Colors.white, // Color de fondo blanco
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                        30.0), // Bordes redondeados
+                                    side: BorderSide(
+                                        color:
+                                            Colors.grey.shade300), // Marco gris
+                                  ),
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: 0), // Espaciado vertical
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Container(
+                            width: 60,
+                            height: 50,
+                            child: Tooltip(
+                              message: 'Recargar',
+                              child: TextButton(
+                                onPressed:
+                                    _isLoading // Solo permite presionar si no está cargando
+                                        ? null // Deshabilitado si se está cargando
+                                        : () {
+                                            setState(() {
+                                              _isLoading =
+                                                  true; // Inicia la carga
+                                            });
+
+                                            fetchDatos().then((_) {
+                                              setState(() {
+                                                _filterDetails(); // Filtra de nuevo para mostrar todos los detalles
+                                                _isLoading =
+                                                    false; // Termina la carga
+                                              });
+                                            });
+                                          },
+                                child: Icon(
+                                  Icons.refresh,
+                                  color: Colors.grey[800],
+                                  size: 24,
+                                ),
+                                style: TextButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30.0),
+                                    side:
+                                        BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  padding: EdgeInsets.symmetric(vertical: 0),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                        ],
+                      ),
+                      Expanded(
+                        child: _isLoading
+                            ? Center(
+                                child:
+                                    CircularProgressIndicator()) // Indicador de carga en el centro
+                            : ListView.builder(
+                                itemCount: currentItems.length,
+                                itemBuilder: (context, index) {
+                                  final detalle = currentItems[index];
+                                  final folio =
+                                      detalle['folio'] ?? 'desconocido';
+                                  final isExpanded =
+                                      _expandedState[folio] ?? false;
+
+                                  // Crear o actualizar el AnimationController para el folio
+                                  if (!_controllers.containsKey(folio)) {
+                                    _controllers[folio] = AnimationController(
+                                      vsync: this,
+                                      duration: Duration(milliseconds: 300),
+                                    );
+                                  }
+
+                                  // Calcular la ganancia total
+                                  double gananciaTotal = 0.0;
+                                  for (var articulo in detalle['articulos']) {
+                                    gananciaTotal +=
+                                        (articulo['ganancia'] ?? 0.0) *
+                                            (articulo['cantidad'] ?? 1.0);
+                                  }
+
+                                  final controller = _controllers[folio]!;
+                                  final animation =
+                                      Tween<double>(begin: 0.0, end: 1.0)
+                                          .animate(CurvedAnimation(
+                                    parent: controller,
+                                    curve: Curves.easeInOut,
+                                  ));
+
+                                  // Iniciar o detener la animación según el estado expandido
+                                  if (isExpanded) {
+                                    if (controller.status ==
+                                        AnimationStatus.dismissed) {
+                                      controller.forward();
+                                    }
+                                  } else {
+                                    if (controller.status ==
+                                        AnimationStatus.completed) {
+                                      controller.reverse();
+                                    }
+                                  }
+
+                                  // Calcular el total del precio de compra
+                                  double totalCompra = 0.0;
+                                  for (var articuloDetalle
+                                      in detalle['articulos']) {
+                                    totalCompra +=
+                                        (articuloDetalle['precio_compra'] ??
+                                                0.0) *
+                                            (articuloDetalle['cantidad'] ??
+                                                1.0);
+                                  }
+
+                                  // Obtener el estado actual
+                                  final estado = obtenerEstadoActual(detalle);
+
+                                  // Función para buscar el cliente basado en el idcliente
+                                  Map<String, dynamic>? buscarClientePorId(
+                                      String idcliente) {
+                                    for (var cliente in clientes) {
+                                      if (cliente['idcliente'] == idcliente) {
+                                        return cliente; // Retorna el cliente si encuentra coincidencia
+                                      }
+                                    }
+                                    return null; // Retorna null si no encuentra el cliente
+                                  }
+
+                                  // Obtener el idcliente del detalle
+                                  final String idCliente =
+                                      detalle['idcliente'] ?? 'desconocido';
+                                  final cliente = buscarClientePorId(idCliente);
+
+                                  // Si no existe una entrada en el Map para este índice, se inicializa como true (formato corto).
+                                  if (!esCortaMap.containsKey(index)) {
+                                    esCortaMap[index] = true;
+                                  }
+
+                                  return Card(
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(20)),
+                                    color: Colors.white,
+                                    margin: const EdgeInsets.symmetric(
+                                        vertical: 4, horizontal: 16.0),
+                                    elevation: 4,
+                                    child: Column(
+                                      children: [
+                                        ListTile(
+                                          contentPadding: EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 8),
+                                          title: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
-                                              // Cliente y Venta
-                                              Expanded(
-                                                child: Text(
-                                                  '${detalle['cliente'] ?? 'Cliente desconocido'} - ${detalle['nombre_venta'] ?? 'Venta sin nombre'}',
-                                                  style: TextStyle(
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.black87,
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                children: [
+                                                  // Cliente y Venta
+                                                  Expanded(
+                                                    child: Text(
+                                                      '${detalle['cliente'] ?? 'Cliente desconocido'} - ${detalle['nombre_venta'] ?? 'Venta sin nombre'}',
+                                                      style: TextStyle(
+                                                        fontSize: 14,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.black87,
+                                                      ),
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
                                                   ),
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                              Container(
-                                                padding: EdgeInsets.symmetric(
-                                                    vertical: 0, horizontal: 8),
-                                                decoration: BoxDecoration(
-                                                  color: _getStatusColor(
-                                                          _estadoPorFolio[
-                                                                  folio] ??
-                                                              estado!)
-                                                      .withOpacity(0.09),
-                                                  borderRadius:
-                                                      BorderRadius.circular(24),
-                                                  border: Border.all(
-                                                    color: _getStatusColor(
-                                                        _estadoPorFolio[
-                                                                folio] ??
-                                                            estado!),
-                                                    width: 1,
-                                                  ),
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    Container(
-                                                      width: 10,
-                                                      height: 10,
-                                                      decoration: BoxDecoration(
-                                                        shape: BoxShape.circle,
+                                                  Container(
+                                                    padding:
+                                                        EdgeInsets.symmetric(
+                                                            vertical: 0,
+                                                            horizontal: 8),
+                                                    decoration: BoxDecoration(
+                                                      color: _getStatusColor(
+                                                              _estadoPorFolio[
+                                                                      folio] ??
+                                                                  estado!)
+                                                          .withOpacity(0.09),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              24),
+                                                      border: Border.all(
                                                         color: _getStatusColor(
                                                             _estadoPorFolio[
                                                                     folio] ??
                                                                 estado!),
+                                                        width: 1,
                                                       ),
                                                     ),
-                                                    SizedBox(width: 4),
-                                                    Container(
-                                                      constraints:
-                                                          BoxConstraints(
-                                                              maxHeight: 30),
-                                                      child: DropdownButton<
-                                                          String>(
-                                                        focusNode: _focusNode,
-                                                        value: _estadoPorFolio[
-                                                                folio] ??
-                                                            estado,
-                                                        onChanged: (String?
-                                                            newValue) async {
-                                                          if (newValue !=
-                                                              null) {
-                                                            bool actualizado =
-                                                                await actualizarEstado(
-                                                                    folio,
-                                                                    newValue);
-                                                            if (actualizado) {
-                                                              setState(() {
+                                                    child: Row(
+                                                      mainAxisSize:
+                                                          MainAxisSize.min,
+                                                      children: [
+                                                        Container(
+                                                          width: 10,
+                                                          height: 10,
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            shape:
+                                                                BoxShape.circle,
+                                                            color: _getStatusColor(
                                                                 _estadoPorFolio[
-                                                                        folio] =
-                                                                    newValue;
-                                                                fetchDatos();
-                                                              });
-                                                            } else {
-                                                              setState(() {
-                                                                _estadoPorFolio[
-                                                                        folio] =
-                                                                    estado;
-                                                              });
-                                                            }
-                                                            _focusNode
-                                                                .unfocus(); // Quita el foco al seleccionar un nuevo valor
-                                                          }
-                                                        },
-                                                        items: estados.map<
-                                                            DropdownMenuItem<
-                                                                String>>((String
-                                                            value) {
-                                                          return DropdownMenuItem<
+                                                                        folio] ??
+                                                                    estado!),
+                                                          ),
+                                                        ),
+                                                        SizedBox(width: 4),
+                                                        Container(
+                                                          constraints:
+                                                              BoxConstraints(
+                                                                  maxHeight:
+                                                                      30),
+                                                          child: DropdownButton<
                                                               String>(
-                                                            value: value,
-                                                            child: Text(
-                                                              value,
-                                                              style: TextStyle(
-                                                                  fontSize: 12),
-                                                            ),
-                                                          );
-                                                        }).toList(),
-                                                        onTap: () {
-                                                          FocusScope.of(context)
-                                                              .requestFocus(
-                                                                  FocusNode());
-                                                        },
-                                                        underline: SizedBox(),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(height: 8),
-                                          // Contenedor para el estado y el DropdownButton
-                                        ],
-                                      ),
-                                      subtitle: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Divider(), // Añadir un separador
-                                          // Cifras con más espaciado y columnas
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              // Columna con los precios
-                                              Expanded(
-                                                child: Wrap(
-                                                  spacing: 16,
-                                                  runSpacing: 4,
-                                                  children: [
-                                                    Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        Text('Precio Compra:',
-                                                            style: TextStyle(
-                                                                fontSize: 14,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold)),
-                                                        Text(
-                                                            '\$${totalCompra.toStringAsFixed(2)}',
-                                                            style: TextStyle(
-                                                                fontSize: 14)),
-                                                      ],
-                                                    ),
-                                                    Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        Text('Ganancia Total:',
-                                                            style: TextStyle(
-                                                                fontSize: 14,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold)),
-                                                        Text(
-                                                            '\$${gananciaTotal.toStringAsFixed(2)}',
-                                                            style: TextStyle(
-                                                                fontSize: 14)),
-                                                      ],
-                                                    ),
-                                                    Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        Text('Subtotal:',
-                                                            style: TextStyle(
-                                                                fontSize: 14,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold)),
-                                                        Text(
-                                                            '\$${detalle['subtotal'] ?? '0.00'}',
-                                                            style: TextStyle(
-                                                                fontSize: 14)),
-                                                      ],
-                                                    ),
-                                                    Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        Text('IVA:',
-                                                            style: TextStyle(
-                                                                fontSize: 14,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold)),
-                                                        Text(
-                                                            '\$${detalle['iva'] ?? '0.00'}',
-                                                            style: TextStyle(
-                                                                fontSize: 14)),
-                                                      ],
-                                                    ),
-                                                    Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        Text('Total:',
-                                                            style: TextStyle(
-                                                                fontSize: 14,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold)),
-                                                        Text(
-                                                          '\$${detalle['total'] ?? '0.00'}',
-                                                          style: TextStyle(
-                                                            fontSize: 14,
+                                                            focusNode:
+                                                                _focusNode,
+                                                            value:
+                                                                _estadoPorFolio[
+                                                                        folio] ??
+                                                                    estado,
+                                                            onChanged: (String?
+                                                                newValue) async {
+                                                              if (newValue !=
+                                                                  null) {
+                                                                bool
+                                                                    actualizado =
+                                                                    await actualizarEstado(
+                                                                        folio,
+                                                                        newValue);
+                                                                if (actualizado) {
+                                                                  setState(() {
+                                                                    _estadoPorFolio[
+                                                                            folio] =
+                                                                        newValue;
+                                                                    fetchDatos();
+                                                                  });
+                                                                } else {
+                                                                  setState(() {
+                                                                    _estadoPorFolio[
+                                                                            folio] =
+                                                                        estado;
+                                                                  });
+                                                                }
+                                                                _focusNode
+                                                                    .unfocus(); // Quita el foco al seleccionar un nuevo valor
+                                                              }
+                                                            },
+                                                            items: estados.map<
+                                                                DropdownMenuItem<
+                                                                    String>>((String
+                                                                value) {
+                                                              return DropdownMenuItem<
+                                                                  String>(
+                                                                value: value,
+                                                                child: Text(
+                                                                  value,
+                                                                  style: TextStyle(
+                                                                      fontSize:
+                                                                          12),
+                                                                ),
+                                                              );
+                                                            }).toList(),
+                                                            onTap: () {
+                                                              FocusScope.of(
+                                                                      context)
+                                                                  .requestFocus(
+                                                                      FocusNode());
+                                                            },
+                                                            underline:
+                                                                SizedBox(),
                                                           ),
                                                         ),
                                                       ],
                                                     ),
-                                                  ],
-                                                ),
+                                                  ),
+                                                ],
                                               ),
-                                              // Total a la derecha
-                                              Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.end,
+                                              SizedBox(height: 8),
+                                              // Contenedor para el estado y el DropdownButton
+                                            ],
+                                          ),
+                                          subtitle: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Divider(), // Añadir un separador
+                                              // Cifras con más espaciado y columnas
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
                                                 children: [
-                                                  Row(
+                                                  // Columna con los precios
+                                                  Expanded(
+                                                    child: Wrap(
+                                                      spacing: 16,
+                                                      runSpacing: 4,
+                                                      children: [
+                                                        Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Text(
+                                                                'Precio Compra:',
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        14,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold)),
+                                                            Text(
+                                                                '\$${totalCompra.toStringAsFixed(2)}',
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        14)),
+                                                          ],
+                                                        ),
+                                                        Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Text(
+                                                                'Ganancia Total:',
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        14,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold)),
+                                                            Text(
+                                                                '\$${gananciaTotal.toStringAsFixed(2)}',
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        14)),
+                                                          ],
+                                                        ),
+                                                        Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Text('Subtotal:',
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        14,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold)),
+                                                            Text(
+                                                                '\$${detalle['subtotal'] ?? '0.00'}',
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        14)),
+                                                          ],
+                                                        ),
+                                                        Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Text('IVA:',
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        14,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold)),
+                                                            Text(
+                                                                '\$${detalle['iva'] ?? '0.00'}',
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        14)),
+                                                          ],
+                                                        ),
+                                                        Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Text('Total:',
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        14,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold)),
+                                                            Text(
+                                                              '\$${detalle['total'] ?? '0.00'}',
+                                                              style: TextStyle(
+                                                                fontSize: 14,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  // Total a la derecha
+                                                  Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment.end,
                                                     children: [
-                                                      // Fecha de Creación
-                                                      GestureDetector(
-                                                        onTap: () {
-                                                          setState(() {
-                                                            // Cambia el estado solo para este elemento específico.
-                                                            esCortaMap[index] =
-                                                                !esCortaMap[
-                                                                    index]!;
-                                                          });
+                                                      Row(
+                                                        children: [
+                                                          // Fecha de Creación
+                                                          GestureDetector(
+                                                            onTap: () {
+                                                              setState(() {
+                                                                // Cambia el estado solo para este elemento específico.
+                                                                esCortaMap[
+                                                                        index] =
+                                                                    !esCortaMap[
+                                                                        index]!;
+                                                              });
 
-                                                          // Regresar al formato corto después de unos segundos.
-                                                          Future.delayed(
-                                                              Duration(
-                                                                  seconds: 2),
-                                                              () {
-                                                            setState(() {
-                                                              esCortaMap[
-                                                                  index] = true;
-                                                            });
-                                                          });
-                                                        },
-                                                        child: AnimatedSwitcher(
-                                                          duration: Duration(
-                                                              milliseconds:
-                                                                  300),
-                                                          child: Text(
-                                                            esCortaMap[
-                                                                    index]! // Obtiene el estado de este elemento.
-                                                                ? formatDateCorta(
-                                                                    DateTime.parse(
+                                                              // Regresar al formato corto después de unos segundos.
+                                                              Future.delayed(
+                                                                  Duration(
+                                                                      seconds:
+                                                                          2),
+                                                                  () {
+                                                                setState(() {
+                                                                  esCortaMap[
+                                                                          index] =
+                                                                      true;
+                                                                });
+                                                              });
+                                                            },
+                                                            child:
+                                                                AnimatedSwitcher(
+                                                              duration: Duration(
+                                                                  milliseconds:
+                                                                      300),
+                                                              child: Text(
+                                                                esCortaMap[
+                                                                        index]! // Obtiene el estado de este elemento.
+                                                                    ? formatDateCorta(DateTime.parse(
                                                                         detalle[
                                                                             'fecha_creacion']))
-                                                                : formatDateLarga(
-                                                                    DateTime.parse(
-                                                                        detalle[
-                                                                            'fecha_creacion'])),
-                                                            key: ValueKey<bool>(
-                                                                esCortaMap[
-                                                                    index]!),
+                                                                    : formatDateLarga(
+                                                                        DateTime.parse(
+                                                                            detalle['fecha_creacion'])),
+                                                                key: ValueKey<
+                                                                        bool>(
+                                                                    esCortaMap[
+                                                                        index]!),
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize: 14,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w500,
+                                                                  color: Colors
+                                                                      .black87,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          SizedBox(width: 12),
+                                                          Text(
+                                                            'Folio: $folio',
                                                             style: TextStyle(
+                                                              color: Color(
+                                                                  0xFF008F8F),
                                                               fontSize: 14,
                                                               fontWeight:
                                                                   FontWeight
-                                                                      .w500,
-                                                              color: Colors
-                                                                  .black87,
+                                                                      .bold,
                                                             ),
                                                           ),
-                                                        ),
-                                                      ),
-                                                      SizedBox(width: 12),
-                                                      Text(
-                                                        'Folio: $folio',
-                                                        style: TextStyle(
-                                                          color:
-                                                              Color(0xFF008F8F),
-                                                          fontSize: 14,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
+                                                        ],
                                                       ),
                                                     ],
                                                   ),
@@ -1096,596 +1169,613 @@ class ControlScreenState extends State<ControlScreen>
                                               ),
                                             ],
                                           ),
-                                        ],
-                                      ),
-                                      trailing: Icon(
-                                        isExpanded
-                                            ? Icons.keyboard_arrow_up
-                                            : Icons.keyboard_arrow_down,
-                                      ),
-                                      onTap: () {
-                                        setState(() {
-                                          if (isExpanded) {
-                                            _expandedState.remove(folio);
-                                          } else {
-                                            _expandedState
-                                                .forEach((key, value) {
-                                              if (value)
-                                                _expandedState[key] = false;
+                                          trailing: Icon(
+                                            isExpanded
+                                                ? Icons.keyboard_arrow_up
+                                                : Icons.keyboard_arrow_down,
+                                          ),
+                                          onTap: () {
+                                            setState(() {
+                                              if (isExpanded) {
+                                                _expandedState.remove(folio);
+                                              } else {
+                                                _expandedState
+                                                    .forEach((key, value) {
+                                                  if (value)
+                                                    _expandedState[key] = false;
+                                                });
+                                                _expandedState[folio] = true;
+                                                FocusScope.of(context)
+                                                    .requestFocus(FocusNode());
+                                              }
                                             });
-                                            _expandedState[folio] = true;
-                                            FocusScope.of(context)
-                                                .requestFocus(FocusNode());
-                                          }
-                                        });
-                                      },
-                                    ),
-                                    SizeTransition(
-                                      sizeFactor: animation,
-                                      child: Container(
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: 16, vertical: 8),
-                                        color: Colors.white,
-                                        child: isExpanded
-                                            ? Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .spaceBetween,
+                                          },
+                                        ),
+                                        SizeTransition(
+                                          sizeFactor: animation,
+                                          child: Container(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 16, vertical: 8),
+                                            color: Colors.white,
+                                            child: isExpanded
+                                                ? Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
                                                     children: [
-                                                      Text(
-                                                        'Teléfono: ${cliente != null ? cliente['telefono'] ?? 'No disponible' : 'Cliente no encontrado'}',
-                                                        style: TextStyle(
-                                                          fontSize: 14,
-                                                        ),
+                                                      Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .spaceBetween,
+                                                        children: [
+                                                          Text(
+                                                            'Teléfono: ${cliente != null ? cliente['telefono'] ?? 'No disponible' : 'Cliente no encontrado'}',
+                                                            style: TextStyle(
+                                                              fontSize: 14,
+                                                            ),
+                                                          ),
+                                                          Text(
+                                                            'Email: ${cliente != null ? cliente['email'] ?? 'No disponible' : 'Email no encontrado'}',
+                                                            style: TextStyle(
+                                                              fontSize: 14,
+                                                            ),
+                                                          ),
+                                                        ],
                                                       ),
-                                                      Text(
-                                                        'Email: ${cliente != null ? cliente['email'] ?? 'No disponible' : 'Email no encontrado'}',
-                                                        style: TextStyle(
-                                                          fontSize: 14,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  SizedBox(height: 16),
-                                                  ...detalle['articulos']
-                                                      .map<Widget>(
-                                                          (articuloDetalle) {
-                                                    return Card(
-                                                      color: Colors.grey[100],
-                                                      margin: const EdgeInsets
-                                                          .symmetric(
-                                                          vertical: 4.0,
-                                                          horizontal: 8.0),
-                                                      elevation: 2,
-                                                      child: ListTile(
-                                                        contentPadding:
-                                                            EdgeInsets
-                                                                .symmetric(
+                                                      SizedBox(height: 16),
+                                                      ...detalle['articulos']
+                                                          .map<Widget>(
+                                                              (articuloDetalle) {
+                                                        return Card(
+                                                          color:
+                                                              Colors.grey[100],
+                                                          margin:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  vertical: 4.0,
+                                                                  horizontal:
+                                                                      8.0),
+                                                          elevation: 2,
+                                                          child: ListTile(
+                                                            contentPadding:
+                                                                EdgeInsets.symmetric(
                                                                     vertical: 2,
                                                                     horizontal:
                                                                         16.0),
-                                                        title: Row(
+                                                            title: Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .spaceBetween,
+                                                              children: [
+                                                                Expanded(
+                                                                  flex: 1,
+                                                                  child: Column(
+                                                                    crossAxisAlignment:
+                                                                        CrossAxisAlignment
+                                                                            .start, // Alinea a la izquierda
+                                                                    mainAxisAlignment:
+                                                                        MainAxisAlignment
+                                                                            .center,
+                                                                    children: [
+                                                                      Text(
+                                                                        'Cantidad:',
+                                                                        style: TextStyle(
+                                                                            fontSize:
+                                                                                14,
+                                                                            fontWeight:
+                                                                                FontWeight.bold),
+                                                                        textAlign:
+                                                                            TextAlign.center,
+                                                                      ),
+                                                                      Padding(
+                                                                        padding: const EdgeInsets
+                                                                            .only(
+                                                                            left:
+                                                                                25),
+                                                                        child:
+                                                                            Text(
+                                                                          '${articuloDetalle['cantidad'] ?? '0'}',
+                                                                          style:
+                                                                              TextStyle(fontSize: 14),
+                                                                          textAlign:
+                                                                              TextAlign.center,
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                                Expanded(
+                                                                  flex: 4,
+                                                                  child: Column(
+                                                                    crossAxisAlignment:
+                                                                        CrossAxisAlignment
+                                                                            .start, // Alinea a la izquierda
+                                                                    mainAxisAlignment:
+                                                                        MainAxisAlignment
+                                                                            .center,
+                                                                    children: [
+                                                                      Text(
+                                                                        'Producto:',
+                                                                        style: TextStyle(
+                                                                            fontSize:
+                                                                                14,
+                                                                            fontWeight:
+                                                                                FontWeight.bold),
+                                                                        textAlign:
+                                                                            TextAlign.left, // Alinea a la izquierda
+                                                                      ),
+                                                                      Text(
+                                                                        '${articuloDetalle['descripcion'] ?? 'Desconocido'}',
+                                                                        style: TextStyle(
+                                                                            fontSize:
+                                                                                14),
+                                                                        textAlign:
+                                                                            TextAlign.left, // Alinea a la izquierda
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                                Expanded(
+                                                                  child: Column(
+                                                                    mainAxisAlignment:
+                                                                        MainAxisAlignment
+                                                                            .center,
+                                                                    children: [
+                                                                      Text(
+                                                                        'Precio Compra:',
+                                                                        style: TextStyle(
+                                                                            fontSize:
+                                                                                14,
+                                                                            fontWeight:
+                                                                                FontWeight.bold),
+                                                                        textAlign:
+                                                                            TextAlign.center,
+                                                                      ),
+                                                                      Text(
+                                                                        '\$${articuloDetalle['precio_compra']?.toStringAsFixed(2) ?? '0.00'}',
+                                                                        style: TextStyle(
+                                                                            fontSize:
+                                                                                14),
+                                                                        textAlign:
+                                                                            TextAlign.center,
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                                Expanded(
+                                                                  child: Column(
+                                                                    mainAxisAlignment:
+                                                                        MainAxisAlignment
+                                                                            .center,
+                                                                    children: [
+                                                                      Text(
+                                                                        'Porcentaje:',
+                                                                        style: TextStyle(
+                                                                            fontSize:
+                                                                                14,
+                                                                            fontWeight:
+                                                                                FontWeight.bold),
+                                                                        textAlign:
+                                                                            TextAlign.center,
+                                                                      ),
+                                                                      Text(
+                                                                        '${articuloDetalle['porcentaje'] ?? '0.00'}%',
+                                                                        style: TextStyle(
+                                                                            fontSize:
+                                                                                14),
+                                                                        textAlign:
+                                                                            TextAlign.center,
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                                Expanded(
+                                                                  child: Column(
+                                                                    mainAxisAlignment:
+                                                                        MainAxisAlignment
+                                                                            .center,
+                                                                    children: [
+                                                                      Text(
+                                                                        'Ganancia p/p:',
+                                                                        style: TextStyle(
+                                                                            fontSize:
+                                                                                14,
+                                                                            fontWeight:
+                                                                                FontWeight.bold),
+                                                                        textAlign:
+                                                                            TextAlign.center,
+                                                                      ),
+                                                                      Text(
+                                                                        // Validamos que cantidad no sea 0 para evitar divisiones por 0
+                                                                        '\$${(articuloDetalle['ganancia'] != null && articuloDetalle['cantidad'] != null && articuloDetalle['cantidad'] != 0) ? (articuloDetalle['ganancia'] / articuloDetalle['cantidad']).toStringAsFixed(2) : '0.00'}',
+                                                                        style: TextStyle(
+                                                                            fontSize:
+                                                                                14),
+                                                                        textAlign:
+                                                                            TextAlign.center,
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                                Expanded(
+                                                                  child: Column(
+                                                                    mainAxisAlignment:
+                                                                        MainAxisAlignment
+                                                                            .center,
+                                                                    children: [
+                                                                      Text(
+                                                                        'Ganancia Total:',
+                                                                        style: TextStyle(
+                                                                            fontSize:
+                                                                                14,
+                                                                            fontWeight:
+                                                                                FontWeight.bold),
+                                                                        textAlign:
+                                                                            TextAlign.center,
+                                                                      ),
+                                                                      Text(
+                                                                        '\$${((double.tryParse(articuloDetalle['ganancia']?.toString() ?? '0') ?? 0)).toStringAsFixed(2)}',
+                                                                        style: TextStyle(
+                                                                            fontSize:
+                                                                                14),
+                                                                        textAlign:
+                                                                            TextAlign.center,
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                                Expanded(
+                                                                  child: Column(
+                                                                    mainAxisAlignment:
+                                                                        MainAxisAlignment
+                                                                            .center,
+                                                                    children: [
+                                                                      Text(
+                                                                        'Venta:',
+                                                                        style: TextStyle(
+                                                                            fontSize:
+                                                                                14,
+                                                                            fontWeight:
+                                                                                FontWeight.bold),
+                                                                        textAlign:
+                                                                            TextAlign.center,
+                                                                      ),
+                                                                      Text(
+                                                                        '\$${articuloDetalle['precio_venta']?.toStringAsFixed(2) ?? '0.00'}',
+                                                                        style: TextStyle(
+                                                                            fontSize:
+                                                                                14),
+                                                                        textAlign:
+                                                                            TextAlign.center,
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                                Expanded(
+                                                                  child: Column(
+                                                                    mainAxisAlignment:
+                                                                        MainAxisAlignment
+                                                                            .center,
+                                                                    children: [
+                                                                      Text(
+                                                                        'Total:',
+                                                                        style: TextStyle(
+                                                                            fontSize:
+                                                                                14,
+                                                                            fontWeight:
+                                                                                FontWeight.bold),
+                                                                        textAlign:
+                                                                            TextAlign.center,
+                                                                      ),
+                                                                      Text(
+                                                                        '\$${(articuloDetalle['precio_venta'] ?? 0) * (articuloDetalle['cantidad'] ?? 0)}',
+                                                                        style: TextStyle(
+                                                                            fontSize:
+                                                                                14),
+                                                                        textAlign:
+                                                                            TextAlign.center,
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        );
+                                                      }).toList(),
+                                                      SizedBox(height: 10),
+                                                      Padding(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical: 8.0,
+                                                                horizontal:
+                                                                    16.0),
+                                                        child: Row(
                                                           mainAxisAlignment:
                                                               MainAxisAlignment
-                                                                  .spaceBetween,
+                                                                  .spaceBetween, // Espacio entre elementos
                                                           children: [
-                                                            Expanded(
-                                                              flex: 1,
-                                                              child: Column(
-                                                                crossAxisAlignment:
-                                                                    CrossAxisAlignment
-                                                                        .start, // Alinea a la izquierda
-                                                                mainAxisAlignment:
-                                                                    MainAxisAlignment
-                                                                        .center,
-                                                                children: [
-                                                                  Text(
-                                                                    'Cantidad:',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            14,
-                                                                        fontWeight:
-                                                                            FontWeight.bold),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .center,
-                                                                  ),
-                                                                  Padding(
-                                                                    padding: const EdgeInsets
-                                                                        .only(
-                                                                        left:
-                                                                            25),
-                                                                    child: Text(
-                                                                      '${articuloDetalle['cantidad'] ?? '0'}',
-                                                                      style: TextStyle(
-                                                                          fontSize:
-                                                                              14),
-                                                                      textAlign:
-                                                                          TextAlign
-                                                                              .center,
-                                                                    ),
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                            Expanded(
-                                                              flex: 4,
-                                                              child: Column(
-                                                                crossAxisAlignment:
-                                                                    CrossAxisAlignment
-                                                                        .start, // Alinea a la izquierda
-                                                                mainAxisAlignment:
-                                                                    MainAxisAlignment
-                                                                        .center,
-                                                                children: [
-                                                                  Text(
-                                                                    'Producto:',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            14,
-                                                                        fontWeight:
-                                                                            FontWeight.bold),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .left, // Alinea a la izquierda
-                                                                  ),
-                                                                  Text(
-                                                                    '${articuloDetalle['descripcion'] ?? 'Desconocido'}',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            14),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .left, // Alinea a la izquierda
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                            Expanded(
-                                                              child: Column(
-                                                                mainAxisAlignment:
-                                                                    MainAxisAlignment
-                                                                        .center,
-                                                                children: [
-                                                                  Text(
-                                                                    'Precio Compra:',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            14,
-                                                                        fontWeight:
-                                                                            FontWeight.bold),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .center,
-                                                                  ),
-                                                                  Text(
-                                                                    '\$${articuloDetalle['precio_compra']?.toStringAsFixed(2) ?? '0.00'}',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            14),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .center,
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                            Expanded(
-                                                              child: Column(
-                                                                mainAxisAlignment:
-                                                                    MainAxisAlignment
-                                                                        .center,
-                                                                children: [
-                                                                  Text(
-                                                                    'Porcentaje:',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            14,
-                                                                        fontWeight:
-                                                                            FontWeight.bold),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .center,
-                                                                  ),
-                                                                  Text(
-                                                                    '${articuloDetalle['porcentaje'] ?? '0.00'}%',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            14),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .center,
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                            Expanded(
-                                                              child: Column(
-                                                                mainAxisAlignment:
-                                                                    MainAxisAlignment
-                                                                        .center,
-                                                                children: [
-                                                                  Text(
-                                                                    'Ganancia p/p:',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            14,
-                                                                        fontWeight:
-                                                                            FontWeight.bold),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .center,
-                                                                  ),
-                                                                  Text(
-                                                                    // Validamos que cantidad no sea 0 para evitar divisiones por 0
-                                                                    '\$${(articuloDetalle['ganancia'] != null && articuloDetalle['cantidad'] != null && articuloDetalle['cantidad'] != 0) ? (articuloDetalle['ganancia'] / articuloDetalle['cantidad']).toStringAsFixed(2) : '0.00'}',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            14),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .center,
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                            Expanded(
-                                                              child: Column(
-                                                                mainAxisAlignment:
-                                                                    MainAxisAlignment
-                                                                        .center,
-                                                                children: [
-                                                                  Text(
-                                                                    'Ganancia Total:',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            14,
-                                                                        fontWeight:
-                                                                            FontWeight.bold),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .center,
-                                                                  ),
-                                                                  Text(
-                                                                    '\$${((double.tryParse(articuloDetalle['ganancia']?.toString() ?? '0') ?? 0)).toStringAsFixed(2)}',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            14),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .center,
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                            Expanded(
-                                                              child: Column(
-                                                                mainAxisAlignment:
-                                                                    MainAxisAlignment
-                                                                        .center,
-                                                                children: [
-                                                                  Text(
-                                                                    'Venta:',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            14,
-                                                                        fontWeight:
-                                                                            FontWeight.bold),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .center,
-                                                                  ),
-                                                                  Text(
-                                                                    '\$${articuloDetalle['precio_venta']?.toStringAsFixed(2) ?? '0.00'}',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            14),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .center,
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                            Expanded(
-                                                              child: Column(
-                                                                mainAxisAlignment:
-                                                                    MainAxisAlignment
-                                                                        .center,
-                                                                children: [
-                                                                  Text(
-                                                                    'Total:',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            14,
-                                                                        fontWeight:
-                                                                            FontWeight.bold),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .center,
-                                                                  ),
-                                                                  Text(
-                                                                    '\$${(articuloDetalle['precio_venta'] ?? 0) * (articuloDetalle['cantidad'] ?? 0)}',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            14),
-                                                                    textAlign:
-                                                                        TextAlign
-                                                                            .center,
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    );
-                                                  }).toList(),
-                                                  SizedBox(height: 10),
-                                                  Padding(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        vertical: 8.0,
-                                                        horizontal: 16.0),
-                                                    child: Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween, // Espacio entre elementos
-                                                      children: [
-                                                        Row(
-                                                          // Elementos de la izquierda
-                                                          children: [
-                                                            Text(
-                                                              'Subtotal:',
-                                                              style: TextStyle(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                fontSize: 14,
-                                                              ),
-                                                            ),
-                                                            SizedBox(width: 10),
-                                                            Text(
-                                                              '\$${detalle['subtotal'] ?? '0.00'}',
-                                                              style: TextStyle(
-                                                                color: Colors
-                                                                    .black87,
-                                                                fontSize: 14,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        Row(
-                                                          // Elementos nuevos a la derecha
-                                                          children: [
-                                                            Text(
-                                                              'Método de pago:',
-                                                              style: TextStyle(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                fontSize: 14,
-                                                              ),
-                                                            ),
-                                                            SizedBox(width: 10),
-                                                            Text(
-                                                              detalle['tipo_pago'] ??
-                                                                  'No disponible',
-                                                              style: TextStyle(
-                                                                color: Colors
-                                                                    .black87,
-                                                                fontSize: 14,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  Padding(
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        vertical: 8.0,
-                                                        horizontal: 16.0),
-                                                    child: Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween, // Espacio entre elementos
-                                                      children: [
-                                                        Row(
-                                                          // Elementos de la izquierda
-                                                          children: [
-                                                            Text(
-                                                              'IVA:',
-                                                              style: TextStyle(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                fontSize: 14,
-                                                              ),
-                                                            ),
-                                                            SizedBox(width: 10),
-                                                            Text(
-                                                              '\$${detalle['iva'] ?? '0.00'}',
-                                                              style: TextStyle(
-                                                                color: Colors
-                                                                    .black87,
-                                                                fontSize: 14,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        Row(
-                                                          // Elementos nuevos a la derecha
-                                                          children: [
-                                                            Text(
-                                                              'Factura:',
-                                                              style: TextStyle(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                fontSize: 14,
-                                                              ),
-                                                            ),
-                                                            SizedBox(width: 10),
-                                                            Text(
-                                                              detalle[
-                                                                  'factura'],
-                                                              style: TextStyle(
-                                                                color: Colors
-                                                                    .black87,
-                                                                fontSize: 14,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            top: 8,
-                                                            bottom: 8,
-                                                            left: 16,
-                                                            right: 0),
-                                                    child: Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween, // Espacio entre elementos
-                                                      children: [
-                                                        Row(
-                                                          // Elementos de la izquierda
-                                                          children: [
-                                                            Text(
-                                                              'Total:',
-                                                              style: TextStyle(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                                fontSize: 14,
-                                                              ),
-                                                            ),
-                                                            SizedBox(width: 10),
-                                                            Text(
-                                                              '\$${detalle['total'] ?? '0.00'}',
-                                                              style: TextStyle(
-                                                                color: Colors
-                                                                    .black87,
-                                                                fontSize: 14,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        Row(
-                                                          // Elementos nuevos a la derecha
-                                                          children: [
-                                                            TextButton(
-                                                              onPressed:
-                                                                  () async {
-                                                                // Asegúrate de que el cliente existe
-                                                                if (cliente !=
-                                                                    null) {
-                                                                  // Crea un nuevo mapa que incluya los detalles del cliente
-                                                                  Map<String,
-                                                                          dynamic>
-                                                                      pdfData =
-                                                                      {
-                                                                    ...detalle,
-                                                                    'telefono':
-                                                                        cliente['telefono'] ??
-                                                                            'No disponible',
-                                                                    'email': cliente[
-                                                                            'email'] ??
-                                                                        'No disponible',
-                                                                  };
-                                                                  await generarPDF(
-                                                                      pdfData); // Pasa el nuevo mapa a la función
-                                                                } else {
-                                                                  // Maneja el caso de cliente no encontrado
-                                                                  print(
-                                                                      'Cliente no encontrado');
-                                                                }
-                                                              },
-                                                              style: TextButton
-                                                                  .styleFrom(
-                                                                shape:
-                                                                    RoundedRectangleBorder(
-                                                                  borderRadius:
-                                                                      BorderRadius
-                                                                          .circular(
-                                                                              8),
-                                                                ),
-                                                              ),
-                                                              child: Icon(
-                                                                Icons
-                                                                    .picture_as_pdf,
-                                                                color: Color(
-                                                                    0xFFB8001F), // Cambia el color del icono si lo deseas
-                                                                size:
-                                                                    24, // Tamaño del icono
-                                                              ),
-                                                            ),
-                                                            // Botón para editar la venta
-                                                            TextButton(
-                                                              onPressed: () {
-                                                                mostrarDialogoEdicion(
-                                                                    context,
-                                                                    detalle);
-                                                              },
-                                                              child: Icon(
-                                                                Icons.edit,
-                                                                color: Colors
-                                                                    .blue, // Cambia el color si lo deseas
-                                                                size: 24,
-                                                              ),
-                                                            ),
-                                                            TextButton(
-                                                              onPressed: () {
-                                                                // Llamas a la función para mostrar el diálogo, pasando el contexto y los detalles
-                                                                mostrarDetallesEstado(
-                                                                    context,
-                                                                    detalle[
-                                                                        'estados']);
-                                                                setState(() {
-                                                                  fetchDatos();
-                                                                });
-                                                              },
-                                                              child: Text(
-                                                                'Ver detalles del estado',
-                                                                style: TextStyle(
+                                                            Row(
+                                                              // Elementos de la izquierda
+                                                              children: [
+                                                                Text(
+                                                                  'Subtotal:',
+                                                                  style:
+                                                                      TextStyle(
                                                                     fontWeight:
                                                                         FontWeight
                                                                             .bold,
                                                                     fontSize:
                                                                         14,
-                                                                    color: Color(
-                                                                        0xFF008F8F)),
-                                                              ),
+                                                                  ),
+                                                                ),
+                                                                SizedBox(
+                                                                    width: 10),
+                                                                Text(
+                                                                  '\$${detalle['subtotal'] ?? '0.00'}',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    color: Colors
+                                                                        .black87,
+                                                                    fontSize:
+                                                                        14,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                            Row(
+                                                              // Elementos nuevos a la derecha
+                                                              children: [
+                                                                Text(
+                                                                  'Método de pago:',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    fontSize:
+                                                                        14,
+                                                                  ),
+                                                                ),
+                                                                SizedBox(
+                                                                    width: 10),
+                                                                Text(
+                                                                  detalle['tipo_pago'] ??
+                                                                      'No disponible',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    color: Colors
+                                                                        .black87,
+                                                                    fontSize:
+                                                                        14,
+                                                                  ),
+                                                                ),
+                                                              ],
                                                             ),
                                                           ],
                                                         ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ],
-                                              )
-                                            : null,
-                                      ),
+                                                      ),
+                                                      Padding(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical: 8.0,
+                                                                horizontal:
+                                                                    16.0),
+                                                        child: Row(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .spaceBetween, // Espacio entre elementos
+                                                          children: [
+                                                            Row(
+                                                              // Elementos de la izquierda
+                                                              children: [
+                                                                Text(
+                                                                  'IVA:',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    fontSize:
+                                                                        14,
+                                                                  ),
+                                                                ),
+                                                                SizedBox(
+                                                                    width: 10),
+                                                                Text(
+                                                                  '\$${detalle['iva'] ?? '0.00'}',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    color: Colors
+                                                                        .black87,
+                                                                    fontSize:
+                                                                        14,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                            Row(
+                                                              // Elementos nuevos a la derecha
+                                                              children: [
+                                                                Text(
+                                                                  'Factura:',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    fontSize:
+                                                                        14,
+                                                                  ),
+                                                                ),
+                                                                SizedBox(
+                                                                    width: 10),
+                                                                Text(
+                                                                  detalle[
+                                                                      'factura'],
+                                                                  style:
+                                                                      TextStyle(
+                                                                    color: Colors
+                                                                        .black87,
+                                                                    fontSize:
+                                                                        14,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                      Padding(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .only(
+                                                                top: 8,
+                                                                bottom: 8,
+                                                                left: 16,
+                                                                right: 0),
+                                                        child: Row(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .spaceBetween, // Espacio entre elementos
+                                                          children: [
+                                                            Row(
+                                                              // Elementos de la izquierda
+                                                              children: [
+                                                                Text(
+                                                                  'Total:',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    fontSize:
+                                                                        14,
+                                                                  ),
+                                                                ),
+                                                                SizedBox(
+                                                                    width: 10),
+                                                                Text(
+                                                                  '\$${detalle['total'] ?? '0.00'}',
+                                                                  style:
+                                                                      TextStyle(
+                                                                    color: Colors
+                                                                        .black87,
+                                                                    fontSize:
+                                                                        14,
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                            Row(
+                                                              // Elementos nuevos a la derecha
+                                                              children: [
+                                                                TextButton(
+                                                                  onPressed:
+                                                                      () async {
+                                                                    // Asegúrate de que el cliente existe
+                                                                    if (cliente !=
+                                                                        null) {
+                                                                      // Crea un nuevo mapa que incluya los detalles del cliente
+                                                                      Map<String,
+                                                                              dynamic>
+                                                                          pdfData =
+                                                                          {
+                                                                        ...detalle,
+                                                                        'telefono':
+                                                                            cliente['telefono'] ??
+                                                                                'No disponible',
+                                                                        'email':
+                                                                            cliente['email'] ??
+                                                                                'No disponible',
+                                                                      };
+                                                                      await generarPDF(
+                                                                          pdfData); // Pasa el nuevo mapa a la función
+                                                                    } else {
+                                                                      // Maneja el caso de cliente no encontrado
+                                                                      print(
+                                                                          'Cliente no encontrado');
+                                                                    }
+                                                                  },
+                                                                  style: TextButton
+                                                                      .styleFrom(
+                                                                    shape:
+                                                                        RoundedRectangleBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              8),
+                                                                    ),
+                                                                  ),
+                                                                  child: Icon(
+                                                                    Icons
+                                                                        .picture_as_pdf,
+                                                                    color: Color(
+                                                                        0xFFB8001F), // Cambia el color del icono si lo deseas
+                                                                    size:
+                                                                        24, // Tamaño del icono
+                                                                  ),
+                                                                ),
+                                                                // Botón para editar la venta
+                                                                TextButton(
+                                                                  onPressed:
+                                                                      () {
+                                                                    mostrarDialogoEdicion(
+                                                                        context,
+                                                                        detalle);
+                                                                  },
+                                                                  child: Icon(
+                                                                    Icons.edit,
+                                                                    color: Colors
+                                                                        .blue, // Cambia el color si lo deseas
+                                                                    size: 24,
+                                                                  ),
+                                                                ),
+                                                                TextButton(
+                                                                  onPressed:
+                                                                      () {
+                                                                    // Llamas a la función para mostrar el diálogo, pasando el contexto y los detalles
+                                                                    mostrarDetallesEstado(
+                                                                        context,
+                                                                        detalle[
+                                                                            'estados']);
+                                                                    setState(
+                                                                        () {
+                                                                      fetchDatos();
+                                                                    });
+                                                                  },
+                                                                  child: Text(
+                                                                    'Ver detalles del estado',
+                                                                    style: TextStyle(
+                                                                        fontWeight:
+                                                                            FontWeight
+                                                                                .bold,
+                                                                        fontSize:
+                                                                            14,
+                                                                        color: Color(
+                                                                            0xFF008F8F)),
+                                                                  ),
+                                                                ),
+                                                              ],
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  )
+                                                : null,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
+                                  );
+                                },
+                              ),
+                      ),
+                      _buildPagination(totalPages),
+                    ],
                   ),
-                  _buildPagination(totalPages),
-                ],
-              ),
       ),
     );
   }

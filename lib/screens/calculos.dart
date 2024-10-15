@@ -9,6 +9,34 @@ class CotizacionProvider extends ChangeNotifier {
   String _email = '';
   String _tipoPersona = '';
 
+  bool _isDarkMode = false; // Estado del modo oscuro
+
+  // Getter para saber si está en modo oscuro
+  bool get isDarkMode => _isDarkMode;
+
+// Método para alternar el modo oscuro
+  void toggleDarkMode() {
+    _isDarkMode = !_isDarkMode;
+    notifyListeners();
+  }
+
+  // Método para obtener el tema actual
+  ThemeData get themeData {
+    return _isDarkMode
+        ? ThemeData.dark().copyWith(
+            useMaterial3: true,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color.fromARGB(255, 0, 255, 225),
+            ),
+          )
+        : ThemeData.light().copyWith(
+            useMaterial3: true,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color.fromARGB(255, 0, 255, 225),
+            ),
+          );
+  }
+
   // Getter para folio
   String? get folio => _folio;
 
