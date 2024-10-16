@@ -174,11 +174,14 @@ class _FormularioScreenState extends State<FormularioScreen> {
   // Definir variables de color para el modo claro y oscuro
   Color colorTextFieldClaro = Color(0xFFFFFFFF); // Blanco para el modo claro
   Color colorTextFieldOscuro =
-      Color(0xFF171b26); // Color oscuro para el modo oscuro
+      Color(0xFF35374B); // Color oscuro para el modo oscuro
 
 // Definir otras variables de color que puedas necesitar
   Color colorFondoClaro = Color(0xFFf7f8fa);
   Color colorFondoOscuro = Color(0xFF021526);
+
+  //Color colorTextoClaro = Color;
+  Color colorTextoOscuro = Color(0xFF424769);
 
   @override
   Widget build(BuildContext context) {
@@ -353,9 +356,10 @@ class _FormularioScreenState extends State<FormularioScreen> {
                                 telefonoController.text =
                                     client['telefono'] ?? '';
                                 emailController.text = client['email'] ?? '';
-                                _selectedPersonType =
-                                    client['tipo_cliente'] ?? 'N/A';
-
+                                _selectedPersonType = _personTypes
+                                        .contains(client['tipo_cliente'])
+                                    ? client['tipo_cliente']
+                                    : 'N/A';
                                 idDetalleVentaExistente = client['idcliente'];
                                 esClienteNuevo =
                                     false; // Marca como cliente existente
@@ -665,7 +669,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
               ),
               filled: true,
               fillColor: isDarkMode
-                  ? Color(0xFF1E1E1E)
+                  ? colorTextFieldOscuro
                   : Colors.white, // Color claro o oscuro
               contentPadding:
                   EdgeInsets.symmetric(vertical: 15, horizontal: 20),
@@ -674,7 +678,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
               Icons.arrow_drop_down,
               color: Color(0xFF001F3F),
             ), // Icono personalizado
-            dropdownColor: Colors.white, // Color del menú desplegable
+            dropdownColor: isDarkMode
+                ? colorTextFieldOscuro
+                : colorTextFieldClaro, // Ajuste del color del dropdown
             items: _types.map((item) {
               return DropdownMenuItem<String>(
                 value: item,
@@ -795,12 +801,16 @@ class _FormularioScreenState extends State<FormularioScreen> {
     required TextEditingController? customController,
     bool enabled = true, // Nueva propiedad para habilitar/deshabilitar
   }) {
+    print('Modo oscuro: $isDarkMode');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DropdownButtonFormField<String>(
-          hint: Text('Elige',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 14)),
+          hint: Text(
+            'Elige',
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+          ),
           value: value,
           onChanged: enabled ? onChanged : null, // Controla el cambio
           decoration: InputDecoration(
@@ -808,31 +818,34 @@ class _FormularioScreenState extends State<FormularioScreen> {
             labelStyle:
                 TextStyle(color: Colors.black54, fontWeight: FontWeight.w500),
             focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30.0),
-                borderSide: BorderSide(
-                  color: Color(0xFF001F3F),
-                )),
+              borderRadius: BorderRadius.circular(30.0),
+              borderSide: BorderSide(color: Color(0xFF001F3F)),
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30.0),
               borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
             ),
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30.0),
-              borderSide: BorderSide(
-                  color: Colors.grey.shade300,
-                  width: 1.5), // Borde deshabilitado
+              borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
             ),
-            filled: true,
             fillColor: enabled
                 ? (isDarkMode
-                    ? Color(0xFF1E1E1E)
-                    : Colors.white) // Color claro o oscuro
-                : Color(0xFF171B26), // Color al deshabilitar
+                    ? colorTextFieldOscuro
+                    : colorTextFieldClaro) // Colores personalizados
+                : (isDarkMode
+                    ? Colors.grey.shade800
+                    : Colors.grey
+                        .shade100), // Color cuando el campo está deshabilitado
+            filled:
+                true, // Asegúrate de que esto esté configurado para aplicar el fillColor
             contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
           ),
+          dropdownColor: isDarkMode
+              ? colorTextFieldOscuro
+              : colorTextFieldClaro, // Ajuste del color del dropdown
           icon: Icon(Icons.arrow_drop_down,
               color: enabled ? Color(0xFF001F3F) : Colors.grey[600]),
-          dropdownColor: Colors.white,
           items: items.map((item) {
             return DropdownMenuItem(
               value: item,
@@ -1132,8 +1145,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
           fontWeight: FontWeight.w500,
           fontSize: 14,
         ),
-        floatingLabelBehavior:
-            FloatingLabelBehavior.auto, // Efecto flotante suave
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30.0),
           borderSide: BorderSide(
@@ -1146,29 +1158,34 @@ class _FormularioScreenState extends State<FormularioScreen> {
           borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
         ),
         disabledBorder: OutlineInputBorder(
-          // Estilo del borde cuando el campo está deshabilitado
           borderRadius: BorderRadius.circular(30.0),
           borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30.0),
-          borderSide:
-              BorderSide(color: Colors.red, width: 1.5), // Borde rojo al error
+          borderSide: BorderSide(color: Colors.red, width: 1.5),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30.0),
-          borderSide: BorderSide(
-              color: Colors.red, width: 1.5), // Borde rojo al error enfocado
+          borderSide: BorderSide(color: Colors.red, width: 1.5),
         ),
         fillColor: enabled
-            ? Colors.white
-            : Colors.grey.shade100, // Color de fondo al deshabilitar
+            ? (isDarkMode
+                ? colorTextFieldOscuro
+                : colorTextFieldClaro) // Color cuando el campo está habilitado
+            : (isDarkMode
+                ? Colors.grey.shade800
+                : Colors
+                    .grey.shade100), // Color cuando el campo está deshabilitado
+        filled:
+            true, // Asegúrate de que esta línea esté presente para aplicar el fillColor
         contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 25),
         errorStyle: TextStyle(
           color: Colors.red,
           fontSize: 10,
         ),
       ),
+
       validator: validator,
       inputFormatters: label == 'Cantidad' ||
               label == 'Precio de Compra' ||
@@ -1330,12 +1347,12 @@ class _FormularioScreenState extends State<FormularioScreen> {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: isDarkMode ? colorTextFieldOscuro : colorTextFieldClaro,
             borderRadius: BorderRadius.circular(8.0),
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.shade300,
-                blurRadius: 10,
+                color: isDarkMode ? colorTextFieldOscuro : colorTextFieldClaro,
+                blurRadius: 2,
                 spreadRadius: 1,
               ),
             ],
@@ -1589,7 +1606,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
                   Icons.arrow_drop_down,
                   color: Color(0xFF001F3F),
                 ), // Icono personalizado
-                dropdownColor: Colors.white, // Color del menú desplegable
+                dropdownColor: isDarkMode
+                    ? colorTextFieldOscuro
+                    : colorTextFieldClaro, // Ajuste del color del dropdown
                 items: _metodos.map((item) {
                   return DropdownMenuItem<String>(
                     value: item,
