@@ -1,6 +1,8 @@
+import 'package:cotizacion/screens/calculos.dart';
 import 'package:cotizacion/screens/estadisticas.dart';
 import 'package:easy_sidemenu/easy_sidemenu.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'screens/control.dart';
 import 'screens/formulario.dart';
 
@@ -37,6 +39,9 @@ class _NavigationScreenState extends State<NavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Provider.of<CotizacionProvider>(context)
+        .isDarkMode; // Obtener el estado del modo oscuro
+
     return Scaffold(
       body: Row(
         children: [
@@ -50,14 +55,19 @@ class _NavigationScreenState extends State<NavigationScreen> {
                 displayMode: isMenuOpen
                     ? SideMenuDisplayMode.open
                     : SideMenuDisplayMode.compact,
-                hoverColor: Colors.blue[100],
+                hoverColor:
+                    isDarkMode ? Colors.blueGrey[700] : Colors.blue[100],
                 selectedHoverColor: Color.fromARGB(255, 0, 58, 117),
-                selectedColor: Color(0xFF001F3F),
+                selectedColor: isDarkMode
+                    ? Color.fromARGB(255, 0, 73, 147)
+                    : Color(0xFF001F3F),
                 selectedTitleTextStyle: const TextStyle(color: Colors.white),
                 selectedIconColor: Colors.white,
-                unselectedTitleTextStyle: const TextStyle(color: Colors.black),
-                unselectedIconColor: Colors.black,
-                backgroundColor: Colors.white,
+                unselectedTitleTextStyle: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.black,
+                ),
+                unselectedIconColor: isDarkMode ? Colors.white : Colors.black,
+                backgroundColor: isDarkMode ? Colors.black : Colors.white,
               ),
               title: Padding(
                 padding:
@@ -79,10 +89,10 @@ class _NavigationScreenState extends State<NavigationScreen> {
                           ),
                           const SizedBox(width: 8),
                           if (isMenuOpen)
-                            const Text(
+                            Text(
                               'COTIX',
                               style: TextStyle(
-                                color: Colors.black,
+                                color: isDarkMode ? Colors.white : Colors.black,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 28,
                                 fontFamily: 'Fredoka',
@@ -97,7 +107,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                         isMenuOpen
                             ? Icons.arrow_back_ios
                             : Icons.arrow_forward_ios,
-                        color: Colors.black,
+                        color: isDarkMode ? Colors.white : Colors.black,
                         size: 18,
                       ),
                       onPressed: toggleMenu,
@@ -106,7 +116,8 @@ class _NavigationScreenState extends State<NavigationScreen> {
                 ),
               ),
               footer: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 0),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -115,18 +126,16 @@ class _NavigationScreenState extends State<NavigationScreen> {
                       children: [
                         Text('Developed by',
                             style: TextStyle(
-                              color: Colors.black,
+                              color: isDarkMode ? Colors.white : Colors.black,
                               fontSize: 12,
                               fontFamily: 'Verdana',
                               fontWeight: FontWeight.w100,
                             )),
                         SizedBox(height: 2),
                         Container(
-                          alignment: Alignment
-                              .center, // Centra el contenido dentro del Container
-                          height: 30, // Ajusta la altura según lo necesites
-                          width: 200, // Ajusta el ancho según lo necesites
-
+                          alignment: Alignment.center,
+                          height: 30,
+                          width: 200,
                           child: SizedBox(
                             width: 80,
                             height: 80,
@@ -140,28 +149,27 @@ class _NavigationScreenState extends State<NavigationScreen> {
                   ],
                 ),
               ),
-
               items: [
                 SideMenuItem(
                   title: 'Formulario',
                   onTap: (index, _) {
                     sideMenu.changePage(0);
                   },
-                  icon: const Icon(Icons.assignment, color: Colors.black),
+                  icon: const Icon(Icons.assignment),
                 ),
                 SideMenuItem(
                   title: 'Control',
                   onTap: (index, _) {
                     sideMenu.changePage(1);
                   },
-                  icon: const Icon(Icons.dashboard, color: Colors.black),
+                  icon: const Icon(Icons.dashboard),
                 ),
                 SideMenuItem(
                   title: 'Estadísticas',
                   onTap: (index, _) {
                     sideMenu.changePage(2);
                   },
-                  icon: const Icon(Icons.stacked_bar_chart_sharp, color: Colors.black),
+                  icon: const Icon(Icons.stacked_bar_chart_sharp),
                 ),
               ],
             ),

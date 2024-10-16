@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cotizacion/custom_app_bar.dart';
 import 'package:cotizacion/generarPDFControl.dart';
+import 'package:cotizacion/screens/calculos.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -10,6 +11,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:provider/provider.dart';
 import '../ip.dart'; // Importar el archivo de la IP
 
 class ControlScreen extends StatefulWidget {
@@ -44,13 +46,12 @@ class ControlScreenState extends State<ControlScreen>
 
   String? estadoActual;
 
-  bool _isDarkMode = false; // Estado del modo oscuro
-
   bool _isLoadingInicio = true; // Variable para controlar el estado de carga
 
   bool _isLoading = false; // Variable para controlar el estado de carga
 
   bool _isEditing = false; // Variable para controlar el estado de edición
+  bool _isDarkMode = false; // Estado del modo oscuro
 
   // Variable para almacenar la fecha seleccionada
   DateTime? selectedDate;
@@ -343,9 +344,22 @@ class ControlScreenState extends State<ControlScreen>
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<CotizacionProvider>(context);
     // Formateador de números
     // Convierte la fecha de String a DateTime
     final numberFormat = NumberFormat("#,##0.00", "en_US");
+
+    // Definir variables de color para el modo claro y oscuro
+    Color colorTextFieldClaro = Color(0xFFFFFFFF); // Blanco para el modo claro
+    Color colorTextFieldOscuro =
+        Color(0xFF22354d); // Color oscuro para el modo oscuro
+
+// Definir otras variables de color que puedas necesitar
+    Color colorFondoClaro = Color(0xFFf7f8fa);
+    Color colorFondoOscuro = Color(0xFF021526);
+//(0xFF424769)
+    Color colorTextoOscuro = Colors.black;
+    Color colorTextoClaro = Colors.white;
 
     int totalPages = (filteredDetalles.length / itemsPerPage).ceil();
     List currentItems = filteredDetalles
@@ -358,9 +372,10 @@ class ControlScreenState extends State<ControlScreen>
         _focusNode.unfocus(); // Quita el foco al tocar fuera
       },
       child: Scaffold(
-        backgroundColor: Color(0xFFf7f8fa),
+        backgroundColor:
+            provider.isDarkMode ? colorFondoOscuro : colorFondoClaro,
         appBar: CustomAppBar(
-          isDarkMode: _isDarkMode,
+          isDarkMode: provider.isDarkMode,
           toggleDarkMode: _toggleDarkMode,
           title: 'Control de Ventas', // Título específico para esta pantalla
         ),
@@ -393,7 +408,10 @@ class ControlScreenState extends State<ControlScreen>
                                 decoration: InputDecoration(
                                   labelText: 'Buscar',
                                   labelStyle: TextStyle(
-                                    color: Colors.black54,
+                                    color: provider.isDarkMode
+                                        ? colorTextoClaro
+                                        : Colors.grey[
+                                            800], // Cambia el color del texto según el modo oscuro
                                     fontWeight: FontWeight.w500,
                                     fontSize: 14,
                                   ),
@@ -409,13 +427,17 @@ class ControlScreenState extends State<ControlScreen>
                                         width: 1.5),
                                   ),
                                   filled: true,
-                                  fillColor: Colors.white,
+                                  fillColor: provider.isDarkMode
+                                      ? colorTextFieldOscuro
+                                      : Colors.white, // Color claro o oscuro
                                   contentPadding: EdgeInsets.symmetric(
                                       vertical: 15, horizontal: 20),
                                   prefixIcon: Icon(
                                     size: 20,
                                     Icons.search, // Icono de lupa
-                                    color: Colors.grey,
+                                    color: provider.isDarkMode
+                                        ? colorTextoClaro
+                                        : Colors.grey[800],
                                   ),
                                   prefixIconConstraints: BoxConstraints(
                                     minWidth: 50,
@@ -433,7 +455,9 @@ class ControlScreenState extends State<ControlScreen>
                               decoration: InputDecoration(
                                 labelText: 'Estado',
                                 labelStyle: TextStyle(
-                                  color: Colors.black54,
+                                  color: provider.isDarkMode
+                                      ? colorTextoClaro
+                                      : Colors.grey[800],
                                   fontWeight: FontWeight.w500,
                                   fontSize: 14,
                                 ),
@@ -448,22 +472,31 @@ class ControlScreenState extends State<ControlScreen>
                                       color: Colors.grey.shade300, width: 1.5),
                                 ),
                                 filled: true,
-                                fillColor: Colors.white,
+                                fillColor: provider.isDarkMode
+                                    ? colorTextFieldOscuro
+                                    : colorTextFieldClaro, // Cambia el color del texto según el modo oscuro
                                 contentPadding: EdgeInsets.symmetric(
                                     vertical: 15, horizontal: 20),
                               ),
                               icon: Icon(
                                 Icons.arrow_drop_down,
-                                color: Color(0xFF001F3F),
+                                color: provider.isDarkMode
+                                    ? colorTextoClaro
+                                    : Color(0xFF001F3F),
                               ),
-                              dropdownColor: Colors.white,
+                              dropdownColor: provider.isDarkMode
+                                  ? colorTextFieldOscuro
+                                  : colorTextFieldClaro, // Ajuste del color del dropdown
                               items: estadosFiltro.map((estado) {
                                 return DropdownMenuItem<String>(
                                   value: estado,
                                   child: Text(
                                     estado,
                                     style: TextStyle(
-                                        color: Colors.black87, fontSize: 12),
+                                        color: provider.isDarkMode
+                                            ? colorTextoClaro
+                                            : Colors.grey[800],
+                                        fontSize: 12),
                                   ),
                                 );
                               }).toList(),
@@ -488,7 +521,9 @@ class ControlScreenState extends State<ControlScreen>
                               decoration: InputDecoration(
                                 labelText: 'Método de Pago',
                                 labelStyle: TextStyle(
-                                  color: Colors.black54,
+                                  color: provider.isDarkMode
+                                      ? colorTextoClaro
+                                      : Colors.grey[800],
                                   fontWeight: FontWeight.w500,
                                   fontSize: 14,
                                 ),
@@ -503,22 +538,31 @@ class ControlScreenState extends State<ControlScreen>
                                       color: Colors.grey.shade300, width: 1.5),
                                 ),
                                 filled: true,
-                                fillColor: Colors.white,
+                                fillColor: provider.isDarkMode
+                                    ? colorTextFieldOscuro
+                                    : colorTextFieldClaro,
                                 contentPadding: EdgeInsets.symmetric(
                                     vertical: 15, horizontal: 20),
                               ),
                               icon: Icon(
                                 Icons.arrow_drop_down,
-                                color: Color(0xFF001F3F),
+                                color: provider.isDarkMode
+                                    ? colorTextoClaro
+                                    : Color(0xFF001F3F),
                               ),
-                              dropdownColor: Colors.white,
+                              dropdownColor: provider.isDarkMode
+                                  ? colorTextFieldOscuro
+                                  : colorTextFieldClaro, // Ajuste del color del dropdown
                               items: tiposPago.map((tipo) {
                                 return DropdownMenuItem<String>(
                                   value: tipo,
                                   child: Text(
                                     tipo,
                                     style: TextStyle(
-                                        color: Colors.black87, fontSize: 12),
+                                        color: provider.isDarkMode
+                                            ? colorTextoClaro
+                                            : Colors.grey[800],
+                                        fontSize: 12),
                                   ),
                                 );
                               }).toList(),
@@ -543,7 +587,9 @@ class ControlScreenState extends State<ControlScreen>
                               decoration: InputDecoration(
                                 labelText: 'Factura',
                                 labelStyle: TextStyle(
-                                  color: Colors.black54,
+                                  color: provider.isDarkMode
+                                      ? colorTextoClaro
+                                      : Colors.grey[800],
                                   fontWeight: FontWeight.w500,
                                   fontSize: 14,
                                 ),
@@ -558,22 +604,31 @@ class ControlScreenState extends State<ControlScreen>
                                       color: Colors.grey.shade300, width: 1.5),
                                 ),
                                 filled: true,
-                                fillColor: Colors.white,
+                                fillColor: provider.isDarkMode
+                                    ? colorTextFieldOscuro
+                                    : colorTextFieldClaro,
                                 contentPadding: EdgeInsets.symmetric(
                                     vertical: 15, horizontal: 20),
                               ),
                               icon: Icon(
                                 Icons.arrow_drop_down,
-                                color: Color(0xFF001F3F),
+                                color: provider.isDarkMode
+                                    ? colorTextoClaro
+                                    : Color(0xFF001F3F),
                               ),
-                              dropdownColor: Colors.white,
+                              dropdownColor: provider.isDarkMode
+                                  ? colorTextFieldOscuro
+                                  : colorTextFieldClaro,
                               items: facturas.map((factura) {
                                 return DropdownMenuItem<String>(
                                   value: factura,
                                   child: Text(
                                     factura,
                                     style: TextStyle(
-                                        color: Colors.black87, fontSize: 12),
+                                        color: provider.isDarkMode
+                                            ? colorTextoClaro
+                                            : Colors.grey[800],
+                                        fontSize: 12),
                                   ),
                                 );
                               }).toList(),
@@ -610,8 +665,9 @@ class ControlScreenState extends State<ControlScreen>
                                 style: TextButton.styleFrom(
                                   padding: EdgeInsets.symmetric(
                                       vertical: 0, horizontal: 10),
-                                  backgroundColor:
-                                      Colors.white, // Color de fondo blanco
+                                  backgroundColor: provider.isDarkMode
+                                      ? colorTextFieldOscuro
+                                      : colorTextFieldClaro, // Color de fondo blanco
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(
                                         30.0), // Bordes redondeados
@@ -625,7 +681,9 @@ class ControlScreenState extends State<ControlScreen>
                                       ? 'Selecciona Fecha'
                                       : formatDateCorta(selectedDate!),
                                   style: TextStyle(
-                                    color: Colors.black87,
+                                    color: provider.isDarkMode
+                                        ? colorTextoClaro
+                                        : Colors.grey[800],
                                     fontSize: 12,
                                   ),
                                   textAlign: TextAlign.center,
@@ -655,8 +713,10 @@ class ControlScreenState extends State<ControlScreen>
                                     Icon(
                                       Icons
                                           .calendar_today, // Ícono de calendario
-                                      color: Colors.grey[
-                                          800], // Color gris oscuro para el ícono de fondo
+                                      color: provider.isDarkMode
+                                          ? colorTextoClaro
+                                          : Colors.grey[
+                                              800], // Color gris oscuro para el ícono de fondo
                                       size:
                                           28, // Tamaño aumentado para mayor visibilidad
                                     ),
@@ -666,8 +726,10 @@ class ControlScreenState extends State<ControlScreen>
                                       top: 8,
                                       child: Icon(
                                         Icons.refresh, // Ícono de recarga
-                                        color: Colors.grey[
-                                            800], // Color gris oscuro para el ícono de recarga
+                                        color: provider.isDarkMode
+                                            ? colorTextoClaro
+                                            : Colors.grey[
+                                                800], // Color gris oscuro para el ícono de recarga
                                         size:
                                             18, // Tamaño aumentado para mayor visibilidad
                                       ),
@@ -675,8 +737,9 @@ class ControlScreenState extends State<ControlScreen>
                                   ],
                                 ),
                                 style: TextButton.styleFrom(
-                                  backgroundColor:
-                                      Colors.white, // Color de fondo blanco
+                                  backgroundColor: provider.isDarkMode
+                                      ? colorTextFieldOscuro
+                                      : colorTextFieldClaro, // Color de fondo blanco
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(
                                         30.0), // Bordes redondeados
@@ -716,11 +779,15 @@ class ControlScreenState extends State<ControlScreen>
                                           },
                                 child: Icon(
                                   Icons.refresh,
-                                  color: Colors.grey[800],
+                                  color: provider.isDarkMode
+                                      ? colorTextoClaro
+                                      : Colors.grey[800],
                                   size: 24,
                                 ),
                                 style: TextButton.styleFrom(
-                                  backgroundColor: Colors.white,
+                                  backgroundColor: provider.isDarkMode
+                                      ? colorTextFieldOscuro
+                                      : colorTextFieldClaro,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(30.0),
                                     side:
@@ -824,7 +891,9 @@ class ControlScreenState extends State<ControlScreen>
                                     shape: RoundedRectangleBorder(
                                         borderRadius:
                                             BorderRadius.circular(20)),
-                                    color: Colors.white,
+                                    color: provider.isDarkMode
+                                        ? colorTextFieldOscuro
+                                        : colorTextFieldClaro,
                                     margin: const EdgeInsets.symmetric(
                                         vertical: 4, horizontal: 16.0),
                                     elevation: 4,
@@ -850,7 +919,10 @@ class ControlScreenState extends State<ControlScreen>
                                                         fontSize: 14,
                                                         fontWeight:
                                                             FontWeight.bold,
-                                                        color: Colors.black87,
+                                                        color: provider
+                                                                .isDarkMode
+                                                            ? colorTextoClaro
+                                                            : colorTextoOscuro,
                                                       ),
                                                       overflow:
                                                           TextOverflow.ellipsis,
@@ -995,6 +1067,10 @@ class ControlScreenState extends State<ControlScreen>
                                                             Text(
                                                                 'Precio Compra:',
                                                                 style: TextStyle(
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontSize:
                                                                         14,
                                                                     fontWeight:
@@ -1003,6 +1079,10 @@ class ControlScreenState extends State<ControlScreen>
                                                             Text(
                                                                 '\$${totalCompra.toStringAsFixed(2)}',
                                                                 style: TextStyle(
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontSize:
                                                                         14)),
                                                           ],
@@ -1015,6 +1095,10 @@ class ControlScreenState extends State<ControlScreen>
                                                             Text(
                                                                 'Ganancia Total:',
                                                                 style: TextStyle(
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontSize:
                                                                         14,
                                                                     fontWeight:
@@ -1023,6 +1107,10 @@ class ControlScreenState extends State<ControlScreen>
                                                             Text(
                                                                 '\$${gananciaTotal.toStringAsFixed(2)}',
                                                                 style: TextStyle(
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontSize:
                                                                         14)),
                                                           ],
@@ -1034,6 +1122,10 @@ class ControlScreenState extends State<ControlScreen>
                                                           children: [
                                                             Text('Subtotal:',
                                                                 style: TextStyle(
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontSize:
                                                                         14,
                                                                     fontWeight:
@@ -1042,6 +1134,10 @@ class ControlScreenState extends State<ControlScreen>
                                                             Text(
                                                                 '\$${detalle['subtotal'] ?? '0.00'}',
                                                                 style: TextStyle(
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontSize:
                                                                         14)),
                                                           ],
@@ -1053,6 +1149,10 @@ class ControlScreenState extends State<ControlScreen>
                                                           children: [
                                                             Text('IVA:',
                                                                 style: TextStyle(
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontSize:
                                                                         14,
                                                                     fontWeight:
@@ -1061,6 +1161,10 @@ class ControlScreenState extends State<ControlScreen>
                                                             Text(
                                                                 '\$${detalle['iva'] ?? '0.00'}',
                                                                 style: TextStyle(
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontSize:
                                                                         14)),
                                                           ],
@@ -1072,6 +1176,10 @@ class ControlScreenState extends State<ControlScreen>
                                                           children: [
                                                             Text('Total:',
                                                                 style: TextStyle(
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontSize:
                                                                         14,
                                                                     fontWeight:
@@ -1080,6 +1188,10 @@ class ControlScreenState extends State<ControlScreen>
                                                             Text(
                                                               '\$${detalle['total'] ?? '0.00'}',
                                                               style: TextStyle(
+                                                                color: provider
+                                                                        .isDarkMode
+                                                                    ? colorTextoClaro
+                                                                    : colorTextoOscuro,
                                                                 fontSize: 14,
                                                               ),
                                                             ),
@@ -1143,8 +1255,10 @@ class ControlScreenState extends State<ControlScreen>
                                                                   fontWeight:
                                                                       FontWeight
                                                                           .w500,
-                                                                  color: Colors
-                                                                      .black87,
+                                                                  color: provider
+                                                                          .isDarkMode
+                                                                      ? colorTextoClaro
+                                                                      : colorTextoOscuro,
                                                                 ),
                                                               ),
                                                             ),
@@ -1196,7 +1310,9 @@ class ControlScreenState extends State<ControlScreen>
                                           child: Container(
                                             padding: EdgeInsets.symmetric(
                                                 horizontal: 16, vertical: 8),
-                                            color: Colors.white,
+                                            color: provider.isDarkMode
+                                                ? colorTextFieldOscuro
+                                                : colorTextFieldClaro,
                                             child: isExpanded
                                                 ? Column(
                                                     crossAxisAlignment:
@@ -1227,8 +1343,15 @@ class ControlScreenState extends State<ControlScreen>
                                                           .map<Widget>(
                                                               (articuloDetalle) {
                                                         return Card(
-                                                          color:
-                                                              Colors.grey[100],
+                                                          color: provider
+                                                                  .isDarkMode
+                                                              ? Color.fromARGB(
+                                                                  255,
+                                                                  62,
+                                                                  83,
+                                                                  110)
+                                                              : Colors
+                                                                  .grey[100],
                                                           margin:
                                                               const EdgeInsets
                                                                   .symmetric(
@@ -1260,6 +1383,9 @@ class ControlScreenState extends State<ControlScreen>
                                                                       Text(
                                                                         'Cantidad:',
                                                                         style: TextStyle(
+                                                                            color: provider.isDarkMode
+                                                                                ? colorTextoClaro
+                                                                                : colorTextoOscuro,
                                                                             fontSize:
                                                                                 14,
                                                                             fontWeight:
@@ -1276,7 +1402,13 @@ class ControlScreenState extends State<ControlScreen>
                                                                             Text(
                                                                           '${articuloDetalle['cantidad'] ?? '0'}',
                                                                           style:
-                                                                              TextStyle(fontSize: 14),
+                                                                              TextStyle(
+                                                                            fontSize:
+                                                                                14,
+                                                                            color: provider.isDarkMode
+                                                                                ? colorTextoClaro
+                                                                                : colorTextoOscuro,
+                                                                          ),
                                                                           textAlign:
                                                                               TextAlign.center,
                                                                         ),
@@ -1297,6 +1429,9 @@ class ControlScreenState extends State<ControlScreen>
                                                                       Text(
                                                                         'Producto:',
                                                                         style: TextStyle(
+                                                                            color: provider.isDarkMode
+                                                                                ? colorTextoClaro
+                                                                                : colorTextoOscuro,
                                                                             fontSize:
                                                                                 14,
                                                                             fontWeight:
@@ -1306,9 +1441,14 @@ class ControlScreenState extends State<ControlScreen>
                                                                       ),
                                                                       Text(
                                                                         '${articuloDetalle['descripcion'] ?? 'Desconocido'}',
-                                                                        style: TextStyle(
-                                                                            fontSize:
-                                                                                14),
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontSize:
+                                                                              14,
+                                                                          color: provider.isDarkMode
+                                                                              ? colorTextoClaro
+                                                                              : colorTextoOscuro,
+                                                                        ),
                                                                         textAlign:
                                                                             TextAlign.left, // Alinea a la izquierda
                                                                       ),
@@ -1324,6 +1464,9 @@ class ControlScreenState extends State<ControlScreen>
                                                                       Text(
                                                                         'Precio Compra:',
                                                                         style: TextStyle(
+                                                                            color: provider.isDarkMode
+                                                                                ? colorTextoClaro
+                                                                                : colorTextoOscuro,
                                                                             fontSize:
                                                                                 14,
                                                                             fontWeight:
@@ -1333,9 +1476,14 @@ class ControlScreenState extends State<ControlScreen>
                                                                       ),
                                                                       Text(
                                                                         '\$${articuloDetalle['precio_compra']?.toStringAsFixed(2) ?? '0.00'}',
-                                                                        style: TextStyle(
-                                                                            fontSize:
-                                                                                14),
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontSize:
+                                                                              14,
+                                                                          color: provider.isDarkMode
+                                                                              ? colorTextoClaro
+                                                                              : colorTextoOscuro,
+                                                                        ),
                                                                         textAlign:
                                                                             TextAlign.center,
                                                                       ),
@@ -1351,6 +1499,9 @@ class ControlScreenState extends State<ControlScreen>
                                                                       Text(
                                                                         'Porcentaje:',
                                                                         style: TextStyle(
+                                                                            color: provider.isDarkMode
+                                                                                ? colorTextoClaro
+                                                                                : colorTextoOscuro,
                                                                             fontSize:
                                                                                 14,
                                                                             fontWeight:
@@ -1360,9 +1511,14 @@ class ControlScreenState extends State<ControlScreen>
                                                                       ),
                                                                       Text(
                                                                         '${articuloDetalle['porcentaje'] ?? '0.00'}%',
-                                                                        style: TextStyle(
-                                                                            fontSize:
-                                                                                14),
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontSize:
+                                                                              14,
+                                                                          color: provider.isDarkMode
+                                                                              ? colorTextoClaro
+                                                                              : colorTextoOscuro,
+                                                                        ),
                                                                         textAlign:
                                                                             TextAlign.center,
                                                                       ),
@@ -1378,6 +1534,9 @@ class ControlScreenState extends State<ControlScreen>
                                                                       Text(
                                                                         'Ganancia p/p:',
                                                                         style: TextStyle(
+                                                                            color: provider.isDarkMode
+                                                                                ? colorTextoClaro
+                                                                                : colorTextoOscuro,
                                                                             fontSize:
                                                                                 14,
                                                                             fontWeight:
@@ -1388,9 +1547,14 @@ class ControlScreenState extends State<ControlScreen>
                                                                       Text(
                                                                         // Validamos que cantidad no sea 0 para evitar divisiones por 0
                                                                         '\$${(articuloDetalle['ganancia'] != null && articuloDetalle['cantidad'] != null && articuloDetalle['cantidad'] != 0) ? (articuloDetalle['ganancia'] / articuloDetalle['cantidad']).toStringAsFixed(2) : '0.00'}',
-                                                                        style: TextStyle(
-                                                                            fontSize:
-                                                                                14),
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontSize:
+                                                                              14,
+                                                                          color: provider.isDarkMode
+                                                                              ? colorTextoClaro
+                                                                              : colorTextoOscuro,
+                                                                        ),
                                                                         textAlign:
                                                                             TextAlign.center,
                                                                       ),
@@ -1406,6 +1570,9 @@ class ControlScreenState extends State<ControlScreen>
                                                                       Text(
                                                                         'Ganancia Total:',
                                                                         style: TextStyle(
+                                                                            color: provider.isDarkMode
+                                                                                ? colorTextoClaro
+                                                                                : colorTextoOscuro,
                                                                             fontSize:
                                                                                 14,
                                                                             fontWeight:
@@ -1415,9 +1582,14 @@ class ControlScreenState extends State<ControlScreen>
                                                                       ),
                                                                       Text(
                                                                         '\$${((double.tryParse(articuloDetalle['ganancia']?.toString() ?? '0') ?? 0)).toStringAsFixed(2)}',
-                                                                        style: TextStyle(
-                                                                            fontSize:
-                                                                                14),
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontSize:
+                                                                              14,
+                                                                          color: provider.isDarkMode
+                                                                              ? colorTextoClaro
+                                                                              : colorTextoOscuro,
+                                                                        ),
                                                                         textAlign:
                                                                             TextAlign.center,
                                                                       ),
@@ -1433,6 +1605,9 @@ class ControlScreenState extends State<ControlScreen>
                                                                       Text(
                                                                         'Venta:',
                                                                         style: TextStyle(
+                                                                            color: provider.isDarkMode
+                                                                                ? colorTextoClaro
+                                                                                : colorTextoOscuro,
                                                                             fontSize:
                                                                                 14,
                                                                             fontWeight:
@@ -1442,9 +1617,14 @@ class ControlScreenState extends State<ControlScreen>
                                                                       ),
                                                                       Text(
                                                                         '\$${articuloDetalle['precio_venta']?.toStringAsFixed(2) ?? '0.00'}',
-                                                                        style: TextStyle(
-                                                                            fontSize:
-                                                                                14),
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontSize:
+                                                                              14,
+                                                                          color: provider.isDarkMode
+                                                                              ? colorTextoClaro
+                                                                              : colorTextoOscuro,
+                                                                        ),
                                                                         textAlign:
                                                                             TextAlign.center,
                                                                       ),
@@ -1460,6 +1640,9 @@ class ControlScreenState extends State<ControlScreen>
                                                                       Text(
                                                                         'Total:',
                                                                         style: TextStyle(
+                                                                            color: provider.isDarkMode
+                                                                                ? colorTextoClaro
+                                                                                : colorTextoOscuro,
                                                                             fontSize:
                                                                                 14,
                                                                             fontWeight:
@@ -1469,9 +1652,14 @@ class ControlScreenState extends State<ControlScreen>
                                                                       ),
                                                                       Text(
                                                                         '\$${(articuloDetalle['precio_venta'] ?? 0) * (articuloDetalle['cantidad'] ?? 0)}',
-                                                                        style: TextStyle(
-                                                                            fontSize:
-                                                                                14),
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontSize:
+                                                                              14,
+                                                                          color: provider.isDarkMode
+                                                                              ? colorTextoClaro
+                                                                              : colorTextoOscuro,
+                                                                        ),
                                                                         textAlign:
                                                                             TextAlign.center,
                                                                       ),
@@ -1503,6 +1691,10 @@ class ControlScreenState extends State<ControlScreen>
                                                                   'Subtotal:',
                                                                   style:
                                                                       TextStyle(
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontWeight:
                                                                         FontWeight
                                                                             .bold,
@@ -1516,8 +1708,10 @@ class ControlScreenState extends State<ControlScreen>
                                                                   '\$${detalle['subtotal'] ?? '0.00'}',
                                                                   style:
                                                                       TextStyle(
-                                                                    color: Colors
-                                                                        .black87,
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontSize:
                                                                         14,
                                                                   ),
@@ -1531,6 +1725,10 @@ class ControlScreenState extends State<ControlScreen>
                                                                   'Método de pago:',
                                                                   style:
                                                                       TextStyle(
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontWeight:
                                                                         FontWeight
                                                                             .bold,
@@ -1545,8 +1743,10 @@ class ControlScreenState extends State<ControlScreen>
                                                                       'No disponible',
                                                                   style:
                                                                       TextStyle(
-                                                                    color: Colors
-                                                                        .black87,
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontSize:
                                                                         14,
                                                                   ),
@@ -1575,6 +1775,10 @@ class ControlScreenState extends State<ControlScreen>
                                                                   'IVA:',
                                                                   style:
                                                                       TextStyle(
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontWeight:
                                                                         FontWeight
                                                                             .bold,
@@ -1588,8 +1792,10 @@ class ControlScreenState extends State<ControlScreen>
                                                                   '\$${detalle['iva'] ?? '0.00'}',
                                                                   style:
                                                                       TextStyle(
-                                                                    color: Colors
-                                                                        .black87,
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontSize:
                                                                         14,
                                                                   ),
@@ -1603,6 +1809,10 @@ class ControlScreenState extends State<ControlScreen>
                                                                   'Factura:',
                                                                   style:
                                                                       TextStyle(
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontWeight:
                                                                         FontWeight
                                                                             .bold,
@@ -1617,8 +1827,10 @@ class ControlScreenState extends State<ControlScreen>
                                                                       'factura'],
                                                                   style:
                                                                       TextStyle(
-                                                                    color: Colors
-                                                                        .black87,
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontSize:
                                                                         14,
                                                                   ),
@@ -1648,6 +1860,10 @@ class ControlScreenState extends State<ControlScreen>
                                                                   'Total:',
                                                                   style:
                                                                       TextStyle(
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontWeight:
                                                                         FontWeight
                                                                             .bold,
@@ -1661,8 +1877,10 @@ class ControlScreenState extends State<ControlScreen>
                                                                   '\$${detalle['total'] ?? '0.00'}',
                                                                   style:
                                                                       TextStyle(
-                                                                    color: Colors
-                                                                        .black87,
+                                                                    color: provider
+                                                                            .isDarkMode
+                                                                        ? colorTextoClaro
+                                                                        : colorTextoOscuro,
                                                                     fontSize:
                                                                         14,
                                                                   ),
@@ -1711,8 +1929,12 @@ class ControlScreenState extends State<ControlScreen>
                                                                   child: Icon(
                                                                     Icons
                                                                         .picture_as_pdf,
-                                                                    color: Color(
-                                                                        0xFFB8001F), // Cambia el color del icono si lo deseas
+                                                                    color: provider.isDarkMode
+                                                                        ? Colors
+                                                                            .white
+                                                                        : Color(
+                                                                            0xFFB8001F),
+                                                                    // Cambia el color del icono si lo deseas
                                                                     size:
                                                                         24, // Tamaño del icono
                                                                   ),
@@ -1723,12 +1945,22 @@ class ControlScreenState extends State<ControlScreen>
                                                                       () {
                                                                     mostrarDialogoEdicion(
                                                                         context,
-                                                                        detalle);
+                                                                        provider,
+                                                                        detalle,
+                                                                        colorTextFieldClaro,
+                                                                        colorTextFieldOscuro,
+                                                                        colorFondoClaro,
+                                                                        colorFondoOscuro,
+                                                                        colorTextoOscuro,
+                                                                        colorTextoClaro);
                                                                   },
                                                                   child: Icon(
                                                                     Icons.edit,
-                                                                    color: Colors
-                                                                        .blue, // Cambia el color si lo deseas
+                                                                    color: provider.isDarkMode
+                                                                        ? Colors
+                                                                            .white
+                                                                        : Colors
+                                                                            .blue, // Cambia el color si lo deseas
                                                                     size: 24,
                                                                   ),
                                                                 ),
@@ -1781,7 +2013,15 @@ class ControlScreenState extends State<ControlScreen>
   }
 
   void mostrarDialogoEdicion(
-      BuildContext context, Map<String, dynamic> detalleOriginal) {
+      BuildContext context,
+      provider,
+      Map<String, dynamic> detalleOriginal,
+      colorTextFieldClaro,
+      colorTextFieldOscuro,
+      colorFondoClaro,
+      colorFondoOscuro,
+      colorTextoOscuro,
+      colorTextoClaro) {
     // Crear una copia profunda del 'detalle' original.
     Map<String, dynamic> detalle = deepCopy(detalleOriginal);
 
@@ -1829,13 +2069,17 @@ class ControlScreenState extends State<ControlScreen>
           builder: (context, setState) {
             return Stack(children: [
               AlertDialog(
-                backgroundColor: Colors.white,
+                backgroundColor: provider.isDarkMode
+                    ? Color.fromARGB(255, 18, 41, 66)
+                    : colorFondoClaro,
                 title: Text(
                   "Editar Artículos",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
-                    color: Color(0xFF001F3F),
+                    color: provider.isDarkMode
+                        ? colorTextoClaro
+                        : colorTextoOscuro,
                   ),
                 ),
                 content: Container(
@@ -1850,7 +2094,10 @@ class ControlScreenState extends State<ControlScreen>
                             Text(
                               'Modifica los artículos y los valores se actualizarán automáticamente.',
                               style: TextStyle(
-                                  color: Colors.grey[700], fontSize: 14),
+                                  color: provider.isDarkMode
+                                      ? colorTextoClaro
+                                      : Colors.grey[700],
+                                  fontSize: 14),
                             ),
                           ],
                         ),
@@ -1860,6 +2107,12 @@ class ControlScreenState extends State<ControlScreen>
                             // Campo deshabilitado para el nombre del cliente
                             Expanded(
                               child: _buildTextFieldDisabled(
+                                colorTextFieldClaro,
+                                colorTextFieldOscuro,
+                                colorFondoClaro,
+                                colorFondoOscuro,
+                                colorTextoOscuro,
+                                colorTextoClaro,
                                 label: 'Cliente',
                                 value: cliente,
                               ),
@@ -1869,6 +2122,12 @@ class ControlScreenState extends State<ControlScreen>
                             // Campo deshabilitado para el folio
                             Expanded(
                               child: _buildTextFieldDisabled(
+                                colorTextFieldClaro,
+                                colorTextFieldOscuro,
+                                colorFondoClaro,
+                                colorFondoOscuro,
+                                colorTextoOscuro,
+                                colorTextoClaro,
                                 label: 'Folio',
                                 value: folio,
                               ),
@@ -1878,6 +2137,12 @@ class ControlScreenState extends State<ControlScreen>
                         SizedBox(height: 10),
                         // Campo para nombre_venta
                         _buildTextFieldValidator(
+                          colorTextFieldClaro,
+                          colorTextFieldOscuro,
+                          colorFondoClaro,
+                          colorFondoOscuro,
+                          colorTextoOscuro,
+                          colorTextoClaro,
                           controller: nombreVentaController,
                           label: 'Nombre Venta',
                         ),
@@ -1890,6 +2155,12 @@ class ControlScreenState extends State<ControlScreen>
                           children: [
                             Expanded(
                               child: _buildDropdownField(
+                                colorTextFieldClaro,
+                                colorTextFieldOscuro,
+                                colorFondoClaro,
+                                colorFondoOscuro,
+                                colorTextoOscuro,
+                                colorTextoClaro,
                                 label: 'Factura',
                                 value: facturaSeleccionada,
                                 items: ['Si', 'No'],
@@ -1903,6 +2174,12 @@ class ControlScreenState extends State<ControlScreen>
                             SizedBox(width: 10),
                             Expanded(
                               child: _buildDropdownField(
+                                colorTextFieldClaro,
+                                colorTextFieldOscuro,
+                                colorFondoClaro,
+                                colorFondoOscuro,
+                                colorTextoOscuro,
+                                colorTextoClaro,
                                 label: 'Tipo de Pago',
                                 value: tipoPagoSeleccionado,
                                 items: [
@@ -1971,7 +2248,9 @@ class ControlScreenState extends State<ControlScreen>
                           recalcularValores();
 
                           return Card(
-                            color: Colors.white,
+                            color: provider.isDarkMode
+                                ? Color.fromARGB(255, 19, 37, 61)
+                                : colorFondoClaro,
                             elevation: 2,
                             margin: EdgeInsets.symmetric(vertical: 8.0),
                             shape: RoundedRectangleBorder(
@@ -1994,6 +2273,13 @@ class ControlScreenState extends State<ControlScreen>
                                     children: [
                                       Expanded(
                                         child: _buildTipoProductoDropdown(
+                                          colorTextFieldClaro,
+                                          colorTextFieldOscuro,
+                                          colorFondoClaro,
+                                          colorFondoOscuro,
+                                          colorTextoOscuro,
+                                          colorTextoClaro,
+                                          provider.isDarkMode,
                                           label: 'Tipo Producto',
                                           value: tipoProductoControllers[index]
                                                   .text
@@ -2012,6 +2298,12 @@ class ControlScreenState extends State<ControlScreen>
                                       SizedBox(width: 10),
                                       Expanded(
                                         child: _buildTextFieldValidator(
+                                          colorTextFieldClaro,
+                                          colorTextFieldOscuro,
+                                          colorFondoClaro,
+                                          colorFondoOscuro,
+                                          colorTextoOscuro,
+                                          colorTextoClaro,
                                           controller:
                                               cantidadControllers[index],
                                           label: 'Cantidad',
@@ -2039,6 +2331,12 @@ class ControlScreenState extends State<ControlScreen>
                                     children: [
                                       Expanded(
                                         child: _buildTextFieldValidator(
+                                          colorTextFieldClaro,
+                                          colorTextFieldOscuro,
+                                          colorFondoClaro,
+                                          colorFondoOscuro,
+                                          colorTextoOscuro,
+                                          colorTextoClaro,
                                           controller:
                                               descripcionControllers[index],
                                           label: 'Descripción',
@@ -2052,6 +2350,12 @@ class ControlScreenState extends State<ControlScreen>
                                     children: [
                                       Expanded(
                                         child: _buildTextFieldValidator(
+                                          colorTextFieldClaro,
+                                          colorTextFieldOscuro,
+                                          colorFondoClaro,
+                                          colorFondoOscuro,
+                                          colorTextoOscuro,
+                                          colorTextoClaro,
                                           controller:
                                               precioCompraControllers[index],
                                           label: 'Precio Compra',
@@ -2070,6 +2374,12 @@ class ControlScreenState extends State<ControlScreen>
                                       SizedBox(width: 10),
                                       Expanded(
                                         child: _buildTextFieldValidator(
+                                          colorTextFieldClaro,
+                                          colorTextFieldOscuro,
+                                          colorFondoClaro,
+                                          colorFondoOscuro,
+                                          colorTextoOscuro,
+                                          colorTextoClaro,
                                           controller:
                                               porcentajeGananciaControllers[
                                                   index],
@@ -2516,20 +2826,33 @@ class ControlScreenState extends State<ControlScreen>
     }
   }
 
-  Widget _buildTipoProductoDropdown({
+  Widget _buildTipoProductoDropdown(
+    Color colorTextoClaro,
+    Color colorTextFieldClaro,
+    Color colorTextFieldOscuro,
+    Color colorFondoClaro,
+    Color colorFondoOscuro,
+    Color colorTextoOscuro,
+    provider, {
     required String label,
     required String? value,
     required ValueChanged<String?> onChanged,
   }) {
+    final providerDialog = Provider.of<CotizacionProvider>(context);
     return SizedBox(
       height: 40.0,
       child: DropdownButtonFormField<String>(
         value: value,
+        style: TextStyle(
+          color: providerDialog.isDarkMode ? colorTextoClaro : colorTextoOscuro,
+          fontWeight: FontWeight.w500,
+        ),
         onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(
-            color: Colors.black54,
+            color:
+                providerDialog.isDarkMode ? colorTextoClaro : colorTextoOscuro,
             fontWeight: FontWeight.w500,
             fontSize: 14,
           ),
@@ -2542,7 +2865,9 @@ class ControlScreenState extends State<ControlScreen>
             borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: providerDialog.isDarkMode
+              ? colorTextFieldClaro
+              : colorTextFieldOscuro,
           contentPadding: EdgeInsets.symmetric(vertical: 5, horizontal: 20),
         ),
         icon: Icon(
@@ -2567,10 +2892,17 @@ class ControlScreenState extends State<ControlScreen>
     );
   }
 
-  Widget _buildTextFieldDisabled({
+  Widget _buildTextFieldDisabled(
+    Color colorTextFieldClaro,
+    Color colorTextFieldOscuro,
+    Color colorFondoClaro,
+    Color colorFondoOscuro,
+    Color colorTextoOscuro,
+    Color colorTextoClaro, {
     required String label,
     required String value,
   }) {
+    final providerTFD = Provider.of<CotizacionProvider>(context);
     return SizedBox(
       height: 40.0,
       child: TextFormField(
@@ -2583,7 +2915,7 @@ class ControlScreenState extends State<ControlScreen>
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(
-            color: Colors.black54,
+            color: providerTFD.isDarkMode ? colorTextoClaro : colorTextoOscuro,
             fontWeight: FontWeight.w500,
             fontSize: 14,
           ),
@@ -2605,19 +2937,27 @@ class ControlScreenState extends State<ControlScreen>
                 color: Colors.grey.shade300, width: 1.5), // Borde deshabilitado
           ),
           filled: true,
-          fillColor: Colors.grey.shade100,
+          fillColor:
+              providerTFD.isDarkMode ? Colors.grey.shade800 : Colors.grey[200],
           contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 25),
         ),
       ),
     );
   }
 
-  Widget _buildTextFieldValidator({
+  Widget _buildTextFieldValidator(
+    Color colorTextoClaro,
+    Color colorTextFieldClaro,
+    Color colorTextFieldOscuro,
+    Color colorFondoClaro,
+    Color colorFondoOscuro,
+    Color colorTextoOscuro, {
     required TextEditingController controller,
     required String label,
     TextInputType inputType = TextInputType.text,
     String? Function(String?)? onChanged,
   }) {
+    final providerTFV = Provider.of<CotizacionProvider>(context);
     return SizedBox(
       height: 40.0,
       child: TextFormField(
@@ -2627,7 +2967,7 @@ class ControlScreenState extends State<ControlScreen>
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(
-            color: Colors.black54,
+            color: providerTFV.isDarkMode ? colorTextoClaro : colorTextoOscuro,
             fontWeight: FontWeight.w500,
             fontSize: 14,
           ),
@@ -2641,7 +2981,8 @@ class ControlScreenState extends State<ControlScreen>
             borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor:
+              providerTFV.isDarkMode ? colorTextFieldClaro : colorTextoClaro,
           contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 25),
         ),
         onChanged: onChanged,
@@ -2649,24 +2990,39 @@ class ControlScreenState extends State<ControlScreen>
     );
   }
 
-  Widget _buildDropdownField({
+  Widget _buildDropdownField(
+    Color colorTextoClaro,
+    Color colorTextFieldClaro,
+    Color colorTextFieldOscuro,
+    Color colorFondoClaro,
+    Color colorFondoOscuro,
+    Color colorTextoOscuro, {
     required String label,
     required String? value,
     required List<String> items,
     required ValueChanged<String?> onChanged,
   }) {
+    final providerDDF = Provider.of<CotizacionProvider>(context);
     return SizedBox(
       height: 40.0,
       child: DropdownButtonFormField<String>(
+        hint: Text(
+          '$value',
+          style: TextStyle(
+              color: providerDDF.isDarkMode
+                  ? colorTextFieldClaro
+                  : colorTextFieldOscuro,
+              fontSize: 14),
+        ),
         value: value,
-        onChanged: onChanged,
+        onChanged: onChanged, // Controla el cambio
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(
-            color: Colors.black54,
-            fontWeight: FontWeight.w500,
-            fontSize: 14,
-          ),
+              color: providerDDF.isDarkMode
+                  ? colorTextFieldOscuro
+                  : colorTextFieldClaro,
+              fontWeight: FontWeight.w500),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(30.0),
             borderSide: BorderSide(color: Color(0xFF001F3F)),
@@ -2675,15 +3031,25 @@ class ControlScreenState extends State<ControlScreen>
             borderRadius: BorderRadius.circular(30.0),
             borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
           ),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: EdgeInsets.symmetric(vertical: 5, horizontal: 20),
+          disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30.0),
+            borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+          ),
+          fillColor: (providerDDF.isDarkMode
+              ? colorTextFieldClaro
+              : colorTextFieldOscuro), // Colores personalizados
+
+          filled:
+              true, // Asegúrate de que esto esté configurado para aplicar el fillColor
+          contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
         ),
-        icon: Icon(
-          Icons.arrow_drop_down,
-          color: Color(0xFF001F3F),
-        ),
-        dropdownColor: Colors.white,
+        dropdownColor: providerDDF.isDarkMode
+            ? colorTextFieldOscuro
+            : colorTextFieldClaro, // Ajuste del color del dropdown
+        icon: Icon(Icons.arrow_drop_down,
+            color: providerDDF.isDarkMode
+                ? colorTextFieldClaro
+                : Color(0xFF001F3F)),
         items: items.map((item) {
           return DropdownMenuItem<String>(
             value: item,

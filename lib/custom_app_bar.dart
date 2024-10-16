@@ -154,7 +154,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                         Text(
                           'Nombre Usuario',
                           style: TextStyle(
-                            color: Colors.grey[800],
+                            color: provider.isDarkMode
+                                ? Colors.white
+                                : Colors.grey[
+                                    800], // Cambia el color del texto según el modo oscuro
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                           ),

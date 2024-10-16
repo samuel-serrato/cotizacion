@@ -174,14 +174,14 @@ class _FormularioScreenState extends State<FormularioScreen> {
   // Definir variables de color para el modo claro y oscuro
   Color colorTextFieldClaro = Color(0xFFFFFFFF); // Blanco para el modo claro
   Color colorTextFieldOscuro =
-      Color(0xFF35374B); // Color oscuro para el modo oscuro
+      Color(0xFF22354d); // Color oscuro para el modo oscuro
 
 // Definir otras variables de color que puedas necesitar
   Color colorFondoClaro = Color(0xFFf7f8fa);
   Color colorFondoOscuro = Color(0xFF021526);
-
-  //Color colorTextoClaro = Color;
-  Color colorTextoOscuro = Color(0xFF424769);
+//(0xFF424769)
+  Color colorTextoOscuro = Colors.black;
+  Color colorTextoClaro = Colors.white;
 
   @override
   Widget build(BuildContext context) {
@@ -217,11 +217,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
                     SizedBox(height: 10),
                     _buildarticuloInfo(isDarkMode),
                     SizedBox(height: 30),
-                    _buildGananciaYPrecioVenta(),
+                    _buildGananciaYPrecioVenta(isDarkMode),
                     _buildSectionTitle('RESUMEN', isDarkMode),
-                    _buildSummary(
-                      provider,
-                    ),
+                    _buildSummary(provider, isDarkMode),
                     SizedBox(height: 20),
                     _buildProductTable(provider, isDarkMode),
                   ],
@@ -655,8 +653,10 @@ class _FormularioScreenState extends State<FormularioScreen> {
             },
             decoration: InputDecoration(
               labelText: 'Tipo',
-              labelStyle:
-                  TextStyle(color: Colors.black54, fontWeight: FontWeight.w500),
+              labelStyle: TextStyle(
+                  color:
+                      isDarkMode ? colorTextFieldClaro : colorTextFieldOscuro,
+                  fontWeight: FontWeight.w500),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30.0), // Bordes redondeados
                 borderSide: BorderSide(
@@ -676,7 +676,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
             ),
             icon: Icon(
               Icons.arrow_drop_down,
-              color: Color(0xFF001F3F),
+              color: isDarkMode ? colorTextFieldClaro : Color(0xFF001F3F),
             ), // Icono personalizado
             dropdownColor: isDarkMode
                 ? colorTextFieldOscuro
@@ -687,7 +687,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 child: Text(
                   item,
                   style: TextStyle(
-                    color: Colors.black87,
+                    color:
+                        isDarkMode ? colorTextFieldClaro : colorTextFieldOscuro,
                     fontSize: 14, // Texto más visible en el menú
                   ),
                 ),
@@ -758,7 +759,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     );
   }
 
-  Widget _buildGananciaYPrecioVenta() {
+  Widget _buildGananciaYPrecioVenta(bool isDarkMode) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -766,15 +767,24 @@ class _FormularioScreenState extends State<FormularioScreen> {
           formatAmount(
             'Precio de Venta: \$${formatAmount(precioVenta)}',
           ),
-          style: TextStyle(fontSize: 14, color: Colors.black),
+          style: TextStyle(
+            fontSize: 14,
+            color: isDarkMode ? colorTextoClaro : colorTextoOscuro,
+          ),
         ),
         Text(
           'Precio de Venta Total: \$${formatAmount(precioVenta * _getCantidad())}',
-          style: TextStyle(fontSize: 14, color: Colors.black),
+          style: TextStyle(
+            fontSize: 14,
+            color: isDarkMode ? colorTextoClaro : colorTextoOscuro,
+          ),
         ),
         Text(
           'Ganancia: \$${formatAmount(ganancia * _getCantidad())}',
-          style: TextStyle(fontSize: 14, color: Colors.black),
+          style: TextStyle(
+            fontSize: 14,
+            color: isDarkMode ? colorTextoClaro : colorTextoOscuro,
+          ),
         ),
         SizedBox(height: 30),
       ],
@@ -809,14 +819,17 @@ class _FormularioScreenState extends State<FormularioScreen> {
         DropdownButtonFormField<String>(
           hint: Text(
             'Elige',
-            style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+            style: TextStyle(
+                color: isDarkMode ? colorTextFieldClaro : colorTextFieldOscuro,
+                fontSize: 14),
           ),
           value: value,
           onChanged: enabled ? onChanged : null, // Controla el cambio
           decoration: InputDecoration(
             labelText: label,
-            labelStyle:
-                TextStyle(color: Colors.black54, fontWeight: FontWeight.w500),
+            labelStyle: TextStyle(
+                color: isDarkMode ? colorTextFieldClaro : colorTextFieldOscuro,
+                fontWeight: FontWeight.w500),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(30.0),
               borderSide: BorderSide(color: Color(0xFF001F3F)),
@@ -845,14 +858,19 @@ class _FormularioScreenState extends State<FormularioScreen> {
               ? colorTextFieldOscuro
               : colorTextFieldClaro, // Ajuste del color del dropdown
           icon: Icon(Icons.arrow_drop_down,
-              color: enabled ? Color(0xFF001F3F) : Colors.grey[600]),
+              color: isDarkMode ? colorTextFieldClaro : Color(0xFF001F3F)),
           items: items.map((item) {
             return DropdownMenuItem(
               value: item,
               child: Text(
                 item,
                 style: TextStyle(
-                  color: enabled ? Colors.black87 : Colors.grey[600],
+                  color: enabled
+                      ? (isDarkMode
+                          ? colorTextFieldClaro
+                          : colorTextFieldOscuro) // Cambia el color del texto según el modo
+                      : Colors.grey[
+                          600], // Color para cuando el campo está deshabilitado
                   fontSize: 14,
                   fontWeight: FontWeight.normal,
                 ),
@@ -1082,12 +1100,19 @@ class _FormularioScreenState extends State<FormularioScreen> {
       VoidCallback? onChanged]) {
     return TextField(
       controller: controller,
-      style:
-          TextStyle(color: Colors.black87, fontSize: 14), // Texto más visible
+      style: TextStyle(
+          color: isDarkMode
+              ? colorTextFieldClaro
+              : colorTextFieldOscuro // Cambia el color del texto según el modo oscuro
+          ), // Texto más visible
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
-            color: Colors.black54, fontWeight: FontWeight.w500, fontSize: 14),
+            color: isDarkMode
+                ? colorTextFieldClaro
+                : colorTextFieldOscuro, // Cambia el color del texto según el modo oscuro
+            fontWeight: FontWeight.w500,
+            fontSize: 14),
         floatingLabelBehavior:
             FloatingLabelBehavior.auto, // Efecto flotante suave
         focusedBorder: OutlineInputBorder(
@@ -1133,15 +1158,17 @@ class _FormularioScreenState extends State<FormularioScreen> {
       enabled: enabled, // Controla si el campo está habilitado o no
       style: TextStyle(
         color: enabled
-            ? Colors.black87
-            : Colors.grey[600], // Cambia el color según el estado
+            ? (isDarkMode
+                ? colorTextFieldClaro
+                : colorTextFieldOscuro) // Cambia el color del texto según el modo
+            : Colors.grey[600], // Color para cuando el campo está deshabilitado
         fontSize: 14,
       ),
       keyboardType: inputType,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
-          color: Colors.black54,
+          color: isDarkMode ? colorTextFieldClaro : colorTextFieldOscuro,
           fontWeight: FontWeight.w500,
           fontSize: 14,
         ),
@@ -1185,7 +1212,6 @@ class _FormularioScreenState extends State<FormularioScreen> {
           fontSize: 10,
         ),
       ),
-
       validator: validator,
       inputFormatters: label == 'Cantidad' ||
               label == 'Precio de Compra' ||
@@ -1257,14 +1283,14 @@ class _FormularioScreenState extends State<FormularioScreen> {
     });
   }
 
-  Widget _buildTableHeader(String title) {
+  Widget _buildTableHeader(String title, bool isDarkMode) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: Text(
         title,
         style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Color(0xFF001F3F),
+            color: isDarkMode ? colorTextFieldClaro : Color(0xFF001F3F),
             fontSize: 12),
       ),
     );
@@ -1317,7 +1343,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
     _handleGeneratePdf(context);
   } */
 
-  Widget _buildSummary(CotizacionProvider provider) {
+  Widget _buildSummary(CotizacionProvider provider, bool isDarkMode) {
     // Calcular el total a pagar incluyendo el porcentaje de ganancia
     final total = provider.items.fold(0.0, (sum, item) {
       final precioCompra = item.precioUnitario;
@@ -1334,7 +1360,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,
-            color: Colors.black,
+            color: isDarkMode ? colorTextoClaro : colorTextoOscuro,
           ),
         ),
       ],
@@ -1375,17 +1401,19 @@ class _FormularioScreenState extends State<FormularioScreen> {
             children: [
               TableRow(
                 children: [
-                  _buildTableHeader('Tipo'),
-                  _buildTableHeader('Cantidad'),
-                  _buildTableHeader('Descripción'),
-                  _buildTableHeader('Precio Compra por articulo'),
-                  _buildTableHeader('Precio Compra Total'),
-                  _buildTableHeader('% Ganancia'),
-                  _buildTableHeader('Ganancia por articulo'), // Nueva cabecera
-                  _buildTableHeader('Ganancia Total'), // Nueva cabecera
-                  _buildTableHeader('Precio Venta por Articulo'),
-                  _buildTableHeader('Total'),
-                  _buildTableHeader('Acción'),
+                  _buildTableHeader('Tipo', isDarkMode),
+                  _buildTableHeader('Cantidad', isDarkMode),
+                  _buildTableHeader('Descripción', isDarkMode),
+                  _buildTableHeader('Precio Compra por articulo', isDarkMode),
+                  _buildTableHeader('Precio Compra Total', isDarkMode),
+                  _buildTableHeader('% Ganancia', isDarkMode),
+                  _buildTableHeader(
+                      'Ganancia por articulo', isDarkMode), // Nueva cabecera
+                  _buildTableHeader(
+                      'Ganancia Total', isDarkMode), // Nueva cabecera
+                  _buildTableHeader('Precio Venta por Articulo', isDarkMode),
+                  _buildTableHeader('Total', isDarkMode),
+                  _buildTableHeader('Acción', isDarkMode),
                 ],
               ),
               ...provider.items.map((item) {
@@ -1533,7 +1561,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
           }).toStringAsFixed(2)}',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: isDarkMode ? colorTextoClaro : colorTextoOscuro,
             fontSize: 14,
           ),
         ),
@@ -1580,7 +1608,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 decoration: InputDecoration(
                   labelText: 'Método de pago',
                   labelStyle: TextStyle(
-                      color: Colors.black54,
+                      color: isDarkMode
+                          ? colorTextFieldClaro
+                          : colorTextFieldOscuro,
                       fontWeight: FontWeight.w500,
                       fontSize: 14),
                   focusedBorder: OutlineInputBorder(
@@ -1604,7 +1634,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 ),
                 icon: Icon(
                   Icons.arrow_drop_down,
-                  color: Color(0xFF001F3F),
+                  color: isDarkMode ? colorTextFieldClaro : Color(0xFF001F3F),
                 ), // Icono personalizado
                 dropdownColor: isDarkMode
                     ? colorTextFieldOscuro
@@ -1632,23 +1662,30 @@ class _FormularioScreenState extends State<FormularioScreen> {
                   '¿Requiere Factura?',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey.shade800,
+                    color:
+                        isDarkMode ? colorTextFieldClaro : colorTextFieldOscuro,
                   ),
                 ),
                 SizedBox(width: 10),
-                Theme(
-                  data: ThemeData(
-                    unselectedWidgetColor: Colors.grey.shade400,
-                  ),
-                  child: Checkbox(
-                    value: _requiereFactura,
-                    onChanged: (bool? value) {
-                      setState(() {
-                        _requiereFactura = value ?? false;
-                      });
-                    },
-                    activeColor: Color(0xFF001F3F),
-                    checkColor: Colors.white,
+                Checkbox(
+                  value: _requiereFactura,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      _requiereFactura = value ?? false;
+                    });
+                  },
+                  activeColor: isDarkMode
+                      ? Colors.white
+                      : Color(
+                          0xFF001F3F), // Color del fondo del checkbox cuando está seleccionado
+                  checkColor: isDarkMode
+                      ? Colors.black
+                      : Colors.white, // Color del checkmark
+                  side: BorderSide(
+                    color: isDarkMode
+                        ? Colors.white60
+                        : Colors.grey.shade400, // Color del borde del checkbox
+                    width: 1.5, // Ajusta el ancho del borde si es necesario
                   ),
                 ),
               ],
@@ -1869,7 +1906,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                                'No se puede guardar la cotización porque no se han agregado artículos.'),
+                                'No se puede guardar la cotización, no se han agregado artículos.'),
                             backgroundColor: Colors.red,
                           ),
                         );
