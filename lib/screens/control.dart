@@ -2279,7 +2279,6 @@ class ControlScreenState extends State<ControlScreen>
                                           colorFondoOscuro,
                                           colorTextoOscuro,
                                           colorTextoClaro,
-                                          provider.isDarkMode,
                                           label: 'Tipo Producto',
                                           value: tipoProductoControllers[index]
                                                   .text
@@ -2827,13 +2826,12 @@ class ControlScreenState extends State<ControlScreen>
   }
 
   Widget _buildTipoProductoDropdown(
-    Color colorTextoClaro,
     Color colorTextFieldClaro,
     Color colorTextFieldOscuro,
     Color colorFondoClaro,
     Color colorFondoOscuro,
     Color colorTextoOscuro,
-    provider, {
+    Color colorTextoClaro, {
     required String label,
     required String? value,
     required ValueChanged<String?> onChanged,
@@ -2844,7 +2842,7 @@ class ControlScreenState extends State<ControlScreen>
       child: DropdownButtonFormField<String>(
         value: value,
         style: TextStyle(
-          color: providerDialog.isDarkMode ? colorTextoClaro : colorTextoOscuro,
+          color: Colors.red,
           fontWeight: FontWeight.w500,
         ),
         onChanged: onChanged,
@@ -2866,15 +2864,17 @@ class ControlScreenState extends State<ControlScreen>
           ),
           filled: true,
           fillColor: providerDialog.isDarkMode
-              ? colorTextFieldClaro
-              : colorTextFieldOscuro,
+              ? colorTextFieldOscuro
+              : colorTextFieldClaro,
           contentPadding: EdgeInsets.symmetric(vertical: 5, horizontal: 20),
         ),
         icon: Icon(
           Icons.arrow_drop_down,
           color: Color(0xFF001F3F),
         ),
-        dropdownColor: Colors.white,
+        dropdownColor: providerDialog.isDarkMode
+            ? colorTextFieldOscuro
+            : colorFondoClaro, // Cambia el color de fondo según el modo
         items: [
           'Producto',
           'Software',
@@ -2884,7 +2884,11 @@ class ControlScreenState extends State<ControlScreen>
             value: item,
             child: Text(
               item,
-              style: TextStyle(color: Colors.black87, fontSize: 12),
+              style: TextStyle(
+                  color: providerDialog.isDarkMode
+                      ? colorTextoClaro
+                      : colorTextoOscuro,
+                  fontSize: 12),
             ),
           );
         }).toList(),
@@ -2946,12 +2950,12 @@ class ControlScreenState extends State<ControlScreen>
   }
 
   Widget _buildTextFieldValidator(
-    Color colorTextoClaro,
     Color colorTextFieldClaro,
     Color colorTextFieldOscuro,
     Color colorFondoClaro,
     Color colorFondoOscuro,
-    Color colorTextoOscuro, {
+    Color colorTextoOscuro,
+    Color colorTextoClaro, {
     required TextEditingController controller,
     required String label,
     TextInputType inputType = TextInputType.text,
@@ -2981,8 +2985,9 @@ class ControlScreenState extends State<ControlScreen>
             borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
           ),
           filled: true,
-          fillColor:
-              providerTFV.isDarkMode ? colorTextFieldClaro : colorTextoClaro,
+          fillColor: providerTFV.isDarkMode
+              ? colorTextFieldOscuro
+              : colorTextFieldClaro,
           contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 25),
         ),
         onChanged: onChanged,
@@ -2991,12 +2996,12 @@ class ControlScreenState extends State<ControlScreen>
   }
 
   Widget _buildDropdownField(
-    Color colorTextoClaro,
     Color colorTextFieldClaro,
     Color colorTextFieldOscuro,
     Color colorFondoClaro,
     Color colorFondoOscuro,
-    Color colorTextoOscuro, {
+    Color colorTextoOscuro,
+    Color colorTextoClaro, {
     required String label,
     required String? value,
     required List<String> items,
@@ -3007,22 +3012,20 @@ class ControlScreenState extends State<ControlScreen>
       height: 40.0,
       child: DropdownButtonFormField<String>(
         hint: Text(
-          '$value',
+          value ?? '',
           style: TextStyle(
-              color: providerDDF.isDarkMode
-                  ? colorTextFieldClaro
-                  : colorTextFieldOscuro,
-              fontSize: 14),
+            color: providerDDF.isDarkMode ? colorTextoClaro : colorTextoOscuro,
+            fontSize: 14,
+          ),
         ),
         value: value,
-        onChanged: onChanged, // Controla el cambio
+        onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(
-              color: providerDDF.isDarkMode
-                  ? colorTextFieldOscuro
-                  : colorTextFieldClaro,
-              fontWeight: FontWeight.w500),
+            color: providerDDF.isDarkMode ? colorTextoClaro : colorTextoOscuro,
+            fontWeight: FontWeight.w500,
+          ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(30.0),
             borderSide: BorderSide(color: Color(0xFF001F3F)),
@@ -3035,27 +3038,30 @@ class ControlScreenState extends State<ControlScreen>
             borderRadius: BorderRadius.circular(30.0),
             borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
           ),
-          fillColor: (providerDDF.isDarkMode
-              ? colorTextFieldClaro
-              : colorTextFieldOscuro), // Colores personalizados
-
-          filled:
-              true, // Asegúrate de que esto esté configurado para aplicar el fillColor
+          fillColor: providerDDF.isDarkMode
+              ? colorTextFieldOscuro
+              : colorTextFieldClaro,
+          filled: true,
           contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
         ),
         dropdownColor: providerDDF.isDarkMode
             ? colorTextFieldOscuro
-            : colorTextFieldClaro, // Ajuste del color del dropdown
-        icon: Icon(Icons.arrow_drop_down,
-            color: providerDDF.isDarkMode
-                ? colorTextFieldClaro
-                : Color(0xFF001F3F)),
+            : colorTextFieldClaro, // Cambia el color del menú desplegable según el modo
+        icon: Icon(
+          Icons.arrow_drop_down,
+          color: providerDDF.isDarkMode ? colorTextoClaro : Color(0xFF001F3F),
+        ),
         items: items.map((item) {
           return DropdownMenuItem<String>(
             value: item,
             child: Text(
               item,
-              style: TextStyle(color: Colors.black87, fontSize: 12),
+              style: TextStyle(
+                color: providerDDF.isDarkMode
+                    ? colorTextoClaro
+                    : colorTextoOscuro, // Ajusta el color del texto según el modo
+                fontSize: 12,
+              ),
             ),
           );
         }).toList(),

@@ -820,7 +820,11 @@ class _FormularioScreenState extends State<FormularioScreen> {
           hint: Text(
             'Elige',
             style: TextStyle(
-                color: isDarkMode ? colorTextFieldClaro : colorTextFieldOscuro,
+                  color: enabled
+            ? (isDarkMode ? colorTextoClaro : colorTextoOscuro)
+            : (isDarkMode
+                ? Colors.grey[200]
+                : Colors.grey[600]),
                 fontSize: 14),
           ),
           value: value,
@@ -870,7 +874,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
                           ? colorTextFieldClaro
                           : colorTextFieldOscuro) // Cambia el color del texto según el modo
                       : Colors.grey[
-                          600], // Color para cuando el campo está deshabilitado
+                          400], // Color para cuando el campo está deshabilitado
                   fontSize: 14,
                   fontWeight: FontWeight.normal,
                 ),
@@ -1158,10 +1162,10 @@ class _FormularioScreenState extends State<FormularioScreen> {
       enabled: enabled, // Controla si el campo está habilitado o no
       style: TextStyle(
         color: enabled
-            ? (isDarkMode
-                ? colorTextFieldClaro
-                : colorTextFieldOscuro) // Cambia el color del texto según el modo
-            : Colors.grey[600], // Color para cuando el campo está deshabilitado
+            ? (isDarkMode ? colorTextoClaro : colorTextoOscuro)
+            : (isDarkMode
+                ? Colors.grey[200]
+                : Colors.grey[600]), // Color según el estado y el modo
         fontSize: 14,
       ),
       keyboardType: inputType,
