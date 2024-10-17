@@ -146,6 +146,10 @@ class ControlScreenState extends State<ControlScreen>
 
   Future<void> fetchDatos() async {
     try {
+      setState(() {
+        _isLoadingInicio = true; // Cambia el estado a loading al inicio
+      });
+
       final detallesResponse = await http.get(
         Uri.parse('https://$baseUrl/api/v1/detalles/'),
       );
@@ -155,35 +159,43 @@ class ControlScreenState extends State<ControlScreen>
 
       if (detallesResponse.statusCode == 200 &&
           clientesResponse.statusCode == 200) {
-        setState(() {
-          detalles = json.decode(detallesResponse.body);
-          clientes = json.decode(clientesResponse.body);
+        // Verifica si el widget está montado antes de llamar a setState
+        if (mounted) {
+          setState(() {
+            detalles = json.decode(detallesResponse.body);
+            clientes = json.decode(clientesResponse.body);
 
-          // Asignar detalles filtrados
-          filteredDetalles = detalles;
+            // Asignar detalles filtrados
+            filteredDetalles = detalles;
 
-          // Ordenar los detalles por fecha_creacion en orden descendente
-          detalles.sort((a, b) {
-            DateTime fechaA = DateTime.parse(a['fecha_creacion']);
-            DateTime fechaB = DateTime.parse(b['fecha_creacion']);
-            return fechaB.compareTo(fechaA); // Más reciente primero
+            // Ordenar los detalles por fecha_creacion en orden descendente
+            detalles.sort((a, b) {
+              DateTime fechaA = DateTime.parse(a['fecha_creacion']);
+              DateTime fechaB = DateTime.parse(b['fecha_creacion']);
+              return fechaB.compareTo(fechaA); // Más reciente primero
+            });
           });
-        });
+        }
       } else {
         // Manejo de error si no se obtienen los datos correctamente
-        setState(() {
-          detalles = [];
-          clientes = [];
-        });
+        if (mounted) {
+          setState(() {
+            detalles = [];
+            clientes = [];
+          });
+        }
         throw Exception('Error al obtener los datos');
       }
     } catch (e) {
       print('Error: $e');
     } finally {
-      setState(() {
-        _isLoadingInicio =
-            false; // Asegúrate de cambiar el estado a false al final
-      });
+      // Verifica si el widget sigue montado antes de cambiar el estado
+      if (mounted) {
+        setState(() {
+          _isLoadingInicio =
+              false; // Asegúrate de cambiar el estado a false al final
+        });
+      }
     }
   }
 
@@ -652,6 +664,33 @@ class ControlScreenState extends State<ControlScreen>
                                     initialDate: selectedDate ?? DateTime.now(),
                                     firstDate: DateTime(2000),
                                     lastDate: DateTime(2101),
+                                    builder:
+                                        (BuildContext context, Widget? child) {
+                                      return Theme(
+                                        data: Theme.of(context).copyWith(
+                                          colorScheme: provider.isDarkMode
+                                              ? ColorScheme.dark(
+                                                  primary: Color(
+                                                      0xFF008F8F), // Color principal del DatePicker en modo oscuro
+                                                  onPrimary: Colors
+                                                      .white, // Color del texto en el DatePicker en modo oscuro
+                                                  surface:
+                                                      colorTextFieldOscuro, // Fondo del DatePicker en modo oscuro
+                                                  onSurface:
+                                                      colorTextoClaro, // Color de los textos como los días en modo oscuro
+                                                )
+                                              : Theme.of(context)
+                                                  .colorScheme, // Mantén el esquema de colores predeterminado en modo claro
+                                          dialogBackgroundColor: provider
+                                                  .isDarkMode
+                                              ? Colors.grey[
+                                                  850] // Fondo del diálogo en modo oscuro
+                                              : Theme.of(context)
+                                                  .dialogBackgroundColor, // Fondo predeterminado en modo claro
+                                        ),
+                                        child: child!,
+                                      );
+                                    },
                                   );
 
                                   if (pickedDate != null &&
@@ -1267,8 +1306,12 @@ class ControlScreenState extends State<ControlScreen>
                                                           Text(
                                                             'Folio: $folio',
                                                             style: TextStyle(
-                                                              color: Color(
-                                                                  0xFF008F8F),
+                                                              color: provider
+                                                                      .isDarkMode
+                                                                  ? Color(
+                                                                      0xFF00CCDD)
+                                                                  : Color(
+                                                                      0xFF008F8F),
                                                               fontSize: 14,
                                                               fontWeight:
                                                                   FontWeight
@@ -1978,16 +2021,17 @@ class ControlScreenState extends State<ControlScreen>
                                                                     });
                                                                   },
                                                                   child: Text(
-                                                                    'Ver detalles del estado',
-                                                                    style: TextStyle(
+                                                                      'Ver detalles del estado',
+                                                                      style:
+                                                                          TextStyle(
                                                                         fontWeight:
-                                                                            FontWeight
-                                                                                .bold,
+                                                                            FontWeight.bold,
                                                                         fontSize:
                                                                             14,
-                                                                        color: Color(
-                                                                            0xFF008F8F)),
-                                                                  ),
+                                                                        color: provider.isDarkMode
+                                                                            ? Color(0xFF00CCDD)
+                                                                            : Color(0xFF008F8F),
+                                                                      )),
                                                                 ),
                                                               ],
                                                             ),
@@ -2471,12 +2515,54 @@ class ControlScreenState extends State<ControlScreen>
                             });
                           },
                           child: Text('Agregar Artículo'),
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: provider.isDarkMode
+                                ? Colors.white
+                                : Colors.white,
+                            backgroundColor: provider.isDarkMode
+                                ? Color(0xFF008f8f)
+                                : Color(
+                                    0xFF008f8f), // Color del texto según el modo
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                  20), // Bordes redondeados
+                            ),
+                          ),
                         ),
 
                         Divider(height: 20, color: Colors.grey[300]),
-                        _buildResumenTotal('Subtotal', subtotalController.text),
-                        _buildResumenTotal('IVA', ivaController.text),
-                        _buildResumenTotal('Total', totalController.text),
+                        _buildResumenTotal(
+                          'Subtotal',
+                          subtotalController.text,
+                          colorTextFieldClaro,
+                          colorTextFieldOscuro,
+                          colorFondoClaro,
+                          colorFondoOscuro,
+                          colorTextoOscuro,
+                          colorTextoClaro,
+                        ),
+                        _buildResumenTotal(
+                          'IVA',
+                          ivaController.text,
+                          colorTextFieldClaro,
+                          colorTextFieldOscuro,
+                          colorFondoClaro,
+                          colorFondoOscuro,
+                          colorTextoOscuro,
+                          colorTextoClaro,
+                        ),
+                        _buildResumenTotal(
+                          'Total',
+                          totalController.text,
+                          colorTextFieldClaro,
+                          colorTextFieldOscuro,
+                          colorFondoClaro,
+                          colorFondoOscuro,
+                          colorTextoOscuro,
+                          colorTextoClaro,
+                        ),
                       ],
                     ),
                   ),
@@ -2870,7 +2956,8 @@ class ControlScreenState extends State<ControlScreen>
         ),
         icon: Icon(
           Icons.arrow_drop_down,
-          color: Color(0xFF001F3F),
+          color:
+              providerDialog.isDarkMode ? colorTextoClaro : Color(0xFF001F3F),
         ),
         dropdownColor: providerDialog.isDarkMode
             ? colorTextFieldOscuro
@@ -2913,7 +3000,7 @@ class ControlScreenState extends State<ControlScreen>
         enabled: false,
         style: TextStyle(
           fontSize: 12,
-          color: Colors.grey[600], // Cambia aquí el color del texto
+          color: providerTFD.isDarkMode ? colorTextoClaro : Colors.grey[700],
         ),
         initialValue: value,
         decoration: InputDecoration(
@@ -3070,7 +3157,17 @@ class ControlScreenState extends State<ControlScreen>
   }
 
 // Widget para mostrar el resumen total
-  Widget _buildResumenTotal(String label, String value) {
+  Widget _buildResumenTotal(
+    String label,
+    String value,
+    Color colorTextFieldClaro,
+    Color colorTextFieldOscuro,
+    Color colorFondoClaro,
+    Color colorFondoOscuro,
+    Color colorTextoOscuro,
+    Color colorTextoClaro,
+  ) {
+    final providerBRT = Provider.of<CotizacionProvider>(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -3082,7 +3179,12 @@ class ControlScreenState extends State<ControlScreen>
           ),
           Text(
             '\$$value',
-            style: TextStyle(fontSize: 14, color: Colors.blueGrey[600]),
+            style: TextStyle(
+              fontSize: 14,
+              color: providerBRT.isDarkMode
+                  ? colorTextoClaro
+                  : Colors.blueGrey[700],
+            ),
           ),
         ],
       ),

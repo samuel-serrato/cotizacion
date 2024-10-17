@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'package:cotizacion/custom_app_bar.dart';
 import 'package:cotizacion/ip.dart';
+import 'package:cotizacion/screens/calculos.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:fl_chart/fl_chart.dart';
+import 'package:provider/provider.dart';
 
 // Modelo de datos
 class ClienteData {
@@ -66,6 +68,12 @@ class CustomChart extends StatelessWidget {
   final int year;
   final String title; // Título del gráfico
   final String dataKey; // Clave para seleccionar el dato a mostrar
+  final Color colorTextFieldClaro;
+  final Color colorTextFieldOscuro;
+  final Color colorFondoClaro;
+  final Color colorFondoOscuro;
+  final Color colorTextoOscuro;
+  final Color colorTextoClaro;
 
   const CustomChart({
     Key? key,
@@ -74,10 +82,17 @@ class CustomChart extends StatelessWidget {
     required this.year,
     required this.title,
     required this.dataKey, // Agregar el nuevo parámetro
+    required this.colorTextFieldClaro,
+    required this.colorTextFieldOscuro,
+    required this.colorFondoClaro,
+    required this.colorFondoOscuro,
+    required this.colorTextoOscuro,
+    required this.colorTextoClaro,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<CotizacionProvider>(context);
     List<ClienteData> monthlyData = data.where((d) {
       final monthYear = d.mesAno.split('-');
       return int.parse(monthYear[0]) - 1 == month &&
@@ -140,7 +155,9 @@ class CustomChart extends StatelessWidget {
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Container(
-          color: Colors.white, // Color de fondo de la gráfica
+          color: provider.isDarkMode
+              ? colorFondoOscuro
+              : colorFondoClaro, // Color de fondo según el modo
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
@@ -149,7 +166,9 @@ class CustomChart extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: provider.isDarkMode
+                      ? Colors.white
+                      : Colors.black, // Color de texto
                 ),
               ),
               Expanded(
@@ -166,7 +185,9 @@ class CustomChart extends StatelessWidget {
                               'clientes',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.blueGrey,
+                                color: provider.isDarkMode
+                                    ? Colors.white
+                                    : Colors.blueGrey, // Color de texto
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -190,7 +211,9 @@ class CustomChart extends StatelessWidget {
                                 '${value.toInt()}',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.blueGrey,
+                                  color: provider.isDarkMode
+                                      ? Colors.white
+                                      : Colors.blueGrey, // Color de texto
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -267,11 +290,25 @@ BarTouchData barTouchData(Map<String, double> totalsByClient) {
 
 // Pantalla principal
 class EstadisticasScreen extends StatefulWidget {
-  const EstadisticasScreen({Key? key}) : super(key: key);
+  const EstadisticasScreen({
+    Key? key,
+  }) : super(key: key);
 
   @override
   _EstadisticasScreenState createState() => _EstadisticasScreenState();
 }
+
+// Definir variables de color para el modo claro y oscuro
+Color colorTextFieldClaro = Color(0xFFFFFFFF); // Blanco para el modo claro
+Color colorTextFieldOscuro =
+    Color(0xFF22354d); // Color oscuro para el modo oscuro
+
+// Definir otras variables de color que puedas necesitar
+Color colorFondoClaro = Color(0xFFf7f8fa);
+Color colorFondoOscuro = Color(0xFF021526);
+//(0xFF424769)
+Color colorTextoOscuro = Colors.black;
+Color colorTextoClaro = Colors.white;
 
 class _EstadisticasScreenState extends State<EstadisticasScreen>
     with SingleTickerProviderStateMixin {
@@ -319,11 +356,22 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
 
   // Método para seleccionar solo el año
   Future<void> selectYear(BuildContext context) async {
+    final providerTM = Provider.of<CotizacionProvider>(context, listen: false);
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Selecciona un año'),
+          backgroundColor: providerTM.isDarkMode
+              ? colorFondoOscuro
+              : colorFondoClaro, // Fondo del AlertDialog
+          title: Text(
+            'Selecciona un año',
+            style: TextStyle(
+              color: providerTM.isDarkMode
+                  ? colorTextoClaro
+                  : colorTextoOscuro, // Color del título
+            ),
+          ),
           content: SizedBox(
             height: 200,
             width: 200,
@@ -334,7 +382,14 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
                 int year = DateTime.now().year -
                     index; // Años desde el actual hacia atrás
                 return ListTile(
-                  title: Text(year.toString()),
+                  title: Text(
+                    year.toString(),
+                    style: TextStyle(
+                      color: providerTM.isDarkMode
+                          ? colorTextoClaro
+                          : colorTextoOscuro, // Color del texto del año
+                    ),
+                  ),
                   onTap: () {
                     setState(() {
                       selectedYear = year; // Actualiza el año seleccionado
@@ -360,8 +415,10 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<CotizacionProvider>(context);
     return Scaffold(
-      backgroundColor: Color(0xFFf7f8fa),
+      backgroundColor: provider.isDarkMode ? colorFondoOscuro : colorFondoClaro,
+      //backgroundColor: Color(0xFFf7f8fa),
       appBar: CustomAppBar(
         isDarkMode: _isDarkMode,
         toggleDarkMode: _toggleDarkMode,
@@ -414,8 +471,12 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
                             child: Container(
                               decoration: BoxDecoration(
                                 color: selectedMonth == index
-                                    ? Color(0xFF001F3F)
-                                    : Colors.grey[200],
+                                    ? (provider.isDarkMode
+                                        ? Color(0xFF008F8F)
+                                        : Colors.grey[200])
+                                    : (provider.isDarkMode
+                                        ? Colors.white
+                                        : Color(0xFF001F3F)),
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: selectedMonth == index
                                     ? [
@@ -438,8 +499,12 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
                                 months[index],
                                 style: TextStyle(
                                   color: selectedMonth == index
-                                      ? Colors.white
-                                      : Colors.black87,
+                                      ? (provider.isDarkMode
+                                          ? Colors.black87
+                                          : Colors.black87)
+                                      : (provider.isDarkMode
+                                          ? Colors.black87
+                                          : Colors.white),
                                   fontWeight: FontWeight.w600,
                                   fontSize: 16,
                                 ),
@@ -480,6 +545,12 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
                           children: [
                             Expanded(
                               child: CustomChart(
+                                colorTextFieldClaro: colorTextFieldClaro,
+                                colorTextFieldOscuro: colorTextFieldOscuro,
+                                colorFondoClaro: colorFondoClaro,
+                                colorFondoOscuro: colorFondoOscuro,
+                                colorTextoOscuro: colorTextoOscuro,
+                                colorTextoClaro: colorTextoClaro,
                                 data: snapshot.data!,
                                 month: selectedMonth,
                                 year: selectedYear,
@@ -489,6 +560,12 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
                             ),
                             Expanded(
                               child: CustomChart(
+                                colorTextFieldClaro: colorTextFieldClaro,
+                                colorTextFieldOscuro: colorTextFieldOscuro,
+                                colorFondoClaro: colorFondoClaro,
+                                colorFondoOscuro: colorFondoOscuro,
+                                colorTextoOscuro: colorTextoOscuro,
+                                colorTextoClaro: colorTextoClaro,
                                 data: snapshot.data!,
                                 month: selectedMonth,
                                 year: selectedYear,
@@ -498,6 +575,12 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
                             ),
                             Expanded(
                               child: CustomChart(
+                                colorTextFieldClaro: colorTextFieldClaro,
+                                colorTextFieldOscuro: colorTextFieldOscuro,
+                                colorFondoClaro: colorFondoClaro,
+                                colorFondoOscuro: colorFondoOscuro,
+                                colorTextoOscuro: colorTextoOscuro,
+                                colorTextoClaro: colorTextoClaro,
                                 data: snapshot.data!,
                                 month: selectedMonth,
                                 year: selectedYear,
@@ -527,6 +610,13 @@ class _EstadisticasScreenState extends State<EstadisticasScreen>
                                             'Error al cargar datos de totalxmes'));
                                   } else {
                                     return TotalMesChart(
+                                      colorTextFieldClaro: colorTextFieldClaro,
+                                      colorTextFieldOscuro:
+                                          colorTextFieldOscuro,
+                                      colorFondoClaro: colorFondoClaro,
+                                      colorFondoOscuro: colorFondoOscuro,
+                                      colorTextoOscuro: colorTextoOscuro,
+                                      colorTextoClaro: colorTextoClaro,
                                       data: snapshot
                                           .data!, // Pasamos los datos del endpoint
                                       month: selectedMonth,
@@ -557,6 +647,12 @@ class TotalMesChart extends StatefulWidget {
   final int month; // Este parámetro puede no ser necesario para este gráfico
   final int year;
   final String title;
+  final Color colorTextFieldClaro;
+  final Color colorTextFieldOscuro;
+  final Color colorFondoClaro;
+  final Color colorFondoOscuro;
+  final Color colorTextoOscuro;
+  final Color colorTextoClaro;
 
   const TotalMesChart({
     Key? key,
@@ -564,6 +660,12 @@ class TotalMesChart extends StatefulWidget {
     required this.month,
     required this.year,
     required this.title,
+    required this.colorTextFieldClaro,
+    required this.colorTextFieldOscuro,
+    required this.colorFondoClaro,
+    required this.colorFondoOscuro,
+    required this.colorTextoOscuro,
+    required this.colorTextoClaro,
   }) : super(key: key);
 
   @override
@@ -630,6 +732,7 @@ class _TotalMesChartState extends State<TotalMesChart> {
 
   @override
   Widget build(BuildContext context) {
+    final providerTM = Provider.of<CotizacionProvider>(context);
     // Filtrar los datos para el año específico
     List<TotalMesData> yearlyData = widget.data.where((d) {
       final monthYear = d.mesAno.split('-');
@@ -676,7 +779,9 @@ class _TotalMesChartState extends State<TotalMesChart> {
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Container(
-          color: Colors.white, // Color de fondo de la gráfica
+          color: providerTM.isDarkMode
+              ? widget.colorFondoOscuro
+              : widget.colorFondoClaro, // Color de fondo de la gráfica
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
@@ -685,7 +790,9 @@ class _TotalMesChartState extends State<TotalMesChart> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: providerTM.isDarkMode
+                      ? widget.colorTextoClaro
+                      : widget.colorTextoOscuro, // Color de fondo de la gráfica
                 ),
               ),
               SizedBox(height: 10),
@@ -832,11 +939,7 @@ class _TotalMesChartState extends State<TotalMesChart> {
                   ),
                 ),
               ),
-              // Botones para ajustar el rango
-
               // Leyenda
-              // Leyenda y botones para ajustar el rango
-              // Botones para ajustar el rango y Leyenda
               Container(
                 //color: Colors.red,
                 height: 30, // Ajusta la altura aquí

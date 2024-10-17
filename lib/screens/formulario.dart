@@ -572,7 +572,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
             decoration: InputDecoration(
               labelText: 'Nombre o Teléfono',
               labelStyle: TextStyle(
-                color: Colors.black54,
+                color: isDarkMode ? colorTextoClaro : colorTextoOscuro,
                 fontWeight: FontWeight.w500,
                 fontSize: 14,
               ),
@@ -820,11 +820,9 @@ class _FormularioScreenState extends State<FormularioScreen> {
           hint: Text(
             'Elige',
             style: TextStyle(
-                  color: enabled
-            ? (isDarkMode ? colorTextoClaro : colorTextoOscuro)
-            : (isDarkMode
-                ? Colors.grey[200]
-                : Colors.grey[600]),
+                color: enabled
+                    ? (isDarkMode ? colorTextoClaro : colorTextoOscuro)
+                    : (isDarkMode ? Colors.grey[200] : Colors.grey[600]),
                 fontSize: 14),
           ),
           value: value,
