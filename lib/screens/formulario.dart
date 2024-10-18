@@ -907,7 +907,7 @@ class _FormularioScreenState extends State<FormularioScreen> {
         if (value == 'OTRO') SizedBox(height: 10),
         if (value == 'OTRO')
           SizedBox(
-            width: 200,
+            width: 600,
             child: TextFormField(
               controller: customController,
               enabled: enabled &&
