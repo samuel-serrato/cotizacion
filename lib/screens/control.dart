@@ -1116,7 +1116,7 @@ class ControlScreenState extends State<ControlScreen>
                                                                         FontWeight
                                                                             .bold)),
                                                             Text(
-                                                                '\$${totalCompra.toStringAsFixed(2)}',
+                                                                '\$${formatAmount(totalCompra)}',
                                                                 style: TextStyle(
                                                                     color: provider
                                                                             .isDarkMode
@@ -1144,7 +1144,7 @@ class ControlScreenState extends State<ControlScreen>
                                                                         FontWeight
                                                                             .bold)),
                                                             Text(
-                                                                '\$${gananciaTotal.toStringAsFixed(2)}',
+                                                                '\$${formatAmount(gananciaTotal)}',
                                                                 style: TextStyle(
                                                                     color: provider
                                                                             .isDarkMode
@@ -1171,7 +1171,7 @@ class ControlScreenState extends State<ControlScreen>
                                                                         FontWeight
                                                                             .bold)),
                                                             Text(
-                                                                '\$${detalle['subtotal'] ?? '0.00'}',
+                                                                '\$${formatAmount(detalle['subtotal'] ?? '0.00')}',
                                                                 style: TextStyle(
                                                                     color: provider
                                                                             .isDarkMode
@@ -1198,7 +1198,7 @@ class ControlScreenState extends State<ControlScreen>
                                                                         FontWeight
                                                                             .bold)),
                                                             Text(
-                                                                '\$${detalle['iva'] ?? '0.00'}',
+                                                                '\$${formatAmount(detalle['iva'] ?? '0.00')}',
                                                                 style: TextStyle(
                                                                     color: provider
                                                                             .isDarkMode
@@ -1225,7 +1225,7 @@ class ControlScreenState extends State<ControlScreen>
                                                                         FontWeight
                                                                             .bold)),
                                                             Text(
-                                                              '\$${detalle['total'] ?? '0.00'}',
+                                                              '\$${formatAmount(detalle['total'] ?? '0.00')}',
                                                               style: TextStyle(
                                                                 color: provider
                                                                         .isDarkMode
@@ -1330,6 +1330,9 @@ class ControlScreenState extends State<ControlScreen>
                                             isExpanded
                                                 ? Icons.keyboard_arrow_up
                                                 : Icons.keyboard_arrow_down,
+                                            color: provider.isDarkMode
+                                                ? Colors.white
+                                                : Colors.grey[700],
                                           ),
                                           onTap: () {
                                             setState(() {
@@ -1518,7 +1521,7 @@ class ControlScreenState extends State<ControlScreen>
                                                                             TextAlign.center,
                                                                       ),
                                                                       Text(
-                                                                        '\$${articuloDetalle['precio_compra']?.toStringAsFixed(2) ?? '0.00'}',
+                                                                        '\$${formatAmount(articuloDetalle['precio_compra'] ?? '0.00')}',
                                                                         style:
                                                                             TextStyle(
                                                                           fontSize:
@@ -1589,7 +1592,7 @@ class ControlScreenState extends State<ControlScreen>
                                                                       ),
                                                                       Text(
                                                                         // Validamos que cantidad no sea 0 para evitar divisiones por 0
-                                                                        '\$${(articuloDetalle['ganancia'] != null && articuloDetalle['cantidad'] != null && articuloDetalle['cantidad'] != 0) ? (articuloDetalle['ganancia'] / articuloDetalle['cantidad']).toStringAsFixed(2) : '0.00'}',
+                                                                        '\$${formatAmount((articuloDetalle['ganancia'] != null && articuloDetalle['cantidad'] != null && articuloDetalle['cantidad'] != 0) ? (articuloDetalle['ganancia'] / articuloDetalle['cantidad']) : '0.00')}',
                                                                         style:
                                                                             TextStyle(
                                                                           fontSize:
@@ -1624,7 +1627,7 @@ class ControlScreenState extends State<ControlScreen>
                                                                             TextAlign.center,
                                                                       ),
                                                                       Text(
-                                                                        '\$${((double.tryParse(articuloDetalle['ganancia']?.toString() ?? '0') ?? 0)).toStringAsFixed(2)}',
+                                                                        '\$${formatAmount(((double.tryParse(articuloDetalle['ganancia']?.toString() ?? '0') ?? 0)))}',
                                                                         style:
                                                                             TextStyle(
                                                                           fontSize:
@@ -1659,7 +1662,7 @@ class ControlScreenState extends State<ControlScreen>
                                                                             TextAlign.center,
                                                                       ),
                                                                       Text(
-                                                                        '\$${articuloDetalle['precio_venta']?.toStringAsFixed(2) ?? '0.00'}',
+                                                                        '\$${formatAmount(articuloDetalle['precio_venta'] ?? '0.00')}',
                                                                         style:
                                                                             TextStyle(
                                                                           fontSize:
@@ -1694,7 +1697,7 @@ class ControlScreenState extends State<ControlScreen>
                                                                             TextAlign.center,
                                                                       ),
                                                                       Text(
-                                                                        '\$${(articuloDetalle['precio_venta'] ?? 0) * (articuloDetalle['cantidad'] ?? 0)}',
+                                                                        '\$${formatAmount((articuloDetalle['precio_venta'] ?? 0) * (articuloDetalle['cantidad'] ?? 0))}',
                                                                         style:
                                                                             TextStyle(
                                                                           fontSize:
@@ -1748,7 +1751,7 @@ class ControlScreenState extends State<ControlScreen>
                                                                 SizedBox(
                                                                     width: 10),
                                                                 Text(
-                                                                  '\$${detalle['subtotal'] ?? '0.00'}',
+                                                                  '\$${formatAmount(detalle['subtotal'] ?? '0.00')}',
                                                                   style:
                                                                       TextStyle(
                                                                     color: provider
@@ -1832,7 +1835,7 @@ class ControlScreenState extends State<ControlScreen>
                                                                 SizedBox(
                                                                     width: 10),
                                                                 Text(
-                                                                  '\$${detalle['iva'] ?? '0.00'}',
+                                                                  '\$${formatAmount(detalle['iva'] ?? '0.00')}',
                                                                   style:
                                                                       TextStyle(
                                                                     color: provider
@@ -1917,7 +1920,7 @@ class ControlScreenState extends State<ControlScreen>
                                                                 SizedBox(
                                                                     width: 10),
                                                                 Text(
-                                                                  '\$${detalle['total'] ?? '0.00'}',
+                                                                  '\$${formatAmount(detalle['total'] ?? '0.00')}',
                                                                   style:
                                                                       TextStyle(
                                                                     color: provider
@@ -2447,7 +2450,7 @@ class ControlScreenState extends State<ControlScreen>
                                     children: [
                                       Expanded(
                                         child: Text(
-                                          'Precio Venta (Unitario): ${precioVentaUnitario.toStringAsFixed(2)}',
+                                          'Precio Venta (Unitario): ${formatAmount(precioVentaUnitario)}',
                                           style: TextStyle(
                                             fontSize: 12,
                                           ),
@@ -2455,7 +2458,7 @@ class ControlScreenState extends State<ControlScreen>
                                       ),
                                       Expanded(
                                         child: Text(
-                                          'Precio Venta (Total): ${precioVentaTotal.toStringAsFixed(2)}',
+                                          'Precio Venta (Total): ${formatAmount(precioVentaTotal)}',
                                           style: TextStyle(
                                             fontSize: 12,
                                           ),
@@ -2468,14 +2471,14 @@ class ControlScreenState extends State<ControlScreen>
                                     children: [
                                       Expanded(
                                         child: Text(
-                                            'Ganancia por Producto: ${gananciaPp.toStringAsFixed(2)}',
+                                            'Ganancia por Producto: ${formatAmount(gananciaPp)}',
                                             style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.bold)),
                                       ),
                                       Expanded(
                                         child: Text(
-                                            'Ganancia Total: ${gananciaTotal.toStringAsFixed(2)}',
+                                            'Ganancia Total: ${formatAmount(gananciaTotal)}',
                                             style: TextStyle(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.bold)),
@@ -3178,7 +3181,7 @@ class ControlScreenState extends State<ControlScreen>
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           Text(
-            '\$$value',
+            '\$${formatAmount(double.tryParse(value) ?? 0.0)}',
             style: TextStyle(
               fontSize: 14,
               color: providerBRT.isDarkMode
@@ -3460,4 +3463,12 @@ class ControlScreenState extends State<ControlScreen>
     super.dispose();
     _focusNode.dispose();
   }
+}
+
+String formatAmount(dynamic value) {
+  if (value is num) {
+    return NumberFormat("#,##0.00")
+        .format(value); // Asegura que siempre se muestren dos decimales
+  }
+  return value.toString();
 }

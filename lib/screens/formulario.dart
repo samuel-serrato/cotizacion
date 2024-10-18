@@ -354,10 +354,21 @@ class _FormularioScreenState extends State<FormularioScreen> {
                                 telefonoController.text =
                                     client['telefono'] ?? '';
                                 emailController.text = client['email'] ?? '';
-                                _selectedPersonType = _personTypes
-                                        .contains(client['tipo_cliente'])
-                                    ? client['tipo_cliente']
-                                    : 'N/A';
+
+                                if (_personTypes
+                                    .contains(client['tipo_cliente'])) {
+                                  _selectedPersonType = client['tipo_cliente'];
+                                  personalizadoController.text =
+                                      ''; // Limpiar el campo personalizado si el tipo es estándar
+                                } else {
+                                  _selectedPersonType = 'OTRO';
+                                  personalizadoController.text =
+                                      client['tipo_cliente'] ?? '';
+                                }
+
+                                // Deshabilitar el campo personalizado si el cliente es seleccionado del overlay
+                                camposEditables = false;
+
                                 idDetalleVentaExistente = client['idcliente'];
                                 esClienteNuevo =
                                     false; // Marca como cliente existente
@@ -485,10 +496,11 @@ class _FormularioScreenState extends State<FormularioScreen> {
                         }
                       });
                     },
-                    customController: personalizadoController,
                     enabled: camposEditables, // Pasa la propiedad habilitada
+                    customController: personalizadoController,
                   ),
                 ),
+
                 SizedBox(width: 10),
                 Expanded(
                   flex: _showClientSearchField ? 5 : 6,
@@ -533,24 +545,25 @@ class _FormularioScreenState extends State<FormularioScreen> {
                 Expanded(
                   flex: _showClientSearchField ? 4 : 6,
                   child: _buildTextFieldValidator(
-                    isDarkMode: isDarkMode,
-                    controller: emailController,
-                    label: 'Correo',
-                    inputType: TextInputType.emailAddress,
-                    enabled: camposEditables,
-                    validator: (value) {
-                      // Permite que el campo esté vacío
-                      if (value == null || value.isEmpty) {
-                        return null; // No hay error si no se ingresa nada
-                      }
-                      const pattern = r'^[^@]+@[^@]+\.[^@]+';
-                      final regex = RegExp(pattern);
-                      if (!regex.hasMatch(value)) {
-                        return 'Ingrese un correo válido';
-                      }
-                      return null; // Retorna null si el correo es válido
-                    },
-                  ),
+                      isDarkMode: isDarkMode,
+                      controller: emailController,
+                      label: 'Correo',
+                      inputType: TextInputType.emailAddress,
+                      enabled: camposEditables,
+                      validator: (value) {
+                        // Permite que el campo esté vacío o que muestre "No asignado" sin errores
+                        if (value == null ||
+                            value.isEmpty ||
+                            value == 'No asignado') {
+                          return null; // No hay error si no se ingresa nada o si está "No asignado"
+                        }
+                        const pattern = r'^[^@]+@[^@]+\.[^@]+';
+                        final regex = RegExp(pattern);
+                        if (!regex.hasMatch(value)) {
+                          return 'Ingrese un correo válido';
+                        }
+                        return null; // Retorna null si el correo es válido
+                      }),
                 ),
               ],
             ),
@@ -802,6 +815,20 @@ class _FormularioScreenState extends State<FormularioScreen> {
     });
   }
 
+  // Método de validación actualizado
+  String? _validarTipoPersona(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Este campo no puede estar vacío.';
+    }
+    if (!value.endsWith('.')) {
+      // Verificar si el valor termina con un punto
+      return 'El valor debe terminar con un punto (.)';
+    }
+    return null; // Sin errores
+  }
+
+  bool esEditable = false; // Controla cuándo el campo es editable
+
   Widget _buildDropdownWithCustom({
     required bool isDarkMode,
     required String label,
@@ -852,13 +879,11 @@ class _FormularioScreenState extends State<FormularioScreen> {
                     ? Colors.grey.shade800
                     : Colors.grey
                         .shade100), // Color cuando el campo está deshabilitado
-            filled:
-                true, // Asegúrate de que esto esté configurado para aplicar el fillColor
+            filled: true,
             contentPadding: EdgeInsets.symmetric(vertical: 15, horizontal: 20),
           ),
-          dropdownColor: isDarkMode
-              ? colorTextFieldOscuro
-              : colorTextFieldClaro, // Ajuste del color del dropdown
+          dropdownColor:
+              isDarkMode ? colorTextFieldOscuro : colorTextFieldClaro,
           icon: Icon(Icons.arrow_drop_down,
               color: isDarkMode ? colorTextFieldClaro : Color(0xFF001F3F)),
           items: items.map((item) {
@@ -870,9 +895,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
                   color: enabled
                       ? (isDarkMode
                           ? colorTextFieldClaro
-                          : colorTextFieldOscuro) // Cambia el color del texto según el modo
-                      : Colors.grey[
-                          400], // Color para cuando el campo está deshabilitado
+                          : colorTextFieldOscuro)
+                      : Colors.grey[400],
                   fontSize: 14,
                   fontWeight: FontWeight.normal,
                 ),
@@ -884,8 +908,19 @@ class _FormularioScreenState extends State<FormularioScreen> {
         if (value == 'OTRO')
           SizedBox(
             width: 200,
-            child: _buildTextField(
-                customController!, isDarkMode, 'Otro', TextInputType.number),
+            child: TextFormField(
+              controller: customController,
+              enabled: enabled &&
+                  !_showClientSearchField, // Editable solo si el switch está apagado y se seleccionó 'OTRO'
+              decoration: InputDecoration(
+                labelText: 'Otro',
+                errorText: _validarTipoPersona(customController?.text),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30.0),
+                ),
+              ),
+              keyboardType: TextInputType.text,
+            ),
           ),
       ],
     );
@@ -911,9 +946,16 @@ class _FormularioScreenState extends State<FormularioScreen> {
   Future<void> _guardarCliente() async {
     //String nombres = '$_selectedPersonType ${nombresController.text}';
     /* String nombres = nombresController.text; */
-    String nombres =
-        formatNombres(_selectedPersonType ?? 'N/A', nombresController.text);
+    String tipoPersona;
+    if (_selectedPersonType == 'OTRO') {
+      tipoPersona =
+          personalizadoController.text; // Usar el valor del campo de texto
+    } else {
+      tipoPersona =
+          _selectedPersonType ?? 'N/A'; // Mantener el valor seleccionado
+    }
 
+    String nombres = formatNombres(tipoPersona, nombresController.text);
     String telefono = telefonoController.text;
     String email = emailController.text;
 
@@ -1849,10 +1891,26 @@ class _FormularioScreenState extends State<FormularioScreen> {
     });
   }
 
-  void _guardarCotizacion(BuildContext context) async {
+  void _guardarCotizacion(
+      BuildContext context, TextEditingController customController) async {
     setState(() {
       _isLoading = true; // Inicia la carga
     });
+
+    // Validar el tipo de persona antes de continuar
+    String? tipoPersonaError = _validarTipoPersona(customController.text);
+    if (tipoPersonaError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(tipoPersonaError),
+          backgroundColor: Colors.red,
+        ),
+      );
+      setState(() {
+        _isLoading = false; // Finaliza la carga
+      });
+      return; // Salir si hay errores de validación
+    }
 
     try {
       if (esClienteNuevo) {
@@ -1877,7 +1935,12 @@ class _FormularioScreenState extends State<FormularioScreen> {
       }
     } catch (e) {
       print('Error al guardar la cotización: $e');
-      // Aquí puedes mostrar un mensaje de error si lo deseas
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al guardar la cotización: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       setState(() {
         _isLoading = false; // Finaliza la carga
@@ -1900,7 +1963,6 @@ class _FormularioScreenState extends State<FormularioScreen> {
                   : () {
                       final provider = Provider.of<CotizacionProvider>(context,
                           listen: false);
-
                       bool hayErrores = false;
 
                       // 1. Verificar si la lista de artículos está vacía
@@ -1930,8 +1992,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
 
                       // 3. Si no hay errores, proceder a guardar la cotización
                       if (!hayErrores) {
-                        _guardarCotizacion(
-                            context); // Guardar cotización si todo es válido
+                        _guardarCotizacion(context,
+                            personalizadoController); // Guardar cotización si todo es válido
                       }
                     },
               icon: Icon(
