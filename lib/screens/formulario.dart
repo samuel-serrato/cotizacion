@@ -816,15 +816,25 @@ class _FormularioScreenState extends State<FormularioScreen> {
   }
 
   // Método de validación actualizado
-  String? _validarTipoPersona(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Este campo no puede estar vacío.';
+  String? _validarTipoPersona(String? customText) {
+    // Si no se ha seleccionado un tipo, asignar "N/A"
+    if (_selectedPersonType == null || _selectedPersonType!.isEmpty) {
+      _selectedPersonType = 'N/A'; // Asignar "N/A" automáticamente
+      return null; // Permitir continuar
     }
-    if (!value.endsWith('.')) {
-      // Verificar si el valor termina con un punto
-      return 'El valor debe terminar con un punto (.)';
+
+    // Validar si seleccionaron "OTRO" y si el campo de texto está vacío o no empieza con "."
+    if (_selectedPersonType == 'OTRO') {
+      if (customText == null || customText.isEmpty) {
+        return 'Por favor, especifique el tipo de persona';
+      }
+
+      if (!customText.startsWith('.')) {
+        return 'El tipo de persona debe comenzar con un "."';
+      }
     }
-    return null; // Sin errores
+
+    return null; // No hay errores
   }
 
   bool esEditable = false; // Controla cuándo el campo es editable
