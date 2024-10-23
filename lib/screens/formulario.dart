@@ -829,8 +829,8 @@ class _FormularioScreenState extends State<FormularioScreen> {
         return 'Por favor, especifique el tipo de persona';
       }
 
-      if (!customText.startsWith('.')) {
-        return 'El tipo de persona debe comenzar con un "."';
+      if (!customText.endsWith('.')) {
+        return 'El tipo de persona debe terminar con un "."';
       }
     }
 
