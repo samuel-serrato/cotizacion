@@ -51,6 +51,9 @@ class ControlScreenState extends State<ControlScreen>
   bool _isLoading = false; // Variable para controlar el estado de carga
 
   bool _isEditing = false; // Variable para controlar el estado de edición
+
+  bool isDeleting = false;
+
   bool _isDarkMode = false; // Estado del modo oscuro
 
   // Variable para almacenar la fecha seleccionada
@@ -1938,6 +1941,44 @@ class ControlScreenState extends State<ControlScreen>
                                                               children: [
                                                                 TextButton(
                                                                   onPressed:
+                                                                      () {
+                                                                    mostrarConfirmacionEliminar(
+                                                                        provider,
+                                                                        colorFondoClaro,
+                                                                        colorTextoOscuro,
+                                                                        colorTextoClaro,
+                                                                        context,
+                                                                        detalle[
+                                                                            'folio'],
+                                                                        detalles,
+                                                                        setState);
+                                                                    // Aquí puedes agregar la lógica para eliminar
+                                                                    print(
+                                                                        'Eliminar item');
+                                                                  },
+                                                                  style: TextButton
+                                                                      .styleFrom(
+                                                                    shape:
+                                                                        RoundedRectangleBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              8),
+                                                                    ),
+                                                                  ),
+                                                                  child: Icon(
+                                                                    Icons
+                                                                        .delete,
+                                                                    color: provider.isDarkMode
+                                                                        ? Colors
+                                                                            .white
+                                                                        : Color(
+                                                                            0xFFB8001F),
+                                                                    size:
+                                                                        24, // Tamaño del icono
+                                                                  ),
+                                                                ),
+                                                                TextButton(
+                                                                  onPressed:
                                                                       () async {
                                                                     // Asegúrate de que el cliente existe
                                                                     if (cliente !=
@@ -2013,28 +2054,35 @@ class ControlScreenState extends State<ControlScreen>
                                                                 TextButton(
                                                                   onPressed:
                                                                       () {
-                                                                    // Llamas a la función para mostrar el diálogo, pasando el contexto y los detalles
+                                                                    // Llamas a la función para mostrar el diálogo, pasando el contexto, los detalles y el folio
                                                                     mostrarDetallesEstado(
                                                                         context,
                                                                         detalle[
-                                                                            'estados']);
+                                                                            'estados'],
+                                                                        detalle[
+                                                                            'folio']);
                                                                     setState(
                                                                         () {
-                                                                      fetchDatos();
+                                                                      //fetchDatos();
                                                                     });
                                                                   },
                                                                   child: Text(
-                                                                      'Ver detalles del estado',
-                                                                      style:
-                                                                          TextStyle(
-                                                                        fontWeight:
-                                                                            FontWeight.bold,
-                                                                        fontSize:
-                                                                            14,
-                                                                        color: provider.isDarkMode
-                                                                            ? Color(0xFF00CCDD)
-                                                                            : Color(0xFF008F8F),
-                                                                      )),
+                                                                    'Ver detalles del estado',
+                                                                    style:
+                                                                        TextStyle(
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                      fontSize:
+                                                                          14,
+                                                                      color: provider
+                                                                              .isDarkMode
+                                                                          ? Color(
+                                                                              0xFF00CCDD)
+                                                                          : Color(
+                                                                              0xFF008F8F),
+                                                                    ),
+                                                                  ),
                                                                 ),
                                                               ],
                                                             ),
@@ -2056,6 +2104,113 @@ class ControlScreenState extends State<ControlScreen>
                     ],
                   ),
       ),
+    );
+  }
+
+  Future<void> eliminarVenta(String folio, List<dynamic> detalles,
+      Function setState, BuildContext context) async {
+    final url = Uri.parse('https://codtix.vercel.app/api/v1/detalles/$folio');
+
+    try {
+      setState(() {
+        isDeleting = true; // Inicia el estado de cargando
+      });
+
+      final response = await http.delete(url);
+
+      if (response.statusCode == 200) {
+        print('Venta eliminada exitosamente');
+        setState(() {
+          detalles.removeWhere((detalle) => detalle['folio'] == folio);
+        });
+
+        // Mostrar SnackBar después de eliminar correctamente
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Venta eliminada correctamente'),
+            duration: Duration(seconds: 2),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Recargar los datos después de eliminar
+        fetchDatos();
+      } else {
+        print('Error al eliminar la venta: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error al eliminar la venta: $e');
+    } finally {
+      setState(() {
+        isDeleting = false; // Termina el estado de cargando
+      });
+    }
+  }
+
+  void mostrarConfirmacionEliminar(
+      provider,
+      colorFondoClaro,
+      colorTextoOscuro,
+      colorTextoClaro,
+      BuildContext context,
+      String folio,
+      List<dynamic> detalles,
+      Function setState) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: provider.isDarkMode
+                  ? Color.fromARGB(255, 18, 41, 66)
+                  : colorFondoClaro,
+              title: Text('Confirmar eliminación'),
+              content: isDeleting
+                  ? SizedBox(
+                      height:
+                          50, // Fija la altura del CircularProgressIndicator
+                      child: Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  : Text('¿Estás seguro de que deseas eliminar esta venta?'),
+              actions: isDeleting
+                  ? [] // No mostrar botones mientras está cargando
+                  : <Widget>[
+                      TextButton(
+                        child: Text(
+                          'Cancelar',
+                          style: TextStyle(
+                            color: provider.isDarkMode
+                                ? colorTextoClaro
+                                : Colors.red,
+                          ),
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).pop(); // Cerrar el diálogo
+                        },
+                      ),
+                      TextButton(
+                        child: Text('Eliminar',
+                            style: TextStyle(
+                              color: provider.isDarkMode
+                                  ? colorTextoClaro
+                                  : Color(0xFF008F8F),
+                            )),
+                        onPressed: () async {
+                          // Ejecutar la función para eliminar la venta y actualizar la lista local
+                          await eliminarVenta(
+                              folio, detalles, setState, context);
+                          Navigator.of(context)
+                              .pop(); // Cerrar el diálogo después de eliminar
+                        },
+                      ),
+                    ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -3361,8 +3516,7 @@ class ControlScreenState extends State<ControlScreen>
   }
 
   void mostrarDetallesEstado(
-      BuildContext context, List<dynamic> estadosActuales) {
-    // Lista de todos los estados posibles
+      BuildContext context, List<dynamic> estadosActuales, String folio) {
     final List<String> estados = [
       'Esperando confirmación',
       'Pago del cliente',
@@ -3382,7 +3536,7 @@ class ControlScreenState extends State<ControlScreen>
           title: Text('Detalles del Estado'),
           content: Container(
             width: MediaQuery.of(context).size.width *
-                0.33, // 80% del ancho de la pantalla
+                0.33, // 33% del ancho de la pantalla
             child: ListView.builder(
               shrinkWrap: true,
               itemCount: estados.length,
@@ -3398,7 +3552,7 @@ class ControlScreenState extends State<ControlScreen>
 
                 final fechaEstado = estadoEncontrado != null
                     ? estadoEncontrado['fechaEstado']
-                    : 'No disponible'; // Si no se encontró, indica que no ha llegado
+                    : 'No disponible'; // Indica que no ha llegado
 
                 // Color de la fecha basado en si es 'No disponible' o no
                 final fechaColor = fechaEstado == 'No disponible'
@@ -3422,17 +3576,29 @@ class ControlScreenState extends State<ControlScreen>
                         ),
                       ),
                       SizedBox(width: 8),
-                      Text(
-                        estado,
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.bold),
+                      Expanded(
+                        child: Text(
+                          estado,
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
                       ),
+                      if (fechaEstado !=
+                          'No disponible') // Solo muestra el ícono si hay fecha
+                        IconButton(
+                          icon: Icon(Icons.delete, color: Colors.red),
+                          onPressed: () async {
+                            // Lógica para eliminar el estado
+                            await eliminarEstado(context, estado, folio);
+                          },
+                        ),
                       Text(
                         ' - ${formatDateWithTime(fechaEstado)}', // Mostrar la fecha o 'No disponible'
                         style: TextStyle(
-                            fontSize: 14,
-                            color: fechaColor,
-                            fontWeight: fechaFontWeight),
+                          fontSize: 14,
+                          color: fechaColor,
+                          fontWeight: fechaFontWeight,
+                        ),
                       ),
                     ],
                   ),
@@ -3451,6 +3617,38 @@ class ControlScreenState extends State<ControlScreen>
         );
       },
     );
+  }
+
+  Future<void> eliminarEstado(
+      BuildContext context, String estado, String folio) async {
+    final url =
+        Uri.parse('https://codtix.vercel.app/api/v1/estados/eliminar/$folio');
+
+    try {
+      final response = await http
+          .delete(url, body: jsonEncode({"estado": estado}), headers: {
+        'Content-Type': 'application/json',
+      });
+
+      if (response.statusCode == 200) {
+        print('Estado eliminado exitosamente');
+
+        // Mostrar SnackBar para confirmar la eliminación
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Estado eliminado correctamente'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Aquí puedes llamar a fetchDatos() si deseas recargar la lista de estados
+        fetchDatos(); // Descomentar si quieres recargar los datos después de eliminar
+      } else {
+        print('Error al eliminar el estado: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error al eliminar el estado: $e');
+    }
   }
 
   @override
