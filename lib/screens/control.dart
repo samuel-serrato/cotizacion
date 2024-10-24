@@ -2057,10 +2057,17 @@ class ControlScreenState extends State<ControlScreen>
                                                                     // Llamas a la función para mostrar el diálogo, pasando el contexto, los detalles y el folio
                                                                     mostrarDetallesEstado(
                                                                         context,
+                                                                        provider,
                                                                         detalle[
                                                                             'estados'],
                                                                         detalle[
-                                                                            'folio']);
+                                                                            'folio'],
+                                                                        colorTextFieldClaro,
+                                                                        colorTextFieldOscuro,
+                                                                        colorFondoClaro,
+                                                                        colorFondoOscuro,
+                                                                        colorTextoOscuro,
+                                                                        colorTextoClaro);
                                                                     setState(
                                                                         () {
                                                                       //fetchDatos();
@@ -2136,10 +2143,30 @@ class ControlScreenState extends State<ControlScreen>
         // Recargar los datos después de eliminar
         fetchDatos();
       } else {
-        print('Error al eliminar la venta: ${response.statusCode}');
+        // Extraer el código y mensaje del servidor
+        final int codigo = response.statusCode;
+        final Map<String, dynamic> errorResponse = jsonDecode(response.body);
+        final String mensaje = errorResponse['Error']['Message'];
+
+        // Mostrar SnackBar con código y mensaje
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Código: $codigo\nMensaje: $mensaje'),
+            duration: Duration(seconds: 5),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
       print('Error al eliminar la venta: $e');
+      // Mostrar SnackBar en caso de excepción
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          duration: Duration(seconds: 3),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       setState(() {
         isDeleting = false; // Termina el estado de cargando
@@ -3516,7 +3543,16 @@ class ControlScreenState extends State<ControlScreen>
   }
 
   void mostrarDetallesEstado(
-      BuildContext context, List<dynamic> estadosActuales, String folio) {
+      BuildContext context,
+      provider,
+      List<dynamic> estadosActuales,
+      String folio,
+      colorTextFieldClaro,
+      colorTextFieldOscuro,
+      colorFondoClaro,
+      colorFondoOscuro,
+      colorTextoOscuro,
+      colorTextoClaro) {
     final List<String> estados = [
       'Esperando confirmación',
       'Pago del cliente',
@@ -3532,95 +3568,133 @@ class ControlScreenState extends State<ControlScreen>
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Detalles del Estado'),
-          content: Container(
-            width: MediaQuery.of(context).size.width *
-                0.33, // 33% del ancho de la pantalla
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: estados.length,
-              itemBuilder: (BuildContext context, int index) {
-                final estado = estados[index];
-                final color = _getStatusColor(estado);
+        return StatefulBuilder(
+          builder: (context, setState) {
+            bool isLoading = false; // Inicializamos isLoading aquí
 
-                // Buscar si este estado ya tiene una fecha en el array de 'estadosActuales'
-                final estadoEncontrado = estadosActuales.firstWhere(
-                  (e) => e['estado'] == estado,
-                  orElse: () => null,
-                );
+            return AlertDialog(
+              title: Text('Detalles del Estado'),
+              backgroundColor: provider.isDarkMode
+                  ? Color.fromARGB(255, 18, 41, 66)
+                  : colorFondoClaro,
+              content: Container(
+                width: MediaQuery.of(context).size.width * 0.33,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: estados.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final estado = estados[index];
+                    final color = _getStatusColor(estado);
 
-                final fechaEstado = estadoEncontrado != null
-                    ? estadoEncontrado['fechaEstado']
-                    : 'No disponible'; // Indica que no ha llegado
+                    final estadoEncontrado = estadosActuales.firstWhere(
+                      (e) => e['estado'] == estado,
+                      orElse: () => null,
+                    );
 
-                // Color de la fecha basado en si es 'No disponible' o no
-                final fechaColor = fechaEstado == 'No disponible'
-                    ? Colors.grey // gris si no ha alcanzado
-                    : Color(0xFF00A1B0); // azul si tiene fecha
+                    final fechaEstado = estadoEncontrado != null
+                        ? estadoEncontrado['fechaEstado']
+                        : 'No disponible';
 
-                final fechaFontWeight = fechaEstado == 'No disponible'
-                    ? FontWeight.normal // normal si no ha alcanzado
-                    : FontWeight.w500; // negrita si tiene fecha
+                    final fechaColor = fechaEstado == 'No disponible'
+                        ? Colors.grey
+                        : Color(0xFF00A1B0);
+                    final fechaFontWeight = fechaEstado == 'No disponible'
+                        ? FontWeight.normal
+                        : FontWeight.w500;
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: color,
-                        ),
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: color,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              estado,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 40),
+                          Expanded(
+                            flex: 5,
+                            child: Text(
+                              fechaEstado == 'No disponible'
+                                  ? fechaEstado
+                                  : formatDateWithTime(fechaEstado),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: fechaColor,
+                                fontWeight: fechaFontWeight,
+                              ),
+                              textAlign: TextAlign.left,
+                            ),
+                          ),
+                          if (fechaEstado != 'No disponible')
+                            isLoading
+                                ? CircularProgressIndicator()
+                                : IconButton(
+                                    icon: Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () async {
+                                      // Iniciar la carga
+                                      setState(() {
+                                        isLoading = true;
+                                      });
+
+                                      // Llamada para eliminar el estado
+                                      await eliminarEstado(
+                                        context,
+                                        estado,
+                                        folio,
+                                        setState,
+                                        estadosActuales,
+                                      );
+
+                                      // Detener la carga
+                                      setState(() {
+                                        isLoading = false;
+                                      });
+                                    },
+                                  ),
+                        ],
                       ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          estado,
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      if (fechaEstado !=
-                          'No disponible') // Solo muestra el ícono si hay fecha
-                        IconButton(
-                          icon: Icon(Icons.delete, color: Colors.red),
-                          onPressed: () async {
-                            // Lógica para eliminar el estado
-                            await eliminarEstado(context, estado, folio);
-                          },
-                        ),
-                      Text(
-                        ' - ${formatDateWithTime(fechaEstado)}', // Mostrar la fecha o 'No disponible'
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: fechaColor,
-                          fontWeight: fechaFontWeight,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('Cerrar'),
-              onPressed: () {
-                Navigator.of(context).pop(); // Cierra el diálogo
-              },
-            ),
-          ],
+                    );
+                  },
+                ),
+              ),
+              actions: <Widget>[
+               TextButton(
+  child: Text(
+    'Cerrar',
+    style: TextStyle(
+      color: provider.isDarkMode ? Colors.white : null, // Elimina el color verde
+    ),
+  ),
+  onPressed: () {
+    Navigator.of(context).pop(); // Cierra el diálogo
+  },
+),
+
+              ],
+            );
+          },
         );
       },
     );
   }
 
-  Future<void> eliminarEstado(
-      BuildContext context, String estado, String folio) async {
+  Future<void> eliminarEstado(BuildContext context, String estado, String folio,
+      Function setState, List<dynamic> estadosActuales) async {
     final url =
         Uri.parse('https://codtix.vercel.app/api/v1/estados/eliminar/$folio');
 
@@ -3633,16 +3707,18 @@ class ControlScreenState extends State<ControlScreen>
       if (response.statusCode == 200) {
         print('Estado eliminado exitosamente');
 
-        // Mostrar SnackBar para confirmar la eliminación
+        // Elimina el estado visualmente
+        setState(() {
+          estadosActuales.removeWhere((e) => e['estado'] == estado);
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Estado eliminado correctamente'),
             duration: Duration(seconds: 2),
+            backgroundColor: Colors.green,
           ),
         );
-
-        // Aquí puedes llamar a fetchDatos() si deseas recargar la lista de estados
-        fetchDatos(); // Descomentar si quieres recargar los datos después de eliminar
       } else {
         print('Error al eliminar el estado: ${response.statusCode}');
       }
